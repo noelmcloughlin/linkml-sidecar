@@ -1,0 +1,14 @@
+# A valid concept of the placeholder class: the bundle's base IRI joined with
+# the concept's path, the class named exactly in `type`, and the one field
+# the class adds to LOKF's own. It sits under problem/valid, which the
+# template's example runner skips: that runner instantiates every valid
+# example through dataclasses compiled from the schema, and LOKF's `from`
+# slot is a Python keyword the generator does not escape. tests/test_data.py
+# validates it with the validator instead. Move it to data/valid once linkml
+# escapes keyword slot names.
+---
+id: <BASE_IRI>examples/example-concept
+type: ExampleConcept
+title: Example concept
+description: A placeholder concept that shows the shape of a <PROJ_NAME> domain concept.
+example_key: example value

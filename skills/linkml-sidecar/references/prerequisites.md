@@ -1,0 +1,28 @@
+# Prerequisites: what the preflight's lines mean, and who fixes each
+
+`.linkml/scripts/linkml-preflight.sh` (before the sidecar exists, `templates/scripts/linkml-preflight.sh`) prints one line per thing the skills depend on, in the words of the tools it checked. This table is the translation: what each line means, what it stops, who normally puts it right, and what to send that person. **You** is the person at the keyboard; **the maintainer** is whoever set the repository up; **an administrator** has the forge's settings.
+
+When a person cannot act on a `missing` or `warn` line, write them a short request note, addressed to the maintainer or administrator: the preflight line as printed, the row's request, and what the person can still do meanwhile.
+
+| Line | It means | It stops | Who | What to send them |
+| --- | --- | --- | --- | --- |
+| `host` | The computer, its shell, and whether `python3` is on the path. | Nothing; `uv run python` stands in. | you | Nothing. |
+| `sync` | The folder lives in OneDrive, Dropbox, Drive or iCloud. | Nothing; the doorway is per machine and `.venv/` should be excluded from the sync. | you | Nothing. |
+| `git` | Whether the folder is under git and on which forge, and whether `.linkml/` is tracked, gitignored or not yet committed. A warning says this directory is inside a larger repository. | No git: `copier update`, the workflow, pull requests. Inside a larger repository: run the skill at that repository's root instead. | the maintainer | "Is this folder meant to be under git, and is its root the repository root?" |
+| `uv` | Whether `uv` is installed. | Steps 1, 4 and 5: copier, just, the project's Python and every generator run through it. | you, or the maintainer | "Please install `uv` (docs.astral.sh/uv) on this machine." |
+| `python` | Whether `uv` can find a Python of 3.10 or later, and whether a root `.python-version` pins one below it. | Step 4 (install, lint, test). | you | "Please run `uv python install 3.12`, or raise the root `.python-version`." |
+| `copier` | Whether `uvx` can run copier with the jinja2-time extension the template needs. | Step 1, the scaffold. | you, or the maintainer | "This machine cannot fetch copier through uvx; please allow github.com and pypi.org, or install it with `uv tool install --with jinja2-time copier`." |
+| `just` | Whether the `just` command runner is present. | Nothing; `uvx --from rust-just just` does the same. | you | Nothing. |
+| `sidecar` | Whether a sidecar exists, and in which shape: `.linkml/` from the template at a recorded pin, a half-made `.linkml/`, a visible `linkml/`, or the repository itself a copier project. A warning names a nested `.linkml/.git`. | Missing: linkml-author, and linkml-sidecar's Steps 2 to 5 until Step 1 has run. Half-made: the repair. | you | "There is no `.linkml/` here; please run the linkml-sidecar skill once, or tell me which folder holds the schema." |
+| `project` | Whether `config.public.mk` names a schema file that exists, whether `.venv` is installed, and whether `uv.lock` is in git when the workflow needs it. | A missing schema file: linkml-author. A lock not in git: the workflow's install step. | you, or the maintainer | "Please run `just --justfile .linkml/justfile install` and commit `.linkml/uv.lock`." |
+| `nested` | How many of the template's files under `.linkml/.github/` and `.pre-commit-config.yaml` are inert there. | Nothing. | nobody | Nothing; the hoisted workflow is the one that runs. |
+| `doorway` | Whether the `linkml_schema` link exists, or the one command that makes it. | Nothing; every recipe works without it. | you | Nothing. |
+| `lokf` | Whether a `.lokf/` bundle is present (KTL mode), its toolkit floor, whether `lokf.yaml` is pinned beside it, whether the justfile names the schema, and the bundle's `base_iri`. A warning says the bundle has no `base_iri`. | KTL mode's wiring and the dummy concept's id. | the maintainer | "Please set `base_iri` in `.lokf/knowledge/index.md`; the ktl-sidecar skill's Step 0 says how to choose it." |
+| `gitignore` | The root `.gitignore` names `.linkml`: the sidecar is gitignored on this host. | The Step 4 commit and Step 5. | nobody | Nothing; that is a decision, not a fault. |
+| `pages` | The host already publishes GitHub Pages, from a branch or a workflow. | Nothing, as long as `just deploy` never runs from `.linkml/`; the Step 5 docs job is scoped to the `linkml/` subpath. | you | Nothing. |
+| `workflows` | Which workflows the host has, whether the sidecar's is among them, and whether another file took its name. | A name clash: Step 5, until one file is renamed. | the maintainer | "A workflow named `linkml-sidecar.yaml` already exists; which of the two should keep the name?" |
+| `workspace` | The root `pyproject.toml` declares a uv workspace, of which `.linkml/` is not a member. | Possibly `just install`; untested. | the maintainer | "Please try `just --justfile .linkml/justfile install` here and report whether uv accepts a non-member project inside the workspace." |
+| `session` | Whether a person is present or the run is automated. | Unattended: nobody can confirm a guessed fact; the hand-off lists them. | nobody | Nothing. |
+| `network` | Whether github.com and pypi.org answer, and whether `curl` exists to ask. | Step 1 (the template) and Step 4 (the packages). | the maintainer | "This machine cannot reach github.com or pypi.org; please allow it, or run the scaffold on one that can and commit the result." |
+
+The preflight changes nothing and is safe to run again; `ok` lines need no action; a `missing` line is a fact about this machine, not about the person. The repository contract checks that every line the preflight can print as missing or a warning has a row here.

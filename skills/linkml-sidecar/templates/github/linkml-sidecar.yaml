@@ -1,0 +1,154 @@
+# The LinkML sidecar's workflow, hoisted to the host's root by linkml-sidecar
+# Step 5. The copier template renders workflows inside .linkml/.github/, where
+# GitHub never reads them; this one runs the same gate from the root, with
+# every step in the sidecar's directory. It never runs `just deploy`, which
+# pushes the host's gh-pages branch root: the docs job builds the site, keeps
+# it as an artifact, and publishes it under the linkml/ subpath only when the
+# repository variable LINKML_DOCS_ENABLED is `true`. One Python version, not
+# the template's five: a sidecar's checks should cost the host little.
+#
+# Every action is pinned to a commit, with its version in the comment for a
+# person or Dependabot to bump. Nothing here holds a placeholder: the file is
+# the same on every host, so a later template fix is a plain copy.
+name: LinkML sidecar
+
+on:
+  pull_request:
+    paths:
+      - ".linkml/**"
+      - ".lokf/lokf.yaml"
+      - ".github/workflows/linkml-sidecar.yaml"
+  push:
+    branches: [main]
+    paths:
+      - ".linkml/**"
+      - ".lokf/lokf.yaml"
+      - ".github/workflows/linkml-sidecar.yaml"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: linkml-sidecar-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: .linkml
+
+jobs:
+  lint-and-test:
+    name: Lint and test the schema
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # Observes the runner's outbound traffic and reports anything
+      # unexpected; audit mode blocks nothing.
+      - name: Harden the runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # setup-uv's inputs are read from the workspace root, not the working
+      # directory, so the lock's path is spelled out.
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: ".linkml/uv.lock"
+
+      - name: Install just
+        run: uv tool install rust-just==1.47.0
+
+      # --locked: the lock the host committed is what runs here, as the
+      # template's own workflow intends; a missing lock fails here, out loud.
+      - name: Install the project from its lock
+        run: uv sync --locked --group dev
+
+      - name: Lint the schema
+        run: just lint
+
+      - name: Generate, test and run the examples
+        run: just test
+
+  docs:
+    name: Build the documentation site
+    if: github.event_name != 'pull_request'
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: ".linkml/uv.lock"
+
+      - name: Install just
+        run: uv tool install rust-just==1.47.0
+
+      - name: Install the project from its lock
+        run: uv sync --locked --group dev
+
+      - name: Build the site
+        run: |
+          just gen-doc
+          uv run mkdocs build --site-dir site
+
+      - name: Keep the site as an artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linkml-docs
+          path: .linkml/site
+
+  publish-docs:
+    name: Publish the site under gh-pages/linkml
+    # Off until the host sets the repository variable; the artifact above is
+    # always there to inspect. The branch is the host's gh-pages, and only the
+    # linkml/ subpath is replaced, so a site the host already publishes there
+    # is left alone (peaceiris cleans destination_dir only).
+    if: github.event_name != 'pull_request' && vars.LINKML_DOCS_ENABLED == 'true'
+    needs: docs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Fetch the built site
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: linkml-docs
+          path: site
+
+      - name: Publish
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          destination_dir: linkml
+          keep_files: true

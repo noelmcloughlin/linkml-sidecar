@@ -1,0 +1,39 @@
+{
+  // Generated local virtualenvs, caches and installed agent runtime state are
+  // not this repository's content.
+  "ignores": [
+    "**/.venv/**",
+    "**/node_modules/**",
+    "**/.agents/**",
+    "**/.claude/**",
+    ".template-cache/**",
+    // The lokf fixture is a LOKF bundle header in the format's own
+    // convention: a frontmatter title plus body H1s. ktl-sidecar's templates
+    // are its source.
+    "tests/fixtures/**"
+  ],
+  // Rules disabled for reasons specific to this repository's content:
+  "config": {
+    // SKILL.md and references prose is left unwrapped: agents and diff
+    // review gain nothing from a fixed 80-column wrap.
+    "MD013": false,
+    // Two adjacent `>` callouts (the "> Sources:" / "> Model:" pair at the
+    // top of each SKILL.md) separated by one blank line are two blockquotes
+    // on purpose.
+    "MD028": false,
+    // `<PROJ_NAME>`, `<SCHEMA_ID>` and the other placeholder tokens are not
+    // HTML.
+    "MD033": false,
+    // templates/readme-for-schema.md and the llms-section fragments are
+    // spliced into a host's files, so they do not start with a heading.
+    "MD041": false,
+    // CHANGELOG.md repeats the Keep a Changelog headings under every
+    // version; siblings_only still catches a real duplicate.
+    "MD024": {
+      "siblings_only": true
+    },
+    // Tables pair a padded header with a bare `|---|` separator, the GFM
+    // convention; MD060 wants both padded.
+    "MD060": false
+  }
+}

@@ -1,0 +1,51 @@
+---
+# The example domain schema linkml-sidecar lays down beside a KTL bundle
+# (`.lokf/`), so that `just lint`, `just gen-project`, `just test` and
+# `lokf validate --schema` have something to run on from the first minute.
+# It imports LOKF's core schema, so a class defined here is a concept class
+# the bundle may use (`type: ExampleConcept`) and the validator checks.
+# Replace ExampleConcept with <PROJ_NAME>'s own classes (the linkml-author
+# skill does that), keeping the header and the import; the data under
+# tests/data/ goes with it. The recipe is ktl-librarian's domain-schema.md.
+id: <SCHEMA_ID>
+name: <PROJ_SLUG>
+title: <PROJ_NAME>
+description: >-
+  <PROJ_DESC>
+license: <LICENSE_ID>
+see_also:
+  - <DOCS_URL>
+
+prefixes:
+  <PROJ_SLUG>: <SCHEMA_ID>/
+  linkml: https://w3id.org/linkml/
+  lokf: https://w3id.org/lokf/
+  schema: http://schema.org/
+default_prefix: <PROJ_SLUG>
+default_range: string
+
+imports:
+  - linkml:types
+  # The pinned copy of LOKF's core schema beside the bundle, at the toolkit's
+  # floor version. LinkML resolves the path relative to this file.
+  - ../../../../.lokf/lokf
+
+classes:
+
+  ExampleConcept:
+    is_a: Concept
+    description: >-
+      A placeholder concept class for <PROJ_NAME>: a unit of knowledge the
+      bundle describes with one field LOKF's core vocabulary lacks. Replace
+      it with the host's own classes; every class is closed, so a concept
+      carries only the fields its class declares.
+    slots:
+      - example_key
+
+slots:
+
+  example_key:
+    description: >-
+      A placeholder field a concept of this class carries; a real class
+      declares the fields the domain needs instead.
+    range: string

@@ -1,0 +1,18 @@
+# The copier answers linkml-sidecar gives the template, rendered by the
+# scaffold from the facts Step 0 resolved. The four fixed answers are what
+# makes the project a sidecar: no upstream example (the skill lays down its
+# own, which lints clean, and copier would recreate a deleted one on update),
+# no PyPI or docs-preview workflows (inert inside .linkml/ anyway), and the
+# host's own license file, pre-seeded as .linkml/LICENSE.
+project_name: "<PROJ_NAME>"
+project_slug: "<PROJ_SLUG>"
+email: "<EMAIL>"
+full_name: "<FULL_NAME>"
+github_org: "<GITHUB_ORG>"
+project_description: "<PROJ_DESC>"
+existing_license_file: "LICENSE"
+license: "<LICENSE_ID>"
+copyright_year: "<COPYRIGHT_YEAR>"
+add_example: false
+gh_action_pypi: false
+gh_action_docs_preview: false

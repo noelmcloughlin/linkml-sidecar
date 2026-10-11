@@ -1,0 +1,5 @@
+No license file was found at the root of the <PROJ_NAME> repository on <TODAY>.
+
+This sidecar carries whatever license the host repository declares, and adds
+none of its own. Its pyproject.toml records `LicenseRef-Custom` for that
+reason. When the host gains a LICENSE, copy it over this file.

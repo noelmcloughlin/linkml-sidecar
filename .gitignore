@@ -1,0 +1,18 @@
+# OS/editor noise
+.DS_Store
+*.swp
+
+# Local tooling, if a contributor runs npm/npx here directly
+node_modules/
+
+# Installed agent runtime state is local to the consuming repo, not source content.
+.agents/
+.claude/
+skills-lock.json
+
+# Python bytecode, if a contributor imports or compiles a script here
+__pycache__/
+
+# A local clone of the pinned template for the tests (tests/conftest.py says
+# where it may live); never committed.
+.template-cache/

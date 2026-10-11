@@ -1,0 +1,57 @@
+# A stub of LOKF's core schema for the fast tests: the Concept class and the
+# camelCase relation slots the lint config must excuse. The slow tests pin the
+# real one out of the toolkit instead.
+id: https://w3id.org/lokf/schema
+name: lokf
+title: LOKF stub
+description: A stub of the core schema for tests.
+license: https://creativecommons.org/licenses/by/4.0/
+version: 0.8.0
+
+prefixes:
+  lokf: https://w3id.org/lokf/
+  linkml: https://w3id.org/linkml/
+  schema: http://schema.org/
+default_prefix: lokf
+default_range: string
+
+imports:
+  - linkml:types
+
+classes:
+  KnowledgeBundle:
+    tree_root: true
+    description: A bundle.
+    slots: [title, concepts]
+  Concept:
+    abstract: true
+    description: A unit of knowledge.
+    slots: [id, type, title, description, isPartOf, hasPart, dependsOn]
+
+slots:
+  id:
+    identifier: true
+    range: uriorcurie
+    description: The concept's IRI.
+  type:
+    designates_type: true
+    required: true
+    description: The concept's class.
+  title:
+    description: A display name.
+  description:
+    description: A one-sentence summary.
+  concepts:
+    range: Concept
+    multivalued: true
+    inlined_as_list: true
+    description: The bundle's concepts.
+  isPartOf:
+    range: uriorcurie
+    description: A whole this is part of.
+  hasPart:
+    range: uriorcurie
+    description: A part of this.
+  dependsOn:
+    range: uriorcurie
+    description: Something this needs.

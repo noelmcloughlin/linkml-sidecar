@@ -1,0 +1,6 @@
+# A concept that must fail: `type`, the one field OKF requires, is missing,
+# and `undeclared_key` is a field no class declares.
+---
+id: <BASE_IRI>examples/example-concept-2
+title: Example concept 2
+undeclared_key: no class declares this field

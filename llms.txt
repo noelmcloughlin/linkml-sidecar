@@ -1,0 +1,7 @@
+# linkml-sidecar
+
+> Two Agent Skills that give a code repository a LinkML data model as a sidecar: linkml-sidecar installs a hidden `.linkml/` project from linkml-project-copier without touching the host's build, and linkml-author turns its dummy schema into the real model and keeps it generated, documented and tested.
+
+## Agent context
+
+The skills are under `skills/`. `skills/linkml-sidecar/SKILL.md` is the installer's procedure and `skills/linkml-sidecar/references/template-assumptions.md` is the catalogue of what the upstream template assumes of a repository root and what the scaffold does about each. `skills/linkml-author/SKILL.md` is the authoring procedure, with the metamodel in its `references/`. Install either with `npx skills add noelmcloughlin/linkml-sidecar --skill <name> --yes`.

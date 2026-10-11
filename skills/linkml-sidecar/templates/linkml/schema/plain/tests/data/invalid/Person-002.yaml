@@ -1,0 +1,6 @@
+# Example data object that must fail: the email does not match the pattern.
+---
+id: "002"
+name: fuu bor
+primary_email: invalid-email-address
+age_in_years: 22

@@ -1,0 +1,53 @@
+# Contributing to linkml-sidecar
+
+*This file is a checklist, not a design log. Each rule is a line or two that links to where its reasoning lives: a script header, a reference page, a workflow comment. `bash scripts/validate-repository.sh` fails when the file outgrows its word budget, so it stays that way.*
+
+## Development setup
+
+There is no build step: the skills are Markdown, YAML, shell and Python.
+
+```bash
+git clone https://github.com/noelmcloughlin/linkml-sidecar.git
+cd linkml-sidecar
+bash scripts/validate-repository.sh
+uv run --no-project --with-requirements tests/requirements.txt pytest
+```
+
+The slow tests run the real template: clone the pinned tag into `.template-cache/linkml-project-copier` (the README has the command) and run pytest with `LINKML_SIDECAR_SLOW=1`. To try a change end-to-end, install from your clone: `npx skills add ./linkml-sidecar --skill linkml-sidecar --skill linkml-author`.
+
+## Layout
+
+| Path | Responsibility |
+| --- | --- |
+| `skills/linkml-sidecar/SKILL.md` | One-shot install: Step 0 gathers facts, the scaffold does Steps 1 to 3. Router only; its `references/` carry the detail. |
+| `skills/linkml-sidecar/scripts/` | The scaffold, driver and Python half. The driver holds the one template pin. |
+| `skills/linkml-sidecar/templates/` | Every file the sidecar writes that the template does not: the sidecar README, the dummies, the pointers, the workflow, the preflight. |
+| `skills/linkml-sidecar/references/template-assumptions.md` | The catalogue: what the template assumes of a root, what the scaffold does, what upstream could remove. |
+| `skills/linkml-author/SKILL.md` | Day to day: replace the dummy, evolve the model, run the gate. Its `references/` hold the metamodel and the pitfalls. |
+| `tests/` | The scripts on throwaway hosts; `tests/fake_copier.py` stands in for copier offline. |
+| `scripts/validate-repository.sh` | The contract: skill shape, links, lint, budgets, the pin, the pins in the workflow, prerequisites rows, invisible characters. |
+
+## Before opening a pull request
+
+- Run `bash scripts/validate-repository.sh` and `pytest`. CI runs both plus ShellCheck, `actionlint`, markdownlint, lychee and codespell, and the slow tests.
+- Run `gh skill publish --dry-run` if you have the GitHub CLI: the Agent Skills spec check `validate.yml` runs.
+- If a change alters what a skill *does*, add a line or two under `## [Unreleased]` in `CHANGELOG.md`. The reasoning belongs beside the code.
+- Moving the template pin: change `LINKML_TEMPLATE_REF` and `LINKML_TEMPLATE_SHA` in the scaffold driver, re-walk `template-assumptions.md` against the new version and bump its heading, re-run the slow tests, and update the version in `SKILL.md`'s Sources note. The contract holds every mention to the one pin.
+- A template file under `templates/github/` names every action by commit SHA with its version in a comment; Dependabot does not reach it, so bump it by hand with the repository's own workflows.
+- The pull request template's checklist is the short form of this list.
+
+## Editing scope
+
+This repository packages and distributes the two skills. A change to what an agent should *do* (a different scaffold step, a new rule in linkml-author) needs its *why* in the pull request, and keeps the boundary: linkml-sidecar installs and repairs, linkml-author authors, and neither edits a generated file or a template-owned one.
+
+## Code of conduct
+
+Participation here is covered by the [Contributor Covenant](CODE_OF_CONDUCT.md).
+
+## Using AI tools
+
+AI assistance is welcome; these skills exist for agents to run. You are still the author of whatever you submit, responsible for understanding and defending it in review, and an agent may not take part in discussion on your behalf. The full rules are in [AI_COVENANT.md](AI_COVENANT.md).
+
+## Releasing (maintainers)
+
+Tag a release by hand once `## [Unreleased]` has been promoted to a version heading with its date; both skills release together under that tag. Installers read the tag; the plugin marketplace reads `main`.

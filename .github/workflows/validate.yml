@@ -1,0 +1,189 @@
+name: Validate
+
+# Validate every pull request and every push to main: the repository contract,
+# the behavioural tests (fast ones offline, slow ones against the pinned
+# template with the network), script and workflow linting, the install path,
+# and Markdown and link checks, each as its own job so failures are easy to
+# read. Also weekly and on demand, so link rot, an upstream `gh skill` change
+# or a template that no longer renders is caught between pull requests.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1" # Mondays at 06:00 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-skills:
+    name: Validate repository contract & Agent Skills spec
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Validate repository contract
+        run: bash scripts/validate-repository.sh
+
+      - name: Verify gh skill support
+        run: gh skill --help
+
+      - name: Validate Agent Skills spec (dry run)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh skill publish --dry-run
+
+  test-scripts:
+    name: Test the scaffold, the preflight and the workflow
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
+      - name: Install just
+        run: |
+          uv tool install rust-just==1.47.0
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      # The slow tests run the real copier against the pinned tag of the
+      # template, cloned once here, then `just install`, `lint`, `test` and
+      # `site` on a plain host and a KTL host.
+      - name: Clone the pinned template
+        run: |
+          pin="$(grep -oE 'LINKML_TEMPLATE_REF:=v[0-9.]+' skills/linkml-sidecar/scripts/linkml-scaffold.sh | sed 's/.*:=//')"
+          git clone --branch "$pin" https://github.com/linkml/linkml-project-copier .template-cache/linkml-project-copier
+
+      - name: Run the tests
+        env:
+          LINKML_SIDECAR_SLOW: "1"
+        run: uv run --no-project --with-requirements tests/requirements.txt pytest
+
+  lint-scripts:
+    name: Lint shell scripts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: ShellCheck
+        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # 2.0.0
+        with:
+          scandir: '.'
+
+  lint-workflows:
+    name: Lint GitHub Actions workflows
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # With no paths given actionlint looks only under .github/workflows/,
+      # so the workflow template hosts copy is named explicitly.
+      - name: actionlint
+        uses: docker://rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 # v1.7.12
+        with:
+          args: -color .github/workflows/validate.yml skills/linkml-sidecar/templates/github/linkml-sidecar.yaml
+
+      - name: Every action is pinned to a commit
+        run: |
+          if grep -rnE '^\s*-?\s*uses:' .github/workflows/ skills/linkml-sidecar/templates/github/ \
+            | grep -vE '@([0-9a-f]{40}|sha256:[0-9a-f]{64})\b' \
+            | grep -vE 'uses:\s*\./'; then
+            echo '::error::the action(s) above are not pinned to a commit SHA' >&2
+            exit 1
+          fi
+
+  smoke-test:
+    name: Smoke-test the install path
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Use Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      - name: Run the install smoke test
+        run: bash scripts/smoke-test-install.sh "$GITHUB_WORKSPACE"
+
+  validate-markdown:
+    name: Lint Markdown & check links
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24.2.0
+        with:
+          globs: '**/*.md'
+
+      - name: Check links
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: --no-progress "**/*.md"
+          fail: true
+
+      - name: codespell
+        uses: codespell-project/actions-codespell@e3258cca84ce02b0bb36a3d41f2c18f719a0cc1a # v2.4.3
+        with:
+          path: '**/*.md'
