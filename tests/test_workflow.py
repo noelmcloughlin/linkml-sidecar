@@ -51,6 +51,15 @@ def test_publishing_is_gated_by_the_variable_and_scoped_to_the_subpath():
     assert publish["needs"] == "docs"
     pages = [s for s in publish["steps"] if "peaceiris/actions-gh-pages" in s.get("uses", "")]
     assert len(pages) == 1
-    assert pages[0]["with"]["destination_dir"] == "linkml" and pages[0]["with"]["keep_files"] is True
+    # Without keep_files peaceiris replaces destination_dir alone, so the pages
+    # of a deleted class go and the host's own site stays.
+    assert pages[0]["with"]["destination_dir"] == "linkml" and "keep_files" not in pages[0]["with"]
     artifact = [s for s in JOBS["docs"]["steps"] if "upload-artifact" in s.get("uses", "")]
     assert artifact and artifact[0]["with"]["path"] == ".linkml/site"
+
+
+def test_it_names_no_branch_and_publishes_from_the_default_branch_only():
+    triggers = DOC[True] if True in DOC else DOC["on"]
+    assert "branches" not in triggers["push"]
+    assert "github.event.repository.default_branch" in JOBS["docs"]["if"]
+    assert JOBS["publish-docs"]["needs"] == "docs"

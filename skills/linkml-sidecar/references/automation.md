@@ -6,9 +6,9 @@
 
 | Job | Runs when | Does |
 | --- | --- | --- |
-| `lint-and-test` | a pull request or push to `main` touching `.linkml/**`, `.lokf/lokf.yaml` or the workflow; dispatch | in `.linkml/`: `uv sync --locked --group dev`, `just lint`, `just test`, on Python 3.12 |
-| `docs` | the same, not on pull requests, after the gate | `just gen-doc`, `mkdocs build`; the site kept as the `linkml-docs` artifact |
-| `publish-docs` | after `docs`, only while the repository variable `LINKML_DOCS_ENABLED` is `true` | the artifact published under the `linkml/` subpath of the host's `gh-pages` branch, with `keep_files`, so a site the host already publishes there is left alone |
+| `lint-and-test` | a pull request or a push to any branch touching `.linkml/**`, `.lokf/lokf.yaml` or the workflow; dispatch | in `.linkml/`: `uv sync --locked --group dev`, `just lint`, `just test`, on Python 3.12 |
+| `docs` | the same, on the repository's default branch only, after the gate | `just gen-doc`, `mkdocs build`; the site kept as the `linkml-docs` artifact |
+| `publish-docs` | after `docs`, only while the repository variable `LINKML_DOCS_ENABLED` is `true` | the artifact published under the `linkml/` subpath of the host's `gh-pages` branch; peaceiris replaces that subpath and nothing else, so a site the host already publishes there is left alone and the page of a deleted class goes |
 
 `--locked` means the lock the host committed is what runs; a sidecar whose `uv.lock` is not in git fails at the install step, out loud. The preflight warns about that case.
 
@@ -20,7 +20,7 @@
 
 ## Pins
 
-Every `uses:` names a commit, with the version in a trailing comment for Dependabot. `peaceiris/actions-gh-pages` is the one action the KTL workflows do not also use; its pin was read from the release tag on 2026-10-07.
+Every `uses:` names a commit, with the version in a trailing comment for Dependabot. `peaceiris/actions-gh-pages`'s pin was read from the release tag on 2026-10-07. Dependabot reaches this repository's own workflows only, so the contract fails until a bump is copied into this template too.
 
 ## Other forges
 

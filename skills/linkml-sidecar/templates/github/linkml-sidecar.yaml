@@ -8,8 +8,10 @@
 # the template's five: a sidecar's checks should cost the host little.
 #
 # Every action is pinned to a commit, with its version in the comment for a
-# person or Dependabot to bump. Nothing here holds a placeholder: the file is
-# the same on every host, so a later template fix is a plain copy.
+# person or Dependabot to bump. Nothing here holds a placeholder, not even the
+# default branch's name: the gate runs on any pushed branch, and the two docs
+# jobs run only on the repository's default branch, whatever it is called. So
+# the file is the same on every host, and a later template fix is a plain copy.
 name: LinkML sidecar
 
 on:
@@ -19,7 +21,6 @@ on:
       - ".lokf/lokf.yaml"
       - ".github/workflows/linkml-sidecar.yaml"
   push:
-    branches: [main]
     paths:
       - ".linkml/**"
       - ".lokf/lokf.yaml"
@@ -63,8 +64,12 @@ jobs:
           enable-cache: true
           cache-dependency-glob: ".linkml/uv.lock"
 
+      # setup-uv puts the tool directory on PATH on Windows only; GitHub's
+      # own Linux image happens to have it, a self-hosted runner may not.
       - name: Install just
-        run: uv tool install rust-just==1.47.0
+        run: |
+          uv tool install rust-just==1.47.0
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       # --locked: the lock the host committed is what runs here, as the
       # template's own workflow intends; a missing lock fails here, out loud.
@@ -79,7 +84,10 @@ jobs:
 
   docs:
     name: Build the documentation site
-    if: github.event_name != 'pull_request'
+    # The default branch only: a dispatch on another branch must not publish
+    # that branch's pages. default_branch is read from the event, so no branch
+    # name is written here.
+    if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     needs: lint-and-test
     runs-on: ubuntu-latest
     permissions:
@@ -101,8 +109,12 @@ jobs:
           enable-cache: true
           cache-dependency-glob: ".linkml/uv.lock"
 
+      # setup-uv puts the tool directory on PATH on Windows only; GitHub's
+      # own Linux image happens to have it, a self-hosted runner may not.
       - name: Install just
-        run: uv tool install rust-just==1.47.0
+        run: |
+          uv tool install rust-just==1.47.0
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Install the project from its lock
         run: uv sync --locked --group dev
@@ -123,7 +135,9 @@ jobs:
     # Off until the host sets the repository variable; the artifact above is
     # always there to inspect. The branch is the host's gh-pages, and only the
     # linkml/ subpath is replaced, so a site the host already publishes there
-    # is left alone (peaceiris cleans destination_dir only).
+    # is left alone: peaceiris removes what is under destination_dir and
+    # nothing else, and the pages of a deleted class go with it. The default
+    # branch condition is inherited from `docs` through `needs`.
     if: github.event_name != 'pull_request' && vars.LINKML_DOCS_ENABLED == 'true'
     needs: docs
     runs-on: ubuntu-latest
@@ -151,4 +165,3 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./site
           destination_dir: linkml
-          keep_files: true
