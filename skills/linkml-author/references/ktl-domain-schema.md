@@ -1,6 +1,6 @@
 # Beside a KTL bundle: what the author keeps in mind
 
-The authority for a domain schema that `lokf validate --schema` checks is ktl-librarian's [domain-schema.md](https://github.com/noelmcloughlin/knowledge-trust-ladder/blob/main/skills/ktl-librarian/references/domain-schema.md); the sidecar's wiring of it is linkml-sidecar's [ktl.md](../../linkml-sidecar/references/ktl.md). This page is the author's short form.
+The authority for a domain schema that `lokf validate --schema` checks is ktl-librarian's [domain-schema.md](https://github.com/noelmcloughlin/knowledge-trust-ladder/blob/main/skills/ktl-librarian/references/domain-schema.md); the sidecar's wiring of it is linkml-sidecar's [ktl.md](https://github.com/noelmcloughlin/linkml-sidecar/blob/main/skills/linkml-sidecar/references/ktl.md). This page is the author's short form.
 
 ## What the validator expects
 
@@ -26,7 +26,7 @@ A class `is_a: Concept` joins the bundle's concept union, and so does any descen
 
 ## What the generators cannot do here
 
-- The generated dataclasses (`src/<slug>/datamodel/<slug>.py`) do not compile beside LOKF, because LOKF's `from` slot is a Python keyword and `gen-python` does not escape it, and the example runner at the end of `just test` instantiates every file under `tests/data/valid/` through the same dataclasses. So valid examples live under `tests/data/problem/valid/`, which the runner skips, and `tests/test_data.py` validates the files of both folders with `linkml.validator`, loading the schema through `SchemaView` so the relative import resolves. Counter-examples stay under `tests/data/invalid/`. The Pydantic models compile. Move the valid examples to `tests/data/valid/` once linkml escapes keyword slot names.
+- The generated dataclasses (`src/<slug>/datamodel/<slug>.py`) do not compile beside LOKF, because LOKF's `from` slot is a Python keyword and `gen-python` does not escape it, and the example runner at the end of `just test` instantiates every file under `tests/data/valid/` through the same dataclasses. So valid examples live under `tests/data/problem/valid/`, which the runner skips, and `tests/test_data.py` validates the files of both folders with `linkml.validator`, loading the schema through `SchemaView` so the relative import resolves. Counter-examples stay under `tests/data/invalid/`. The Pydantic models compile. linkml 1.12.0 escapes the field name; move the valid examples to `tests/data/valid/` once a release also loads data that uses `from` (PR 4083).
 - `linkml-lint` lints LOKF's camelCase slot names through the import closure; `.linkml/.linkmllint.yaml` excuses exactly those names. Regenerate it when `.lokf/lokf.yaml` moves (linkml-sidecar `--repair .linkmllint.yaml`).
 - `gen-doc` renders LOKF's pages too (`--render-imports`), so the docs site shows the whole vocabulary a concept may use.
 

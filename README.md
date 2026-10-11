@@ -2,11 +2,11 @@
 
 Two [Agent Skills](https://agentskills.io) that give a code repository a [LinkML](https://linkml.io) data model without touching its build: **linkml-sidecar** installs a hidden `.linkml/` folder holding a complete, pinned [linkml-project-copier](https://github.com/linkml/linkml-project-copier) project, and **linkml-author** turns its dummy schema into the model the code describes and keeps it linted, generated, documented and tested.
 
-> **It is a sidecar.** One hidden folder, one visible doorway (`linkml_schema/`), one workflow, and a README inside that says which files are the template's and which are yours. Nothing in the host's build depends on it; `rm -rf .linkml linkml_schema` and one workflow file remove it. The schema is the source; the JSON Schema, the Pydantic and dataclass models, the OWL and SHACL, the TypeScript and the docs site are generated from it, one `just` recipe each.
+> **It is a sidecar.** One hidden folder, one visible doorway (`linkml_schema/`), one workflow, and a README inside that says which files are the template's and which are yours. Nothing in the host's build depends on it; three deletions and two edits remove it, as the README inside says. The schema is the source; the JSON Schema, the Pydantic and dataclass models, the OWL and SHACL, the TypeScript and the docs site are generated from it, one `just` recipe each.
 
 ## Two patterns
 
-A repository that *is* a schema project, such as [lmodel/gist](https://github.com/lmodel/gist), runs copier at its root and needs nothing here. A domain codebase whose maintainers would resist a schema project landing in their root gets the sidecar. The template assumes a repository root in some twenty ways (its workflows render where GitHub never reads them, `just setup` nests a repository, `just deploy` pushes the host's Pages root, the README describes "the repository"); the skill catalogues every one and neutralises it, and the catalogue is what an upstream `layout: sidecar` answer would shrink.
+A repository that *is* a schema project, such as [lmodel/gist](https://github.com/lmodel/gist), runs copier at its root and needs nothing here. A domain codebase whose maintainers would resist a schema project landing in their root gets the sidecar. The template assumes a repository root in a dozen ways (its workflows render where GitHub never reads them, `just setup` nests a repository, `just deploy` pushes the host's Pages root, the README describes "the repository"); the skill catalogues every one and neutralises it, and the catalogue is what an upstream `layout: sidecar` answer would shrink.
 
 ## Install
 
@@ -16,7 +16,22 @@ npx skills add noelmcloughlin/linkml-sidecar --skill linkml-sidecar --skill link
 claude plugin marketplace add noelmcloughlin/linkml-sidecar && claude plugin install linkml-sidecar@linkml-sidecar
 ```
 
-Then ask your agent to set up a LinkML sidecar. It runs the preflight, gathers the project's facts from its manifests, README and git remote, runs one scaffold script, validates the result with the project's own tools, and hands off to linkml-author with a list of what it guessed. The hosts need `uv`; everything else (copier, just, LinkML) runs through it.
+Then ask your agent to set up a LinkML sidecar. It runs the preflight, gathers the project's facts from its manifests, README and git remote, runs one scaffold script, validates the result with the project's own tools, and hands off to linkml-author with a list of what it guessed. The hosts need `git` and `uv`; everything else (copier, just, LinkML) runs through uv.
+
+## Run it yourself
+
+The skill's two scripts work without an agent. From the host's root, with this repository cloned beside it:
+
+```bash
+bash ../linkml-sidecar/skills/linkml-sidecar/templates/scripts/linkml-preflight.sh .
+export PROJ_NAME="Acme Platform" PROJ_DESC="One sentence." GITHUB_ORG=acme \
+  REPO_URL=https://github.com/acme/platform FULL_NAME="A Person" EMAIL=a.person@acme.example \
+  LICENSE_ID=Apache-2.0 SCHEMA_ID=https://w3id.org/acme/platform DOCS_URL=https://acme.github.io/platform/linkml/
+bash ../linkml-sidecar/skills/linkml-sidecar/scripts/linkml-scaffold.sh --dry-run
+bash ../linkml-sidecar/skills/linkml-sidecar/scripts/linkml-scaffold.sh
+```
+
+Step 0 of [the skill](skills/linkml-sidecar/SKILL.md) says where each fact comes from, and Step 1 lists the exit codes, `--repair` and `--pointers-only`.
 
 ## With or without KTL
 

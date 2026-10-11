@@ -1,6 +1,5 @@
 {
   "name": "linkml-sidecar",
-  "version": "0.1.0",
   "displayName": "LinkML Sidecar",
   "description": "Two agent skills that give a code repository a LinkML data model as a sidecar: linkml-sidecar installs a hidden .linkml/ project from linkml-project-copier without touching the host's build, and linkml-author turns its dummy schema into the real model and keeps it generated, documented and tested. Works with or without a KTL knowledge bundle.",
   "author": { "name": "Noel McLoughlin", "url": "https://github.com/noelmcloughlin" },

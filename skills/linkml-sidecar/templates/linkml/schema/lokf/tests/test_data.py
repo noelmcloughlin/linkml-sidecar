@@ -4,16 +4,18 @@ Every file under tests/data/valid and tests/data/problem/valid validates
 against the class its name starts with, and every file under
 tests/data/invalid fails to. The schema is loaded through SchemaView, which
 resolves its relative import of .lokf/lokf.yaml from the schema file;
-linkml.validator.validate() given a path would resolve it from the working
-directory instead (linkml PR 3855).
+linkml.validator.validate() given a path resolved it from the working
+directory instead before linkml 1.12.0 (PR 3855).
 
 The generated dataclasses are not imported, and valid examples live under
 problem/valid: LOKF has a slot named `from`, which linkml's Python generator
 writes as a field name, so the dataclass module does not compile, and the
 template's example runner (`just test`) instantiates every example under
 data/valid through those same dataclasses. problem/valid is the folder the
-runner skips. Move the examples to data/valid once the generator escapes
-keyword slot names; the Pydantic models compile meanwhile.
+runner skips. linkml 1.12.0 escapes the field as `from_` (PR 3317), but its
+loaders still reject data that uses `from` (PR 4083 is open). Move the
+examples to data/valid once a release loads it; the Pydantic models compile
+meanwhile.
 """
 
 import glob

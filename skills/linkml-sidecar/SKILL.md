@@ -24,19 +24,19 @@ Create a fresh **`.linkml/` sidecar** inside the repository this skill is invoke
 
 ## Step 0 - Gather the host project's facts
 
-**First, the preflight.** Run `bash templates/scripts/linkml-preflight.sh` from this skill's directory (the copy under `.linkml/scripts/` does not exist yet) and read its screen before anything else. It shows the host and shell; whether the tree is under git and on which forge; whether `uv`, `copier` and `just` run here and whether github.com and pypi.org answer; whether a sidecar already exists, in which shape; whether a `.lokf/` bundle is present, which switches on **KTL mode**; whether the host already publishes Pages (a docs collision); and whether the root declares a uv workspace. Its last line names what is missing and which steps that disables; repeat that line in the Step 6 hand-off. When the person you are working with cannot act on a `missing` or `warn` line themselves, write them a request note from [references/prerequisites.md](references/prerequisites.md), which gives each line's meaning, who fixes it, and what to send.
+**First, the preflight.** Run `bash templates/scripts/linkml-preflight.sh <host-root>` from this skill's directory (the copy under `.linkml/scripts/` does not exist yet), naming the host's root: without it the script reports on the tree it sits in, which is wrong when the skill is installed outside the host. Read its screen before anything else. It shows the host and shell; whether the tree is under git and on which forge; whether `uv`, `copier` and `just` run here and whether github.com and pypi.org answer; whether a sidecar already exists, in which shape; whether a `.lokf/` bundle is present, which switches on **KTL mode**; whether the host already publishes Pages (a docs collision); and whether the root declares a uv workspace. Its last line names what is missing and which steps that disables; repeat that line in the Step 6 hand-off. When the person you are working with cannot act on a `missing` or `warn` line themselves, write them a request note from [references/prerequisites.md](references/prerequisites.md), which gives each line's meaning, who fixes it, and what to send.
 
 Resolve every fact from real project sources before running anything; the scaffold refuses a missing or malformed one, and never leaves a `<...>` token behind.
 
 | Fact | Meaning | Where to find it |
 | --- | --- | --- |
 | `PROJ_NAME` | Human-readable project name; the template's `project_name` | repo name, manifest `name` (`package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, ...), root `README.md` title. Letters, digits, space, `-`, `_`; starts with a letter, ends alphanumeric |
-| `PROJ_SLUG` | Python package and schema name, snake_case | derived from `PROJ_NAME` (`Acme Platform` -> `acme_platform`); the scaffold derives it when unset |
+| `PROJ_SLUG` | Python package and schema name, snake_case | derived from `PROJ_NAME` (`Acme Platform` becomes `acme_platform`); at least two characters; the scaffold derives it when unset |
 | `PROJ_DESC` | One-sentence description | manifest `description`, README intro |
 | `GITHUB_ORG`, `REPO_URL` | Owner and the repository's URL | `git remote get-url origin`; any forge |
 | `FULL_NAME`, `EMAIL` | The schema's author | `git config user.name` / `user.email`, manifest authors, `CODEOWNERS` |
-| `LICENSE_ID` | SPDX id of the host's license | the root `LICENSE` text or the manifest's `license`; one of `Apache-2.0`, `MIT`, `BSD-3-Clause`, `MPL-2.0`, `LGPL-3.0-only`, `GPL-3.0-only`, else `LicenseRef-Custom`. No license file at all: `LicenseRef-Custom`, and the scaffold writes a stub that says so; flag it |
-| `SCHEMA_ID` | The schema's `id` IRI, and its prefix's namespace with `/` | (1) in KTL mode, the bundle's `base_iri` authority plus `/schema/<slug>`; (2) a persistent-identifier namespace the project already publishes under (w3id.org, purl.org, an owned domain); (3) the docs `site_url`; (4) else `https://<slug>.example/schema/<slug>`, flagged for review. **Never** the code-host repo URL: that path space is not the project's, so the IRIs could never resolve |
+| `LICENSE_ID` | SPDX id of the host's license | the root `LICENSE` text or the manifest's `license`; one of `Apache-2.0`, `MIT`, `BSD-3-Clause`, `MPL-2.0`, `LGPL-3.0-only`, `GPL-3.0-only`, else `LicenseRef-Custom`. No license file at all: `LicenseRef-Custom`, which the scaffold insists on, and it writes a stub that says so; flag it |
+| `SCHEMA_ID` | The schema's `id` IRI, with no trailing `/`; the scaffold adds the `/` for its prefix's namespace | (1) in KTL mode, the bundle's `base_iri` authority plus `/schema/<slug>`; (2) a persistent-identifier namespace the project already publishes under (w3id.org, purl.org, an owned domain); (3) the docs `site_url`, unless it is on a code host's pages (`github.io`), which the scaffold refuses like the repo URL; (4) else `https://<slug>.example/schema/<slug>`, flagged for review. **Never** the code-host repo URL: that path space is not the project's, so the IRIs could never resolve |
 | `DOCS_URL` | Where the sidecar's docs site will live | the host's Pages URL plus `/linkml/`, else `https://<org>.github.io/<repo>/linkml/`, flagged |
 | `BASE_IRI` | KTL mode only; the dummy concept's `id` | `.lokf/knowledge/index.md`; the scaffold reads it when unset |
 
@@ -78,7 +78,7 @@ Run it from the host's root (`--host DIR` otherwise). Every line it prints start
 8. **Wires `.lokf/justfile`** in KTL mode: `schema :=` and the two validate recipes, by exact match on ktl-sidecar's template lines; a justfile that differs gets the edit printed instead.
 9. **Adds the Step 2 pointers**, then prints the hand-off facts and the Step 4 commands.
 
-`--repair PATH` re-lays one owned file of a finished sidecar (the preflight, the README, a dummy data file), reading the facts back from the sidecar's own answers and config; a template-owned file comes back with `just update`.
+`--repair PATH` re-lays one owned file of a finished sidecar (the preflight, the README, the docs pages, `LICENSE`, a dummy file, `.linkmllint.yaml` in KTL mode, or `project.justfile`'s doorway recipe), reading the facts back from the sidecar's own answers and config; a template-owned file comes back with `just update`. When copier fails (exit 4), the scaffold removes the unfinished `.linkml/` it pre-seeded, so the next run starts clean.
 
 ## Step 2 - Point people and agents at the schema (root-level, add-only)
 
@@ -109,7 +109,7 @@ just --justfile .linkml/justfile lint      # linkml-lint, the recommended rules
 just --justfile .linkml/justfile test      # generate into tmp/, pytest, run the examples (it does not lint)
 ```
 
-`just` runs each recipe inside `.linkml/`, so these work from the host's root; `uvx --from rust-just just` stands in for an uninstalled `just`. Fix findings, then commit `.linkml/` **including `uv.lock`** (Step 5's workflow installs from it), unless `.linkml/` is gitignored (Step 0). In KTL mode also run `cd .lokf && just lokf-install && just lokf-validate && just lokf-check-refs`: the bundle, dummy concept and all, against LOKF's schema plus the sidecar's. With no `uv`, no copier or no network there is no sidecar to make and no fallback; say so plainly and stop after Step 0.
+`just` runs each recipe inside `.linkml/`, so these work from the host's root; `uvx --from rust-just just` stands in for an uninstalled `just`. Fix findings, then commit `.linkml/` **including `uv.lock`** (Step 5's workflow installs from it), unless `.linkml/` is gitignored (Step 0). In KTL mode also run `cd .lokf && just lokf-install && just lokf-validate && just lokf-check-refs`: the bundle, dummy concept and all, against LOKF's schema plus the sidecar's. With no `git`, no `uv`, no copier or no network there is no sidecar to make and no fallback; say so plainly and stop after Step 0.
 
 ## Step 5 - Install the automation (optional)
 
@@ -117,7 +117,7 @@ just --justfile .linkml/justfile test      # generate into tmp/, pytest, run the
 
 | Template | Destination |
 | --- | --- |
-| `templates/github/linkml-sidecar.yaml` | `.github/workflows/linkml-sidecar.yaml`: on a pull request or push that touches `.linkml/**`, every step runs in `.linkml/` (`working-directory`), installs from `uv.lock` with `--locked`, then `just lint` and `just test` on one Python version. A second job builds the docs site and keeps it as an artifact; a third publishes it under the `linkml/` subpath of the host's `gh-pages` branch only once the repository variable `LINKML_DOCS_ENABLED` is `true`, replacing that subpath alone |
+| `templates/github/linkml-sidecar.yaml` | `.github/workflows/linkml-sidecar.yaml`: on a pull request or push that touches `.linkml/**`, every step runs in `.linkml/` (`working-directory`), installs from `uv.lock` with `--locked`, then `just lint` and `just test` on one Python version. On the repository's default branch, whatever its name, a second job builds the docs site and keeps it as an artifact, and a third publishes it under the `linkml/` subpath of the host's `gh-pages` branch only once the repository variable `LINKML_DOCS_ENABLED` is `true`, replacing that subpath alone |
 
 The template's own workflows under `.linkml/.github/` are inert there and stay as the template's copies. The host's root `dependabot.yml`, if any, can gain a `uv` entry for `/.linkml`; suggest it in one line, do not scaffold it. Check whether the host already runs ShellCheck and `actionlint` over its tree; if not, suggest coverage for `.linkml/scripts/linkml-preflight.sh` and the workflow, in one line. [references/automation.md](references/automation.md) says what each job does, the variable to set, and how to port the workflow to another forge.
 

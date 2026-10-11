@@ -53,17 +53,6 @@ In short:
 - AI may *support* participation
 - Humans must *own* participation
 
-## Repository-Owned Agent Automation
-
-Some of what runs here is not "a person using an AI tool". It is a scheduled or on-demand agent (`ktl-librarian`, say) that reads the repository and proposes changes on its own initiative, with no one drafting alongside it in real time. The core principle above still applies. Here is what it means in that case:
-
-- **Identity.** Such an agent commits as either a clearly labeled bot identity (for example `knowledge-librarian[bot]`) or the maintainer who invoked it interactively, never both. A bot identity already discloses what produced the change, so it carries no further trailer. A commit made under a maintainer's identity carries no AI co-authorship trailer either, for the same reason the "Not required" section below discourages one generally.
-- **Review, always.** Every change such an agent proposes arrives as a pull request, never a direct push to the default branch, and requires a human maintainer's approval before merge. This is the "AI-Assisted Code Reviews" rule above, extended to AI-*authored* changes: an agent's own review of its own work, or one agent approving another's, does not satisfy it.
-- **Least privilege, enforced.** The scheduled agent runs in a read-only job with no git credentials on disk and hands its proposed change to a separate privileged job that runs no agent code (see [SECURITY.md](SECURITY.md)). The "edit only `.lokf/knowledge/`" contract is checked after the agent runs, not merely requested of it.
-- **Verdicts must be real.** A skill that records a person's judgment (for instance, `ktl-curator` writing a `verified: human:<id>` event) may write only what that person actually said about that specific item, in that session, never inferred, batched, or supplied by the agent itself. That constraint is what keeps a label like "confirmed by a person" meaningful rather than something an agent could award itself.
-
-None of this relaxes anything above: an agent's output is nobody's contribution until a human has reviewed and approved it into the repository.
-
 ## When to Disclose AI Assistance
 
 **Required disclosure:**

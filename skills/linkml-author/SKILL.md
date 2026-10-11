@@ -87,7 +87,7 @@ These settle the questions an author meets most, each stated once:
 
 ## Beside a KTL bundle
 
-When the host carries `.lokf/`, the schema is the bundle's domain schema (linkml-sidecar's [references/ktl.md](../linkml-sidecar/references/ktl.md), and ktl-librarian's domain-schema.md, which is the authority):
+When the host carries `.lokf/`, the schema is the bundle's domain schema (linkml-sidecar's [references/ktl.md](https://github.com/noelmcloughlin/linkml-sidecar/blob/main/skills/linkml-sidecar/references/ktl.md), and ktl-librarian's [domain-schema.md](https://github.com/noelmcloughlin/knowledge-trust-ladder/blob/main/skills/ktl-librarian/references/domain-schema.md), which is the authority):
 
 - a class the bundle's concepts may use is `is_a: Concept`, or a subclass of a LOKF built-in whose meaning fits; its concepts write that class name in `type`, exactly;
 - every class is closed, so a concept carries only the slots its class declares; a built-in plus one key of its own is not valid, which is why the subclass exists;

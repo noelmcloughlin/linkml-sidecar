@@ -13,7 +13,7 @@ bash scripts/validate-repository.sh
 uv run --no-project --with-requirements tests/requirements.txt pytest
 ```
 
-The slow tests run the real template: clone the pinned tag into `.template-cache/linkml-project-copier` (the README has the command) and run pytest with `LINKML_SIDECAR_SLOW=1`. To try a change end-to-end, install from your clone: `npx skills add ./linkml-sidecar --skill linkml-sidecar --skill linkml-author`.
+The slow tests run the real template: clone the pinned tag into `.template-cache/linkml-project-copier` (the README has the command) and run pytest with `LINKML_SIDECAR_SLOW=1`. To try a change end to end, install from your clone into a throwaway consumer repository: `bash scripts/smoke-test-install.sh "$PWD"` does exactly that, then runs the installed preflight and the scaffold's dry run.
 
 ## Layout
 
@@ -26,14 +26,15 @@ The slow tests run the real template: clone the pinned tag into `.template-cache
 | `skills/linkml-author/SKILL.md` | Day to day: replace the dummy, evolve the model, run the gate. Its `references/` hold the metamodel and the pitfalls. |
 | `tests/` | The scripts on throwaway hosts; `tests/fake_copier.py` stands in for copier offline. |
 | `scripts/validate-repository.sh` | The contract: skill shape, links, lint, budgets, the pin, the pins in the workflow, prerequisites rows, invisible characters. |
+| `scripts/smoke-test-install.sh` | The install path: the skills installed into a throwaway repository with `npx skills`, then run from there. |
 
 ## Before opening a pull request
 
-- Run `bash scripts/validate-repository.sh` and `pytest`. CI runs both plus ShellCheck, `actionlint`, markdownlint, lychee and codespell, and the slow tests.
+- Run `bash scripts/validate-repository.sh` and `pytest`. CI runs both plus ShellCheck, `actionlint`, markdownlint, lychee, codespell, the install smoke test and the slow tests.
 - Run `gh skill publish --dry-run` if you have the GitHub CLI: the Agent Skills spec check `validate.yml` runs.
 - If a change alters what a skill *does*, add a line or two under `## [Unreleased]` in `CHANGELOG.md`. The reasoning belongs beside the code.
 - Moving the template pin: change `LINKML_TEMPLATE_REF` and `LINKML_TEMPLATE_SHA` in the scaffold driver, re-walk `template-assumptions.md` against the new version and bump its heading, re-run the slow tests, and update the version in `SKILL.md`'s Sources note. The contract holds every mention to the one pin.
-- A template file under `templates/github/` names every action by commit SHA with its version in a comment; Dependabot does not reach it, so bump it by hand with the repository's own workflows.
+- A template file under `templates/github/` names every action by commit SHA with its version in a comment; Dependabot does not reach it, so copy each bump of the repository's own workflows into it in the same pull request. The contract fails until the two agree.
 - The pull request template's checklist is the short form of this list.
 
 ## Editing scope
@@ -50,4 +51,4 @@ AI assistance is welcome; these skills exist for agents to run. You are still th
 
 ## Releasing (maintainers)
 
-Tag a release by hand once `## [Unreleased]` has been promoted to a version heading with its date; both skills release together under that tag. Installers read the tag; the plugin marketplace reads `main`.
+Tag a release by hand once `## [Unreleased]` has been promoted to a version heading with its date; both skills release together under that tag. Installers read the tag; the plugin marketplace reads `main`, and `plugin.json` carries no `version` so that it always does.
