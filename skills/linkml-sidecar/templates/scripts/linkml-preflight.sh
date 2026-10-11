@@ -16,7 +16,9 @@
 #
 # Usage: linkml-preflight.sh [repo-root]   (default: the nearest ancestor of
 # the current directory holding `.linkml/`, `.lokf/` or `.git`, else the
-# current directory)
+# current directory). LINKML_PREFLIGHT_OFFLINE=1 skips the two checks that
+# reach the network (copier through uvx, and github.com and pypi.org), for
+# tests and air-gapped machines.
 [ -n "${BASH_VERSION:-}" ] || { echo "run this with bash: bash ${0##*/} [repo-root]" >&2; exit 2; }
 set -u
 
@@ -75,10 +77,14 @@ if have git && git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1; t
     *) forge=other ;;
   esac
   ok git ".linkml/ $tracked; forge $forge${remote:+ ($remote)}"
-  toplevel="$(git -C "$root" rev-parse --show-toplevel 2>/dev/null || true)"
-  [ -n "$toplevel" ] && [ "$toplevel" != "$root" ] && warn git "this directory is inside the repository at $toplevel; the sidecar belongs at the repository root"
+  # --show-prefix is empty at the root and a path below it, on every host;
+  # --show-toplevel spells the path differently from pwd on Git for Windows.
+  prefix="$(git -C "$root" rev-parse --show-prefix 2>/dev/null || true)"
+  [ -n "$prefix" ] && warn git "this directory is $prefix inside its repository; the sidecar belongs at the repository root"
+elif have git; then
+  info git "not under git: copier update, the workflow and pull requests do not apply; the host's own history is the record"
 else
-  info git "no git: copier update, the workflow and pull requests do not apply; the host's own history is the record"
+  miss git "git not installed - copier fetches the template with it, and the scaffold checks the template's tag with git ls-remote" "Step 1 (the scaffold)"
 fi
 
 # ---- tooling ---------------------------------------------------------------
@@ -93,11 +99,14 @@ if have uv; then
       2.*|3.[0-9]|3.[0-9].*) warn python "root .python-version pins $pinned; uv reads it inside .linkml/ too, and the project needs >=3.10" ;;
     esac
   fi
-  copier_cmd="uvx --from copier>=9.4.0,<10 --with jinja2-time copier"
-  if cv="$( (${copier_cmd} --version) 2>/dev/null | head -n 1)" && [ -n "$cv" ]; then
+  copier_cmd=(uvx --from 'copier>=9.4.0,<10' --with jinja2-time copier)
+  copier_hint="uvx --from 'copier>=9.4.0,<10' --with jinja2-time copier --version"
+  if [ "${LINKML_PREFLIGHT_OFFLINE:-}" = 1 ]; then
+    info copier "not checked (LINKML_PREFLIGHT_OFFLINE=1): $copier_hint"
+  elif cv="$("${copier_cmd[@]}" --version 2>/dev/null | head -n 1)" && [ -n "$cv" ]; then
     ok copier "$cv through uvx, with jinja2-time (the template needs both)"
   else
-    miss copier "uvx cannot run copier (offline, or a uv cache problem) - try: $copier_cmd --version" "Step 1 (the scaffold)"
+    miss copier "uvx cannot run copier (offline, or a uv cache problem) - try: $copier_hint" "Step 1 (the scaffold)"
   fi
   if have just; then ok just "just $(just --version 2>/dev/null | sed 's/^just //')"
   else info just "just not installed - uvx --from rust-just just works the same, and so does uv tool install rust-just"; fi
@@ -161,7 +170,9 @@ fi
 if [ -d "$root/.lokf" ]; then
   floor="$(sed -n 's/.*"lokf\[build\]>=\([0-9.]*\)".*/\1/p' "$root/.lokf/pyproject.toml" 2>/dev/null | head -n 1)"
   pinned="absent (the scaffold copies it out of the installed toolkit)"; [ -f "$root/.lokf/lokf.yaml" ] && pinned="pinned"
-  wired="not wired"; grep -q '^schema := ' "$root/.lokf/justfile" 2>/dev/null && wired="wired ($(sed -n 's/^schema := //p' "$root/.lokf/justfile" | head -n 1))"
+  # ktl-sidecar's template carries `schema := ""` before anything is wired.
+  named="$(sed -n 's/^schema := "\(.*\)"$/\1/p' "$root/.lokf/justfile" 2>/dev/null | head -n 1)"
+  wired="not wired"; [ -n "$named" ] && wired="wired ($named)"
   base="$(sed -n 's/^base_iri: *//p' "$root/.lokf/knowledge/index.md" 2>/dev/null | head -n 1)"
   ok lokf "KTL bundle present: with-KTL mode; lokf floor >=${floor:-?}; .lokf/lokf.yaml $pinned; .lokf/justfile schema $wired; base_iri ${base:-unknown}"
   [ -z "$base" ] && warn lokf "no base_iri in .lokf/knowledge/index.md - the dummy concept's id needs it (BASE_IRI)"
@@ -178,9 +189,12 @@ if [ "$ingit" -eq 1 ]; then
   git -C "$root" show-ref --quiet refs/heads/gh-pages 2>/dev/null && pages="a local gh-pages branch"
   git -C "$root" show-ref --quiet refs/remotes/origin/gh-pages 2>/dev/null && pages="${pages:-}${pages:+ and }origin/gh-pages"
 fi
-if [ -d "$root/.github/workflows" ] && grep -lsqE 'gh-pages|deploy-pages|mkdocs gh-deploy' "$root"/.github/workflows/*.y*ml 2>/dev/null; then
-  pages="${pages:-}${pages:+ and }a workflow that publishes Pages"
-fi
+for wf in "$root"/.github/workflows/*.y*ml; do
+  case "$wf" in */linkml-sidecar.yaml) continue ;; esac
+  if [ -f "$wf" ] && grep -qE 'gh-pages|deploy-pages|mkdocs gh-deploy' "$wf" 2>/dev/null; then
+    pages="${pages:-}${pages:+ and }a workflow that publishes Pages"; break
+  fi
+done
 if [ -n "$pages" ]; then
   warn pages "the host already publishes Pages ($pages) - never run just deploy from .linkml/; the Step 5 docs job publishes under the linkml/ subpath only"
 fi
@@ -204,7 +218,9 @@ for v in CI GITHUB_ACTIONS GITLAB_CI TF_BUILD; do
 done
 if [ -n "$unattended" ]; then info session "unattended ($unattended set): guessed facts cannot be confirmed here; the hand-off lists them"
 else info session "attended: a person can confirm each guessed fact"; fi
-if have curl; then
+if [ "${LINKML_PREFLIGHT_OFFLINE:-}" = 1 ]; then
+  info network "not checked (LINKML_PREFLIGHT_OFFLINE=1); the scaffold needs github.com and pypi.org"
+elif have curl; then
   net=""
   if curl -sI --max-time 4 https://github.com/linkml/linkml-project-copier >/dev/null 2>&1; then net="github.com"
   else warn network "github.com unreachable - copier cannot fetch the template"; fi

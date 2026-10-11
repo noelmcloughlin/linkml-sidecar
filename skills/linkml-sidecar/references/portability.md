@@ -10,7 +10,8 @@ The scaffold writes files, so any directory tree works. What varies is the shell
 | Windows, PowerShell | uv, copier, just, the generators | the two scripts, which are bash | run them through Git for Windows' bash (below) |
 | GitLab, Forgejo, Gitea | the sidecar, the gate, the docs build | the GitHub Actions workflow | the gate as a job of the host's CI ([automation.md](automation.md)) |
 | No forge, git only | everything local; `just update` | the workflow, pull requests | the host's own review |
-| No git | the sidecar, the gate, the docs | `copier update`, which needs the destination under git; the package version (`0.0.0`) | re-run the scaffold into a scratch clone to see what a new template version changes, and copy by hand |
+| git installed, the folder not a repository | the sidecar, the gate, the docs | `copier update`, which needs the destination under git; the package version (`0.0.0`) | re-run the scaffold into a scratch clone to see what a new template version changes, and copy by hand |
+| git not installed | nothing: copier fetches the template with git, and the scaffold checks the tag with it | the sidecar | install git; the preflight reports it as `missing` |
 | A uv workspace at the root | untested | - | the preflight warns; try `just install` and report |
 
 ## Windows

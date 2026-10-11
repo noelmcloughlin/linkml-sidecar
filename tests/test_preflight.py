@@ -12,7 +12,7 @@ import os
 
 import pytest
 
-from conftest import PREFLIGHT, REPO, add_lokf, bash, make_host, matches, run, write
+from conftest import PREFLIGHT, REPO, WORKFLOW, Git, add_lokf, bash, make_host, matches, read, run, write
 
 
 def preflight(*args, cwd=None, env=None):
@@ -78,7 +78,7 @@ def test_reads_a_ktl_bundle_and_warns_without_a_base_iri(tmp_path):
 
 def test_warns_about_a_pages_collision_a_workflow_clash_and_a_uv_workspace(tmp_path):
     host = make_host(tmp_path)
-    run(["git", "-C", host, "branch", "gh-pages"])
+    Git(host)("branch", "gh-pages")
     write(host / ".github" / "workflows" / "linkml-sidecar.yaml", "name: something else\n")
     write(host / "pyproject.toml", "[tool.uv.workspace]\nmembers = []\n")
     result = preflight(host)
@@ -101,6 +101,7 @@ def test_notes_gitignored_mode(tmp_path):
     assert result and matches(result.out, r"^info    gitignore .*gitignored mode"), result.out
 
 
+@pytest.mark.skipif(bool(run(["sh", "-c", "echo ${BASH_VERSION:-}"]).out.strip()), reason="sh is bash here, which the guard accepts")
 def test_refuses_sh():
     result = run(["sh", PREFLIGHT])
     assert result.rc == 2 and "run this with bash" in result.out, result.out
@@ -113,3 +114,31 @@ def test_sees_the_doorway(tmp_path):
     os.symlink(".linkml/src/demo/schema", host / "linkml_schema")
     result = preflight(host)
     assert result and matches(result.out, r"^ok      doorway    linkml_schema -> \.linkml/src/demo/schema"), result.out
+
+
+def test_the_sidecars_own_workflow_is_no_pages_collision(tmp_path):
+    host = make_host(tmp_path)
+    write(host / ".github" / "workflows" / "linkml-sidecar.yaml", read(WORKFLOW))
+    result = preflight(host)
+    assert result and matches(result.out, r"^ok      workflows  linkml-sidecar\.yaml present"), result.out
+    assert not matches(result.out, r"^warn    pages "), result.out
+
+
+def test_a_ktl_justfile_with_an_empty_schema_variable_is_not_wired(tmp_path):
+    host = make_host(tmp_path)
+    add_lokf(host)
+    write(host / ".lokf" / "justfile", 'bundle := "knowledge"\nschema := ""\n')
+    result = preflight(host)
+    assert result and "schema not wired" in result.out, result.out
+    write(host / ".lokf" / "justfile", 'bundle := "knowledge"\nschema := "../.linkml/src/demo/schema/demo.yaml"\n')
+    result = preflight(host)
+    assert result and "schema wired (../.linkml/src/demo/schema/demo.yaml)" in result.out, result.out
+
+
+def test_warns_below_the_repository_root(tmp_path):
+    host = make_host(tmp_path)
+    (host / "sub").mkdir()
+    result = preflight(host / "sub")
+    assert result and matches(result.out, r"^warn    git +this directory is sub/ inside its repository"), result.out
+    result = preflight(host)
+    assert result and not matches(result.out, r"^warn    git "), result.out
