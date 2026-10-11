@@ -16,3 +16,6 @@ __pycache__/
 # A local clone of the pinned template for the tests (tests/conftest.py says
 # where it may live); never committed.
 .template-cache/
+
+# The test environment, if a contributor makes one here.
+.venv/

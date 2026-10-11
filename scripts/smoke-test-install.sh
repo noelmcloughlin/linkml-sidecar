@@ -33,6 +33,12 @@ trap 'rm -rf "$test_root"' EXIT
 echo "Source:    $source_arg"
 echo "Test root: $test_root"
 
+# What the installer must not write here: these paths are gitignored, so git
+# status would never show them; they are counted before and after instead.
+leaked() { find "$repo_root" -maxdepth 1 \( -name .agents -o -name .claude -o -name skills-lock.json \) 2>/dev/null | sort; }
+before="$(leaked)"
+nothing_leaked() { [[ "$(leaked)" == "$before" ]]; }
+
 mkdir -p "$test_root/consumer"
 (
   cd "$test_root/consumer"
@@ -67,8 +73,7 @@ printf '# Consumer\n\nA consumer.\n\n## Usage\n' > "$test_root/consumer/README.m
 cp "$repo_root/LICENSE" "$test_root/consumer/LICENSE"
 assert "the installed scaffold's dry run plans a sidecar from where the installer put it" \
   "(cd \"$test_root/consumer\" && PROJ_NAME=consumer PROJ_DESC='A consumer.' GITHUB_ORG=acme REPO_URL=https://github.com/acme/consumer FULL_NAME='Smoke Test' EMAIL=smoke@example.invalid LICENSE_ID=Apache-2.0 SCHEMA_ID=https://w3id.org/acme/consumer DOCS_URL=https://acme.github.io/consumer/linkml/ LINKML_TEMPLATE_SKIP_PIN_CHECK=1 bash \"$sidecar_dir/scripts/linkml-scaffold.sh\" --dry-run | grep -q '^next: just')"
-assert "no installer metadata leaked back into this source repo" \
-  "[[ -z \"\$(git -C \"\$repo_root\" status --porcelain --untracked-files=all -- .agents .claude skills-lock.json 2>/dev/null)\" ]]"
+assert "no installer metadata leaked back into this source repo" nothing_leaked
 
 echo ""
 if [[ "$fail" -eq 0 ]]; then

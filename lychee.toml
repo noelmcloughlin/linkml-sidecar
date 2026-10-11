@@ -1,15 +1,22 @@
 # lychee link-checker config (validate.yml's "Check links" step, and local runs).
 exclude = [
-  # This repository's own GitHub URL, until it is published; drop after.
-  '^https://github\.com/noelmcloughlin/linkml-sidecar',
   # Example hosts the templates and tests use.
   '^https://acme\.',
   '^https://fixture\.',
   '\.example/',
-  # The docs site URL is a placeholder until a host renders it.
+  # The fixture bundle's context IRI; the real one is served by w3id once LOKF publishes it.
   '^https://w3id\.org/lokf/context\.jsonld$',
 ]
+# Regular expressions over the file path. The fixtures and the pages rendered
+# into a host hold links that resolve only there (docs/index.md links the
+# elements gen-doc writes). Hidden folders are skipped by lychee itself.
 exclude_path = [
-  "(^|/)\\.template-cache/",
-  "(^|/)\\.venv/",
+  "(^|/)tests/fixtures/",
+  "/templates/linkml/docs/",
 ]
+# github.com answers 503 to a burst of requests now and then: wait longer and
+# retry more before calling a link dead, and count rate limiting as alive. 503
+# itself is not accepted, or a real outage would pass.
+max_retries = 5
+retry_wait_time = 10
+accept = ["200..=204", "429"]

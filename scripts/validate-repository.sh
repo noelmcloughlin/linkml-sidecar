@@ -8,6 +8,8 @@
 # template pin and every mention of it, the action pins, the prerequisites
 # rows, and that no tracked file holds a character a reader cannot see.
 set -euo pipefail
+# mapfile and declare -A below need bash 4; macOS ships 3.2 (brew install bash).
+[ "${BASH_VERSINFO[0]}" -ge 4 ] || { echo "validate-repository.sh needs bash 4 or later; this is $BASH_VERSION" >&2; exit 2; }
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
@@ -119,8 +121,8 @@ while IFS= read -r file; do
     fi
   done < <(awk 'BEGIN{f=0} /^[[:space:]]*```/{f=!f; print ""; next} {print (f ? "" : $0)}' "$file" \
              | grep -noE '\]\(([^)]+)\)' || true)
-done < <(find skills README.md CONTRIBUTING.md -name '*.md' -not -path '*/templates/*' | sort)
-[[ "$broken" -eq 0 ]] && ok "all relative Markdown links under skills/ resolve (fenced examples ignored; templates/ render into a host)"
+done < <(find skills README.md CONTRIBUTING.md CHANGELOG.md AI_COVENANT.md CODE_OF_CONDUCT.md .github/pull_request_template.md -name '*.md' -not -path '*/templates/*' | sort)
+[[ "$broken" -eq 0 ]] && ok "all relative Markdown links under skills/ and the root pages resolve (fenced examples ignored; templates/ render into a host)"
 
 # 6. Shell scripts pass ShellCheck, and Python scripts compile.
 say ""
@@ -136,11 +138,11 @@ fi
 # A Python template under templates/ holds placeholder tokens until it is
 # rendered into a host, and the tests compile the rendered form.
 mapfile -t py_scripts < <(find skills tests -type f -name '*.py' -not -path '*/.venv/*' -not -path '*/templates/*' | sort)
+# ast.parse rather than py_compile, which would write __pycache__ as a side effect.
 if command -v python3 >/dev/null 2>&1; then
   for p in "${py_scripts[@]}"; do
-    if python3 -m py_compile "$p"; then ok "compiles: $p"; else err "does not compile: $p"; fi
+    if python3 -c 'import ast, sys; ast.parse(open(sys.argv[1], encoding="utf-8").read(), sys.argv[1])' "$p"; then ok "parses: $p"; else err "does not parse: $p"; fi
   done
-  find skills tests -name '__pycache__' -type d -prune -exec rm -rf {} + 2>/dev/null || true
 fi
 
 # 7. Word budgets. An agent loads the whole SKILL.md when the skill starts;
@@ -174,7 +176,7 @@ if [[ -z "$pin" || -z "$pin_sha" ]]; then
   err "$scaffold holds no LINKML_TEMPLATE_REF/LINKML_TEMPLATE_SHA pin"
 else
   ok "the scaffold pins linkml-project-copier $pin (${pin_sha:0:12})"
-  stray="$(grep -rnoE 'linkml-project-copier[^v]{0,40}v[0-9]+\.[0-9]+\.[0-9]+|v[0-9]+\.[0-9]+\.[0-9]+[^v]{0,20}linkml-project-copier' skills README.md | grep -v -- "$pin" || true)"
+  stray="$(grep -rnoE 'linkml-project-copier[^v]{0,40}v[0-9]+\.[0-9]+\.[0-9]+|v[0-9]+\.[0-9]+\.[0-9]+[^v]{0,40}linkml-project-copier' skills README.md | grep -v -- "$pin" || true)"
   if [[ -n "$stray" ]]; then err "a page names another template version than the pin $pin: $stray"; else ok "every mention of the template's version under skills/ and README.md is $pin"; fi
   if grep -qE "at template \*\*$pin\*\*|tag \*\*$pin\*\*" "$sidecar/SKILL.md" "$sidecar/references/template-assumptions.md"; then
     ok "SKILL.md and the catalogue name the pin $pin"
@@ -189,12 +191,25 @@ fi
 say ""
 say "Checking action pins..."
 if grep -rnE '^\s*-?\s*uses:' .github/workflows/ "$templates/github/" \
-  | grep -vE '@([0-9a-f]{40}|sha256:[0-9a-f]{64})\b' \
+  | grep -vE 'uses:\s*[^@ ]+@([0-9a-f]{40}|sha256:[0-9a-f]{64})\b' \
   | grep -vE 'uses:\s*\./'; then
   err "the action(s) above are not pinned to a commit SHA"
 else
   ok "every action in .github/workflows/ and $templates/github/ is pinned to a commit"
 fi
+# Dependabot bumps .github/workflows/ and never the template hosts copy, so an
+# action both use must carry the same commit in both, or the bump fails here
+# until the template follows (CONTRIBUTING.md says to bump them together).
+shared_drift=0
+while IFS= read -r action; do
+  own="$(grep -rhoE "uses:\s*$action@[^ ]+" .github/workflows/ | sed 's/.*@//' | sort -u || true)"
+  theirs="$(grep -hoE "uses:\s*$action@[^ ]+" "$templates/github/linkml-sidecar.yaml" | sed 's/.*@//' | sort -u || true)"
+  if [[ -n "$own" && "$own" != "$theirs" ]]; then
+    err "$action is pinned to $own in .github/workflows/ and to $theirs in $templates/github/linkml-sidecar.yaml; bump both together"
+    shared_drift=1
+  fi
+done < <(grep -hoE 'uses:\s*[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@' "$templates/github/linkml-sidecar.yaml" | sed -E 's/uses:\s*//; s/@$//' | sort -u)
+[[ "$shared_drift" -eq 0 ]] && ok "every action the template shares with .github/workflows/ is pinned to the same commit in both"
 
 # 10. Every line the preflight can print as missing or a warning has a row on
 #     the prerequisites page, so a person can be told who fixes it.

@@ -7,12 +7,21 @@ updates:
   # This does NOT reach the workflow template under
   # skills/linkml-sidecar/templates/github/. Dependabot's github-actions
   # ecosystem only scans .github/workflows/ (or a root action.yml), a known
-  # limitation (dependabot/dependabot-core#5970). That pin still needs a
-  # manual bump; the lint-workflows job's actionlint step catches syntax
-  # drift, not staleness.
+  # limitation (dependabot/dependabot-core#5970). So the contract's check 9
+  # fails a Dependabot pull request until the same commit is copied into the
+  # template by hand, for every action the two files share.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     commit-message:
       prefix: "chore(actions)"
+
+  # The test suite's exact pins (tests/requirements.txt), which would
+  # otherwise go stale silently.
+  - package-ecosystem: "pip"
+    directory: "/tests"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"

@@ -73,10 +73,19 @@ jobs:
       # The slow tests run the real copier against the pinned tag of the
       # template, cloned once here, then `just install`, `lint`, `test` and
       # `site` on a plain host and a KTL host.
+      # The tests skip the scaffold's own pin check (they run it offline too),
+      # so the clone is checked here: the tag must still name the pinned
+      # commit, or the slow tests would test whatever the tag points at now.
       - name: Clone the pinned template
         run: |
           pin="$(grep -oE 'LINKML_TEMPLATE_REF:=v[0-9.]+' skills/linkml-sidecar/scripts/linkml-scaffold.sh | sed 's/.*:=//')"
+          sha="$(grep -oE 'LINKML_TEMPLATE_SHA:=[0-9a-f]{40}' skills/linkml-sidecar/scripts/linkml-scaffold.sh | sed 's/.*:=//')"
           git clone --branch "$pin" https://github.com/linkml/linkml-project-copier .template-cache/linkml-project-copier
+          head="$(git -C .template-cache/linkml-project-copier rev-parse HEAD)"
+          if [ "$head" != "$sha" ]; then
+            echo "::error::the template's tag $pin is $head, not the pinned $sha; read the template before moving the pin" >&2
+            exit 1
+          fi
 
       - name: Run the tests
         env:
@@ -120,19 +129,11 @@ jobs:
 
       # With no paths given actionlint looks only under .github/workflows/,
       # so the workflow template hosts copy is named explicitly.
+      # The action pins themselves are check 9 of scripts/validate-repository.sh.
       - name: actionlint
         uses: docker://rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 # v1.7.12
         with:
           args: -color .github/workflows/validate.yml skills/linkml-sidecar/templates/github/linkml-sidecar.yaml
-
-      - name: Every action is pinned to a commit
-        run: |
-          if grep -rnE '^\s*-?\s*uses:' .github/workflows/ skills/linkml-sidecar/templates/github/ \
-            | grep -vE '@([0-9a-f]{40}|sha256:[0-9a-f]{64})\b' \
-            | grep -vE 'uses:\s*\./'; then
-            echo '::error::the action(s) above are not pinned to a commit SHA' >&2
-            exit 1
-          fi
 
   smoke-test:
     name: Smoke-test the install path
@@ -183,7 +184,9 @@ jobs:
           args: --no-progress "**/*.md"
           fail: true
 
+      # Not codespell-project/actions-codespell: it hands its path to codespell
+      # unquoted under /bin/sh, where `**/*.md` means `*/*.md` and matches no
+      # file here, so it checked nothing. git ls-files lists the tracked
+      # Markdown, the fixtures and templates included.
       - name: codespell
-        uses: codespell-project/actions-codespell@e3258cca84ce02b0bb36a3d41f2c18f719a0cc1a # v2.4.3
-        with:
-          path: '**/*.md'
+        run: git ls-files -z '*.md' | xargs -0 pipx run --spec codespell==2.4.2 codespell
