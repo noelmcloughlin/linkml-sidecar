@@ -127,9 +127,20 @@ def test_a_failed_copier_run_exits_4_and_a_nested_repository_exits_5(tmp_path):
     host = make_host(tmp_path / "a")
     result = scaffold(host, env={"FAKE_COPIER_FAIL": "1"})
     assert result.rc == 4 and "copier failed" in result.out, result.out
+    # The pre-seeded files go with the failure, so the next run is not refused.
+    assert not (host / ".linkml").exists() and "removed the unfinished .linkml/" in result.out
+    assert scaffold(host), "a second run after the failure"
     host = make_host(tmp_path / "b")
     result = scaffold(host, env={"FAKE_COPIER_GIT": "1"})
     assert result.rc == 5 and ".linkml/.git appeared" in result.out, result.out
+
+
+def test_an_unfinished_sidecar_is_refused_with_the_way_out(tmp_path):
+    host = make_host(tmp_path)
+    write(host / ".linkml" / "README.md", "left by a failed run\n")
+    result = scaffold(host)
+    assert result.rc == 3 and "holds no .copier-answers.yml" in result.out and "rm -rf .linkml" in result.out, result.out
+
 
 
 def test_a_ktl_host_gets_the_lokf_dummy_the_lint_config_and_the_wired_justfile(tmp_path):
@@ -177,11 +188,13 @@ def test_a_ktl_justfile_that_differs_is_not_patched_but_told(tmp_path):
 def test_a_ktl_justfile_that_carries_the_variable_gets_only_that_line_set(tmp_path):
     host = make_host(tmp_path)
     add_lokf(host)
-    write(host / ".lokf" / "justfile", 'bundle := "knowledge"\nschema := ""\nlokf-validate:\n    uv run lokf validate {{ schema_flag }} {{ bundle }}\n')
+    original = 'bundle := "knowledge"\nschema := ""\n_validate := if schema == "" { "uv run lokf validate" } else { "cd " + parent_directory(schema) }\nlokf-validate:\n    {{ _validate }} {{ bundle }}\n'
+    write(host / ".lokf" / "justfile", original)
     result = scaffold(host)
     assert result, result.out
     justfile = read(host / ".lokf" / "justfile")
-    assert 'schema := "../.linkml/src/demo/schema/demo.yaml"' in justfile and "parent_directory" not in justfile
+    # Exactly one line changes, the variable; the template's recipes are left as they are.
+    assert justfile.replace('schema := "../.linkml/src/demo/schema/demo.yaml"', 'schema := ""') == original
     assert "the template's own recipes take it from there" in result.out
 
 
@@ -225,16 +238,136 @@ def test_every_template_token_is_one_the_scaffold_knows():
     assert found <= known, found - known
 
 
+
+@pytest.mark.parametrize(
+    ("fact", "value", "needle"),
+    [
+        ("SCHEMA_ID", "https://w3id.org/acme/demo/", "SCHEMA_ID must not end with /"),
+        ("PROJ_SLUG", "d", "PROJ_SLUG 'd' must be"),
+        ("SCHEMA_ID", "https://acme.github.io/demo/linkml/", "names a code host"),
+    ],
+)
+def test_a_fact_the_template_would_reject_stops_before_anything_is_written(tmp_path, fact, value, needle):
+    host = make_host(tmp_path)
+    result = scaffold(host, facts={**FACTS, fact: value})
+    assert result.rc == 2 and needle in result.out, result.out
+    assert not (host / ".linkml").exists()
+
+
+def test_no_license_file_requires_the_custom_license_id(tmp_path):
+    host = make_host(tmp_path, license_file=False)
+    result = scaffold(host)
+    assert result.rc == 2 and "LICENSE_ID must be LicenseRef-Custom" in result.out, result.out
+    assert not (host / ".linkml").exists()
+
+
+def test_a_backslash_in_a_url_is_written_as_text(tmp_path):
+    host = make_host(tmp_path)
+    result = scaffold(host, facts={**FACTS, "DOCS_URL": "https://acme.example/docs\\1/"})
+    assert result, result.out
+    assert "site_url: https://acme.example/docs\\1/\n" in read(host / ".linkml" / "mkdocs.yml")
+
+
+def test_the_aside_skips_fenced_code_and_leads_a_readme_that_opens_with_a_section(tmp_path):
+    host = make_host(tmp_path / "a")
+    write(host / "README.md", "# Demo\n\nIntro.\n\n```md\n## not a heading\n```\n\n## Usage\n")
+    assert scaffold(host)
+    readme = read(host / "README.md")
+    assert readme.index("## not a heading") < readme.index("**The data model is a sidecar.**") < readme.index("## Usage")
+    host = make_host(tmp_path / "b")
+    write(host / "README.md", "## Usage\n\nRun it.\n")
+    assert scaffold(host)
+    readme = read(host / "README.md")
+    assert readme.startswith("> ") or readme.startswith("**"), readme[:80]
+    assert readme.index("**The data model is a sidecar.**") < readme.index("## Usage")
+
+
+def test_an_anchored_gitignore_line_is_not_added_twice(tmp_path):
+    host = make_host(tmp_path)
+    write(host / ".gitignore", "/.linkml/\n/linkml_schema\n")
+    result = scaffold(host, "--gitignored")
+    assert result and "already names the sidecar and the doorway" in result.out, result.out
+    assert read(host / ".gitignore") == "/.linkml/\n/linkml_schema\n"
+
+
+def test_the_doorway_recipe_names_the_slug(tmp_path):
+    host = make_host(tmp_path)
+    assert scaffold(host)
+    block = read(host / ".linkml" / "project.justfile")
+    assert "mklink /J linkml_schema .linkml\\src\\demo\\schema" in block and "<PROJ_SLUG>" not in block
+
+
+def test_dry_run_prints_the_same_handoff_lines(tmp_path):
+    host = make_host(tmp_path)
+    result = scaffold(host, "--dry-run")
+    assert result and matches(result.out, r"^handoff: the inert file") and matches(result.out, r"^handoff: CODE_OF_CONDUCT\.md"), result.out
+
+
+def test_dry_run_on_a_ktl_host_without_a_toolkit_fails_as_the_real_run_would(tmp_path):
+    host = make_host(tmp_path)
+    add_lokf(host)
+    (host / ".lokf" / "lokf.yaml").unlink()
+    (host / ".lokf" / "pyproject.toml").unlink()
+    result = scaffold(host, "--dry-run")
+    assert result.rc == 2 and "has no pyproject.toml" in result.out, result.out
+
+
+def test_repair_relays_the_lint_config_and_the_doorway_recipe(tmp_path):
+    host = make_host(tmp_path)
+    add_lokf(host)
+    assert scaffold(host)
+    env = {"LINKML_TEMPLATE_SKIP_PIN_CHECK": "1"}
+    lint = host / ".linkml" / ".linkmllint.yaml"
+    original = read(lint)
+    lint.unlink()
+    result = bash(SCAFFOLD, "--host", str(host), "--repair", ".linkml/.linkmllint.yaml", env=env)
+    assert result and read(lint) == original, result.out
+    justfile = host / ".linkml" / "project.justfile"
+    with_block = read(justfile)
+    write(justfile, with_block[: with_block.index("# ---- linkml-sidecar")])
+    result = bash(SCAFFOLD, "--host", str(host), "--repair", str(justfile), env=env)
+    assert result and read(justfile).count(MARKER) == 1, result.out
+    again = bash(SCAFFOLD, "--host", str(host), "--repair", "project.justfile", env=env)
+    assert again and read(justfile).count(MARKER) == 1 and "already carries the doorway recipe" in again.out
+
+
+def test_repair_refuses_the_lint_config_on_a_plain_host(tmp_path):
+    host = make_host(tmp_path)
+    assert scaffold(host)
+    result = bash(SCAFFOLD, "--host", str(host), "--repair", ".linkmllint.yaml", env={"LINKML_TEMPLATE_SKIP_PIN_CHECK": "1"})
+    assert result.rc == 2 and "KTL mode only" in result.out, result.out
+
+
+def test_pointers_only_refuses_a_sidecar_that_records_no_slug(tmp_path):
+    host = make_host(tmp_path)
+    assert scaffold(host)
+    side = host / ".linkml"
+    answers = read(side / ".copier-answers.yml")
+    write(side / ".copier-answers.yml", re.sub(r"(?m)^project_slug:.*$", "project_slug: ''", answers))
+    write(side / "config.public.mk", re.sub(r'(?m)^LINKML_SCHEMA_NAME=.*$', 'LINKML_SCHEMA_NAME=""', read(side / "config.public.mk")))
+    (host / "linkml_schema").unlink()
+    result = bash(SCAFFOLD, "--host", str(host), "--pointers-only", env={"LINKML_TEMPLATE_SKIP_PIN_CHECK": "1"})
+    assert result.rc == 2 and "records no project_slug" in result.out, result.out
+    assert not (host / "linkml_schema").is_symlink()
+
+
+def test_the_scaffold_runs_on_python_3_8_syntax_and_library():
+    """Path.write_text(newline=) is 3.10; the scaffold promises 3.8."""
+    assert "write_text(" not in read(SCAFFOLD.with_suffix(".py")).split("def write(", 1)[1].split("\ndef ", 1)[0]
+
+
 # ---- the slow tests: the real copier, then the gate -------------------------
 
 
 def slow_host(tmp_path, with_lokf):
+    # LINKML_SIDECAR_SLOW=1 asks for these tests, so a missing clone or tool
+    # fails them: a skip would let a broken clone step in CI pass green.
     src = template_src()
     if src is None:
-        pytest.skip("no template clone: set LINKML_TEMPLATE_SRC or clone the pinned tag into .template-cache/linkml-project-copier")
+        pytest.fail("no template clone: set LINKML_TEMPLATE_SRC or clone the pinned tag into .template-cache/linkml-project-copier")
     for tool in ("uv", "just"):
         if not have(tool):
-            pytest.skip(f"{tool} not installed")
+            pytest.fail(f"{tool} not installed")
     host = make_host(tmp_path)
     if with_lokf:
         add_lokf(host, stub_schema=False)

@@ -64,7 +64,7 @@ TOKENS = (
 LICENSES = ("Apache-2.0", "MIT", "BSD-3-Clause", "MPL-2.0", "LGPL-3.0-only", "GPL-3.0-only", "LicenseRef-Custom")
 LICENSE_FILES = ("LICENSE", "LICENSE.md", "LICENSE.txt", "LICENCE", "LICENCE.md", "LICENCE.txt", "COPYING")
 NAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9 _\-]*[A-Za-z0-9]$")
-SLUG_RE = re.compile(r"^[a-z][a-z0-9_]*$")
+SLUG_RE = re.compile(r"^[a-z][a-z0-9_]+$")
 CODE_HOSTS = ("github.com", "gitlab.com", "bitbucket.org", "codeberg.org", "sourceforge.net", "github.io/")
 # The files the skill owns, as (template path, destination inside .linkml/).
 # Each is in the template's `_skip_if_exists`, or outside the template. The
@@ -97,7 +97,9 @@ def write(path, text, dry, mode=None):
     if dry:
         return
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8", newline="\n")
+    # open() rather than Path.write_text, whose newline argument needs Python 3.10.
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write(text)
     if mode is not None:
         path.chmod(mode)
 
@@ -116,14 +118,6 @@ def render(text, facts):
 def slugify(name):
     slug = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
     return slug if slug and slug[0].isalpha() else "schema_" + slug
-
-
-def git_toplevel(host):
-    try:
-        out = subprocess.run(["git", "-C", str(host), "rev-parse", "--show-toplevel"], capture_output=True, text=True)
-    except OSError:
-        return None
-    return Path(out.stdout.strip()) if out.returncode == 0 and out.stdout.strip() else None
 
 
 def frontmatter_value(path, key):
@@ -230,10 +224,22 @@ def validate(facts, mode):
             problems.append(f"{token} {value!r} names a code host; use a namespace the project controls (w3id.org, purl.org, its own domain)")
     if facts.get("BASE_IRI") and not facts["BASE_IRI"].endswith("/"):
         problems.append("BASE_IRI must end with /")
+    if facts.get("SCHEMA_ID", "").endswith("/"):
+        problems.append("SCHEMA_ID must not end with /; the schema's prefix adds it")
     if facts["COPYRIGHT_YEAR"] and not re.match(r"^\d{4}$", facts["COPYRIGHT_YEAR"]):
         problems.append("COPYRIGHT_YEAR must be four digits")
     if problems:
         raise Refused(2, "; ".join(problems))
+
+
+def validate_host(host, facts):
+    """What the facts must agree with on disk, checked before anything runs."""
+    if host_license(host) is None and facts["LICENSE_ID"] != "LicenseRef-Custom":
+        raise Refused(
+            2,
+            f"no LICENSE file at the host root, so LICENSE_ID must be LicenseRef-Custom, not {facts['LICENSE_ID']!r}: "
+            "the stub .linkml/LICENSE says the sidecar carries the host's license, and pyproject.toml records what LICENSE_ID says",
+        )
 
 
 # ---- the pin ---------------------------------------------------------------
@@ -274,6 +280,8 @@ def check_pin(src, ref, sha, skip):
 
 def refuse_existing(host):
     if (host / SIDECAR).exists():
+        if not (host / SIDECAR / ".copier-answers.yml").is_file():
+            raise Refused(3, f"{SIDECAR}/ exists under {host} but holds no .copier-answers.yml: a run that failed left it; remove it (rm -rf {SIDECAR}) and run again")
         raise Refused(3, f"{SIDECAR}/ already exists under {host}; linkml-author works there, and --repair re-lays one file")
     if (host / "linkml" / ".copier-answers.yml").is_file():
         raise Refused(3, "a visible linkml/ sidecar exists (the hand-made shape); it is left alone, and linkml-author works in it")
@@ -308,7 +316,7 @@ def preseed(host, facts, mode, dry):
             shutil.copyfile(source, sidecar / "LICENSE")
     else:
         write(sidecar / "LICENSE", render(read(TEMPLATES / "linkml" / "LICENSE.missing"), facts), dry)
-        say("handoff", "no LICENSE at the host root: .linkml/LICENSE is a stub that says so; LICENSE_ID should be LicenseRef-Custom until a license exists")
+        say("handoff", "no LICENSE at the host root: .linkml/LICENSE is a stub that says so, and LICENSE_ID is LicenseRef-Custom until a license exists")
     for template, dest in OWNED:
         src = TEMPLATES / template
         text = render(read(src), facts)
@@ -338,7 +346,7 @@ def answers_text(facts):
 def copier_command():
     custom = os.environ.get("LINKML_COPIER", "").strip()
     if custom:
-        return shlex.split(custom)
+        return shlex.split(custom, posix=os.name != "nt")
     return ["uvx", "--from", "copier>=9.4.0,<10", "--with", "jinja2-time", "copier"]
 
 
@@ -361,14 +369,15 @@ def run_copier(host, facts, src, ref, dry):
     if done.returncode != 0:
         raise Refused(4, f"copier failed ({done.returncode}): {(done.stderr or done.stdout).strip()[-2000:]}")
     for line in (done.stdout + done.stderr).splitlines():
-        if line.strip() and "just setup" not in line and "PROJECT CREATION COMPLETE" not in line:
+        if line.strip():
             say("scaffold", f"copier: {line.rstrip()}")
 
 
 def after_copy(host, facts, mode, ref, dry):
     sidecar = host / SIDECAR
     if dry:
-        say("scaffold", "would check .linkml/.copier-answers.yml, remove nothing, patch mkdocs.yml, append the doorway recipe" + (", set --render-imports" if mode == "lokf" else ""))
+        say("scaffold", "would check .linkml/.copier-answers.yml, remove nothing, patch mkdocs.yml, append the doorway recipe" + (", set --render-imports and write .linkmllint.yaml" if mode == "lokf" else ""))
+        say_inert_handoffs(None)
         return
     if (sidecar / ".git").exists():
         raise Refused(5, ".linkml/.git appeared: a nested repository; remove it (rm -rf .linkml/.git) and never run just setup there")
@@ -382,26 +391,42 @@ def after_copy(host, facts, mode, ref, dry):
     mkdocs = sidecar / "mkdocs.yml"
     if mkdocs.is_file():
         text = read(mkdocs)
-        text = re.sub(r"^site_url:.*$", f"site_url: {facts['DOCS_URL']}", text, count=1, flags=re.M)
-        text = re.sub(r"^repo_url:.*$", f"repo_url: {facts['REPO_URL']}", text, count=1, flags=re.M)
+        text = re.sub(r"^site_url:.*$", lambda _m: f"site_url: {facts['DOCS_URL']}", text, count=1, flags=re.M)
+        text = re.sub(r"^repo_url:.*$", lambda _m: f"repo_url: {facts['REPO_URL']}", text, count=1, flags=re.M)
         write(mkdocs, text, dry)
-    project_justfile = sidecar / "project.justfile"
-    block = read(TEMPLATES / "project.justfile.append")
-    existing = read(project_justfile) if project_justfile.is_file() else ""
-    if MARKER not in existing:
-        write(project_justfile, existing.rstrip("\n") + "\n\n" + block, dry)
+    append_doorway_recipe(host, facts, dry)
     if mode == "lokf":
         mk = sidecar / "config.public.mk"
         if mk.is_file():
             text = read(mk)
-            text = re.sub(r"^LINKML_GENERATORS_DOC_ARGS=.*$", 'LINKML_GENERATORS_DOC_ARGS="--render-imports"', text, count=1, flags=re.M)
+            text = re.sub(r"^LINKML_GENERATORS_DOC_ARGS=.*$", lambda _m: 'LINKML_GENERATORS_DOC_ARGS="--render-imports"', text, count=1, flags=re.M)
             write(mk, text, dry)
         write(sidecar / ".linkmllint.yaml", lint_config(host), dry)
-    inert = [p for p in (sidecar / ".github").rglob("*") if p.is_file()] if (sidecar / ".github").is_dir() else []
-    if (sidecar / ".pre-commit-config.yaml").is_file():
-        inert.append(sidecar / ".pre-commit-config.yaml")
-    say("handoff", f"{len(inert)} inert file(s) under .linkml/.github/ and .pre-commit-config.yaml (GitHub and pre-commit read the root only); the hoisted workflow is Step 5")
+    say_inert_handoffs(sidecar)
+
+
+def say_inert_handoffs(sidecar):
+    """The two hand-off lines about what the template left that the host ignores; a dry run counts nothing."""
+    if sidecar is None:
+        count = "the"
+    else:
+        inert = [p for p in (sidecar / ".github").rglob("*") if p.is_file()] if (sidecar / ".github").is_dir() else []
+        if (sidecar / ".pre-commit-config.yaml").is_file():
+            inert.append(sidecar / ".pre-commit-config.yaml")
+        count = str(len(inert))
+    say("handoff", f"{count} inert file(s) under .linkml/.github/ and .pre-commit-config.yaml (GitHub and pre-commit read the root only); the hoisted workflow is Step 5")
     say("handoff", "CODE_OF_CONDUCT.md and CONTRIBUTING.md under .linkml/ are the template's copies; the host's own govern")
+
+
+def append_doorway_recipe(host, facts, dry):
+    """The linkml-link recipe at the end of project.justfile, the file copier merges, once."""
+    project_justfile = host / SIDECAR / "project.justfile"
+    block = render(read(TEMPLATES / "project.justfile.append"), facts)
+    existing = read(project_justfile) if project_justfile.is_file() else ""
+    if MARKER in existing:
+        say("scaffold", "project.justfile already carries the doorway recipe")
+        return
+    write(project_justfile, existing.rstrip("\n") + "\n\n" + block, dry)
 
 
 # ---- KTL -------------------------------------------------------------------
@@ -454,13 +479,13 @@ def pin_lokf_schema(host, dry):
     if target.is_file():
         say("scaffold", ".lokf/lokf.yaml is pinned already")
         return
-    if dry:
-        say("scaffold", "would copy the toolkit's lokf.yaml to .lokf/lokf.yaml (uv sync, then importlib.resources)")
-        return
     if not (lokf / "pyproject.toml").is_file():
         raise Refused(2, ".lokf/ has no pyproject.toml, so the lokf toolkit cannot be installed to copy lokf.yaml out of; run ktl-sidecar first")
     if not shutil.which("uv"):
         raise Refused(2, "uv is needed to install the lokf toolkit and copy lokf.yaml beside the bundle")
+    if dry:
+        say("scaffold", "would copy the toolkit's lokf.yaml to .lokf/lokf.yaml (uv sync, then importlib.resources)")
+        return
     sync = subprocess.run(["uv", "sync"], cwd=str(lokf), capture_output=True, text=True)
     if sync.returncode != 0:
         raise Refused(2, f"uv sync in .lokf/ failed: {sync.stderr.strip()[-800:]}")
@@ -484,7 +509,7 @@ def wire_lokf(host, facts, dry):
     if re.search(r'^schema := ""$', text, re.M):
         # The ktl-sidecar template that carries the variable itself: its recipes
         # already pass --schema and run from the schema's directory when it is set.
-        write(justfile, re.sub(r'^schema := ""$', f'schema := "{schema}"', text, count=1, flags=re.M), dry)
+        write(justfile, re.sub(r'^schema := ""$', lambda _m: f'schema := "{schema}"', text, count=1, flags=re.M), dry)
         say("handoff", f'.lokf/justfile wired: schema := "{schema}" (the template\'s own recipes take it from there)')
         say("handoff", "list ExampleConcept under the KTL plugins' Known LOKF types")
         return
@@ -517,8 +542,8 @@ def wire_lokf(host, facts, dry):
     say("handoff", f".lokf/justfile wired: schema := \"{schema}\"; lokf-validate and lokf-check-refs run from the schema's directory")
     say(
         "handoff",
-        "make the validate steps of knowledge-registrar.yaml and knowledge-librarian.yaml run `just lokf-validate` "
-        "(the host then owns those copies), and list ExampleConcept under the plugins' Known LOKF types",
+        "make the validate steps of knowledge-registrar.yaml and knowledge-librarian.yaml run `just lokf-validate` and "
+        "`just lokf-check-refs` (the host then owns those copies), and list ExampleConcept under the plugins' Known LOKF types",
     )
 
 
@@ -536,12 +561,31 @@ def readme_aside(host, facts, dry):
         return
     aside = render(read(TEMPLATES / "readme-for-schema.md"), facts).rstrip("\n") + "\n"
     lines = text.split("\n")
-    at = next((i for i, line in enumerate(lines) if line.startswith("## ")), None)
+    at = first_section(lines)
     if at is None:
         new = text.rstrip("\n") + "\n\n" + aside
+    elif at == 0:
+        new = aside + "\n" + text
     else:
         new = "\n".join(lines[:at]).rstrip("\n") + "\n\n" + aside + "\n" + "\n".join(lines[at:])
     write(readme, new, dry)
+
+
+def first_section(lines):
+    """The index of the first `## ` heading outside a fenced code block, or None."""
+    fence = None
+    for i, line in enumerate(lines):
+        stripped = line.lstrip()
+        if fence is None and (stripped.startswith("```") or stripped.startswith("~~~")):
+            fence = stripped[:3]
+            continue
+        if fence is not None:
+            if stripped.startswith(fence):
+                fence = None
+            continue
+        if line.startswith("## "):
+            return i
+    return None
 
 
 def llms_pointer(host, facts, mode, dry):
@@ -575,7 +619,7 @@ def doorway(host, facts, dry):
     if dry:
         return
     try:
-        os.symlink(target, link)
+        os.symlink(target, link, target_is_directory=True)
     except OSError as exc:
         say("handoff", f"could not create the {DOORWAY} link ({exc}); on Windows: mklink /J {DOORWAY} {SIDECAR}\\src\\{facts['PROJ_SLUG']}\\schema")
 
@@ -583,8 +627,8 @@ def doorway(host, facts, dry):
 def gitignore_lines(host, dry):
     path = host / ".gitignore"
     text = read(path) if path.is_file() else ""
-    have = set(text.split("\n"))
-    add = [line for line in (f"{SIDECAR}/", DOORWAY) if line not in have and line.rstrip("/") not in have]
+    have = {line.strip().lstrip("/").rstrip("/") for line in text.split("\n")}
+    add = [line for line in (f"{SIDECAR}/", DOORWAY) if line.rstrip("/") not in have]
     if not add:
         say("scaffold", ".gitignore already names the sidecar and the doorway")
         return
@@ -606,9 +650,20 @@ def pointers(host, facts, mode, gitignored, dry):
 
 def repair(host, facts, mode, target, dry):
     rel = target.replace("\\", "/")
+    if os.path.isabs(rel):
+        rel = os.path.relpath(rel, host).replace("\\", "/")
+    rel = os.path.normpath(rel).replace("\\", "/")
     if rel.startswith(SIDECAR + "/"):
         rel = rel[len(SIDECAR) + 1 :]
     slug = facts["PROJ_SLUG"]
+    if rel == ".linkmllint.yaml":
+        if mode != "lokf":
+            raise Refused(2, ".linkmllint.yaml is written in KTL mode only (the host has no .lokf/, or --mode plain was given)")
+        write(host / SIDECAR / rel, lint_config(host), dry)
+        return
+    if rel == "project.justfile":
+        append_doorway_recipe(host, facts, dry)
+        return
     for template, dest in OWNED:
         if dest == rel:
             write(host / SIDECAR / dest, render(read(TEMPLATES / template), facts), dry, 0o755 if dest.endswith(".sh") else None)
@@ -622,7 +677,7 @@ def repair(host, facts, mode, target, dry):
     if rel == "LICENSE":
         preseed_license_only(host, facts, dry)
         return
-    raise Refused(2, f"{target} is not a file this skill owns; a template-owned file comes back with `just --justfile .linkml/justfile update`, and project.justfile's block with --pointers-only")
+    raise Refused(2, f"{target} is not a file this skill owns (the preflight, README.md, docs/index.md, docs/about.md, LICENSE, the dummy schema and its tests, .linkmllint.yaml, project.justfile's doorway recipe); a template-owned file comes back with `just --justfile .linkml/justfile update`")
 
 
 def preseed_license_only(host, facts, dry):
@@ -665,8 +720,8 @@ def main(argv=None):
             if not (host / SIDECAR / ".copier-answers.yml").is_file():
                 raise Refused(3, f"no finished sidecar under {host} to work on")
             facts = facts_from_sidecar(host, ref)
+            validate_light(facts)
             if args.repair:
-                validate_light(facts)
                 repair(host, facts, mode, args.repair, dry)
             else:
                 pointers(host, facts, mode, args.gitignored, dry)
@@ -674,6 +729,7 @@ def main(argv=None):
         refuse_existing(host)
         facts = facts_from_env(host, mode, ref)
         validate(facts, mode)
+        validate_host(host, facts)
         say("scaffold", f"mode {mode}; host {host}; template {src} at {ref}")
         for token in ("PROJ_NAME", "PROJ_SLUG", "LICENSE_ID", "SCHEMA_ID", "DOCS_URL", "BASE_IRI"):
             if facts.get(token):
@@ -694,6 +750,12 @@ def main(argv=None):
         return 0
     except Refused as exc:
         say("scaffold", f"{'refused' if exc.code == 3 else 'failed'} ({exc.code}): {exc}")
+        sidecar = host / SIDECAR
+        # A copier failure leaves the pre-seeded files and no answers file. Remove them,
+        # so the next run is not refused for a sidecar that was never finished.
+        if not dry and exc.code == 4 and sidecar.is_dir() and not (sidecar / ".copier-answers.yml").is_file():
+            shutil.rmtree(sidecar, ignore_errors=True)
+            say("scaffold", f"removed the unfinished {SIDECAR}/ so the next run starts clean")
         return exc.code
 
 

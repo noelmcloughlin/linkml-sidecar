@@ -3,9 +3,9 @@
 # folder pickers and file managers that hide dot-folders. Git carries the
 # link; a sync service does not, so this recipe recreates it on a machine
 # where it is missing. POSIX only; on Windows run, from the host root,
-# mklink /J linkml_schema .linkml\src\<slug>\schema
+# mklink /J linkml_schema .linkml\src\<PROJ_SLUG>\schema
 
-# Create (or recreate) the linkml_schema -> .linkml/src/<slug>/schema doorway link at the host root
+# Create (or recreate) the linkml_schema link at the host root, to .linkml/src/<PROJ_SLUG>/schema
 [group('sidecar')]
 linkml-link:
     #!/usr/bin/env bash

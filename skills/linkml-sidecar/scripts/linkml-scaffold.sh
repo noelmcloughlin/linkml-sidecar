@@ -11,7 +11,7 @@
 # the Python half verifies the tag still names this commit before it trusts
 # the template with `--trust`.
 #
-# Usage: linkml-scaffold.sh [--dry-run] [--host DIR] [--mode plain|lokf]
+# Usage: linkml-scaffold.sh [--dry-run] [--host DIR] [--mode plain|lokf|auto]
 #                           [--gitignored] [--pointers-only] [--repair PATH]
 #   Facts (environment): PROJ_NAME PROJ_SLUG PROJ_DESC GITHUB_ORG REPO_URL
 #   FULL_NAME EMAIL LICENSE_ID SCHEMA_ID DOCS_URL [COPYRIGHT_YEAR] [TODAY]
