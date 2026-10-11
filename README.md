@@ -1,12 +1,14 @@
 # linkml-sidecar
 
-Two [Agent Skills](https://agentskills.io) that give a code repository a [LinkML](https://linkml.io) data model without touching its build: **linkml-sidecar** installs a hidden `.linkml/` folder holding a complete, pinned [linkml-project-copier](https://github.com/linkml/linkml-project-copier) project, and **linkml-author** turns its dummy schema into the model the code describes and keeps it linted, generated, documented and tested.
+Two [Agent Skills](https://agentskills.io) that give a code repository a [LinkML](https://linkml.io) data model without touching its own build: **linkml-sidecar** installs a hidden `.linkml/` folder holding a complete, pinned [linkml-project-copier](https://github.com/linkml/linkml-project-copier) project, and **linkml-author** turns its dummy schema into the model the code describes and keeps it linted, generated, documented and tested.
 
-> **It is a sidecar.** One hidden folder, one visible doorway (`linkml_schema/`), one workflow, and a README inside that says which files are the template's and which are yours. Nothing in the host's build depends on it; three deletions and two edits remove it, as the README inside says. The schema is the source; the JSON Schema, the Pydantic and dataclass models, the OWL and SHACL, the TypeScript and the docs site are generated from it, one `just` recipe each.
+> **It is a sidecar.** One hidden folder, one visible doorway (`linkml_schema/`), one workflow, and a README describing the land. Nothing in the host's build depends on it; and it can be removed easily, as the README inside says. The schema is the source; the JSON Schema, Pydantic and dataclass models, OWL and SHACL, TypeScript and the docs site are generated from it, one `just` recipe each.
 
 ## Two patterns
 
-A repository that *is* a schema project, such as [lmodel/gist](https://github.com/lmodel/gist), runs copier at its root and needs nothing here. A domain codebase whose maintainers would resist a schema project landing in their root gets the sidecar. The template assumes a repository root in a dozen ways (its workflows render where GitHub never reads them, `just setup` nests a repository, `just deploy` pushes the host's Pages root, the README describes "the repository"); the skill catalogues every one and neutralises it, and the catalogue is what an upstream `layout: sidecar` answer would shrink.
+A repository that *is* a schema project, such as [lmodel/gist](https://github.com/lmodel/gist), runs copier at its root and needs nothing here.
+
+A domain codebase whose maintainers resist a unknown schema project landing in their root folder gets the sidecar.
 
 ## Install
 
@@ -33,10 +35,6 @@ bash ../linkml-sidecar/skills/linkml-sidecar/scripts/linkml-scaffold.sh
 
 Step 0 of [the skill](skills/linkml-sidecar/SKILL.md) says where each fact comes from, and Step 1 lists the exit codes, `--repair` and `--pointers-only`.
 
-## With or without KTL
-
-The sidecar stands alone. Beside a [Knowledge Trust Ladder](https://github.com/noelmcloughlin/knowledge-trust-ladder) bundle (`.lokf/`), its schema becomes the bundle's domain schema: it imports LOKF's core schema, each class in it that is `is_a: Concept` is a type the bundle's concepts may carry, and `lokf validate --schema` checks the bundle against both. The scaffold wires that in one run, and the skills say what the KTL plugins still need to be told.
-
 ## Layout
 
 | Path | What it is |
@@ -45,6 +43,10 @@ The sidecar stands alone. Beside a [Knowledge Trust Ladder](https://github.com/n
 | `skills/linkml-author/` | The author: `SKILL.md` and its references (the metamodel, generator pitfalls by version, source mapping, the lmodel profile, KTL). |
 | `tests/` | The scaffold, the preflight and the workflow on throwaway hosts; `tests/conftest.py` says how to run them, with and without the network. |
 | `scripts/validate-repository.sh` | The repository contract CI runs on every pull request. |
+
+## With or without KTL
+
+The sidecar stands alone. Beside a [Knowledge Trust Ladder](https://github.com/noelmcloughlin/knowledge-trust-ladder) bundle (`.lokf/`), its schema becomes the bundle's domain schema: it imports LOKF's core schema, each class in it that is `is_a: Concept` is a type the bundle's concepts may carry, and `lokf validate --schema` checks the bundle against both. The scaffold wires that in one run, and the skills say what the KTL plugins still need to be told.
 
 ## Development
 
