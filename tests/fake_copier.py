@@ -9,6 +9,13 @@ that already exists when the template's `_skip_if_exists` would, so the
 pre-seeded files are left alone as the real copier leaves them. Nothing here
 needs the network.
 
+A destination file that exists and that `_skip_if_exists` does not cover
+fails the run, as the real copier does under --defaults with no terminal
+("Interactive session required"), so a pre-seeded file the template would
+not leave alone is caught here and not first on a real host. Under --quiet
+the real copier prints nothing, and neither does this. It does not apply the
+template's answer validators or write the files the scaffold never reads.
+
 FAKE_COPIER_FAIL=1 makes it exit 1 after writing nothing, and
 FAKE_COPIER_GIT=1 makes it leave a `.git` directory behind, as `just setup`
 would, so the scaffold's refusals can be tested.
@@ -163,11 +170,13 @@ def main(argv):
         target = dst / rel
         if target.exists() and (rel in SKIP_IF_EXISTS or rel.startswith(skip_prefixes)):
             continue
+        if target.exists():
+            print(f"fake copier: {rel} exists and _skip_if_exists does not cover it; the real copier would ask to overwrite it", file=sys.stderr)
+            return 1
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(text, encoding="utf-8")
     if os.environ.get("FAKE_COPIER_GIT") == "1":
         (dst / ".git").mkdir(exist_ok=True)
-    print("\n** PROJECT CREATION COMPLETE **\n\nNext step run \"just setup\" in the root of your project directory.")
     return 0
 
 

@@ -3,7 +3,8 @@
 These tests exercise skills/linkml-sidecar/scripts/ and templates/ on
 throwaway hosts. The fast ones run the scaffold against tests/fake_copier.py,
 which renders the few template files the scaffold touches without the
-network, and a stub `.lokf/` under tests/fixtures/. The slow ones, switched
+network, and a stub `.lokf/` under tests/fixtures/; the preflight runs with
+LINKML_PREFLIGHT_OFFLINE=1, so they make no network call. The slow ones, switched
 on by LINKML_SIDECAR_SLOW=1, run the real copier against a local clone of the
 pinned template (LINKML_TEMPLATE_SRC, or .template-cache/linkml-project-copier
 under the repository), then `just install`, `lint` and `test`, and need uv,
@@ -210,9 +211,19 @@ def _isolated_environment(tmp_path_factory):
     patch.setenv("GIT_CONFIG_GLOBAL", "/dev/null")
     patch.setenv("GIT_CONFIG_SYSTEM", "/dev/null")
     patch.setenv("TMPDIR", str(tmp_path_factory.getbasetemp()))
+    # An identity for every git call, even one that does not go through Git:
+    # without it git builds one from the host's FQDN, a 15 s DNS wait on a
+    # machine whose hostname does not resolve.
+    for kind in ("AUTHOR", "COMMITTER"):
+        patch.setenv(f"GIT_{kind}_NAME", "Test")
+        patch.setenv(f"GIT_{kind}_EMAIL", "test@example.invalid")
+    patch.setenv("LINKML_PREFLIGHT_OFFLINE", "1")
     for name in FACTS:
         patch.delenv(name, raising=False)
-    for name in ("LINKML_COPIER", "LINKML_TEMPLATE_REF", "LINKML_TEMPLATE_SHA", "LINKML_MODE", "BASE_IRI"):
+    for name in (
+        "LINKML_COPIER", "LINKML_TEMPLATE_REF", "LINKML_TEMPLATE_SHA", "LINKML_TEMPLATE_SKIP_PIN_CHECK",
+        "LINKML_MODE", "BASE_IRI", "COPYRIGHT_YEAR", "TODAY", "FAKE_COPIER_FAIL", "FAKE_COPIER_GIT", "GIT_DIR", "GIT_WORK_TREE",
+    ):
         patch.delenv(name, raising=False)
     yield
     patch.undo()
