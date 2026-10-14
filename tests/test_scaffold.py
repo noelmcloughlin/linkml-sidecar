@@ -151,7 +151,7 @@ WORKFLOWS_HANDOFF = (
 
 def test_a_ktl_host_gets_the_lokf_dummy_the_lint_config_and_the_wired_justfile(tmp_path):
     host = make_host(tmp_path)
-    add_lokf(host)
+    add_lokf(host, before_schema=True)
     result = scaffold(host)
     assert result, result.out
     side = host / ".linkml"
@@ -178,9 +178,10 @@ def test_a_ktl_host_gets_the_lokf_dummy_the_lint_config_and_the_wired_justfile(t
 def test_mode_plain_overrides_a_ktl_host(tmp_path):
     host = make_host(tmp_path)
     add_lokf(host)
+    original = read(host / ".lokf" / "justfile")
     assert scaffold(host, "--mode", "plain")
     assert "Person" in read(host / ".linkml" / "src" / "demo" / "schema" / "demo.yaml")
-    assert "schema :=" not in read(host / ".lokf" / "justfile")
+    assert read(host / ".lokf" / "justfile") == original
 
 
 def test_a_ktl_justfile_that_differs_is_not_patched_but_told(tmp_path):
@@ -197,8 +198,7 @@ def test_a_ktl_justfile_that_differs_is_not_patched_but_told(tmp_path):
 def test_a_ktl_justfile_that_carries_the_variable_gets_only_that_line_set(tmp_path):
     host = make_host(tmp_path)
     add_lokf(host)
-    original = 'bundle := "knowledge"\nschema := ""\n_validate := if schema == "" { "uv run lokf validate" } else { "cd " + parent_directory(schema) }\nlokf-validate:\n    {{ _validate }} {{ bundle }}\n'
-    write(host / ".lokf" / "justfile", original)
+    original = read(host / ".lokf" / "justfile")
     result = scaffold(host)
     assert result, result.out
     justfile = read(host / ".lokf" / "justfile")

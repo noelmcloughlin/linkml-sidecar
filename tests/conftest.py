@@ -174,10 +174,16 @@ def make_host(root: Path, readme=True, license_file=True, git=True) -> Path:
     return root
 
 
-def add_lokf(root: Path, stub_schema=True) -> Path:
-    """A `.lokf/` from the fixture: ktl-sidecar's justfile and pyproject, a bundle header, and the stub core schema unless the slow tests want the real one pinned."""
+def add_lokf(root: Path, stub_schema=True, before_schema=False) -> Path:
+    """A `.lokf/` from the fixture: ktl-sidecar's justfile and pyproject, a bundle header, and the stub core schema unless the slow tests want the real one pinned.
+
+    before_schema takes the justfile of a ktl-sidecar release from before the
+    `schema` variable, whose lines the scaffold patches by exact match.
+    """
     target = root / ".lokf"
     shutil.copytree(FIXTURES / "lokf", target, dirs_exist_ok=True)
+    if before_schema:
+        shutil.copy(FIXTURES / "lokf-before-schema" / "justfile", target / "justfile")
     if not stub_schema:
         (target / "lokf.yaml").unlink()
     return target
