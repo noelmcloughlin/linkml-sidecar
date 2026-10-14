@@ -143,6 +143,12 @@ def test_an_unfinished_sidecar_is_refused_with_the_way_out(tmp_path):
 
 
 
+WORKFLOWS_HANDOFF = (
+    r"^handoff: make the validate step of knowledge-registrar\.yaml, knowledge-librarian\.yaml and knowledge-release\.yaml "
+    r"run `uvx --from rust-just==1\.47\.0 just lokf-check-refs`"
+)
+
+
 def test_a_ktl_host_gets_the_lokf_dummy_the_lint_config_and_the_wired_justfile(tmp_path):
     host = make_host(tmp_path)
     add_lokf(host)
@@ -164,6 +170,8 @@ def test_a_ktl_host_gets_the_lokf_dummy_the_lint_config_and_the_wired_justfile(t
     assert "--check-refs --schema" in justfile
     assert "lokf validate" in read(host / "llms.txt")
     assert matches(result.out, r"^handoff: \.lokf/justfile wired") and "BASE_IRI=https://fixture.example/knowledge/" in result.out
+    # The template's workflows still validate inline, so all three are named, with the line the runners can run.
+    assert matches(result.out, WORKFLOWS_HANDOFF), result.out
     assert tokens_left(side) == []
 
 
@@ -182,6 +190,7 @@ def test_a_ktl_justfile_that_differs_is_not_patched_but_told(tmp_path):
     result = scaffold(host)
     assert result, result.out
     assert "does not hold the ktl-sidecar template's lines" in result.out
+    assert matches(result.out, WORKFLOWS_HANDOFF), result.out
     assert "schema :=" not in read(host / ".lokf" / "justfile")
 
 
@@ -196,6 +205,8 @@ def test_a_ktl_justfile_that_carries_the_variable_gets_only_that_line_set(tmp_pa
     # Exactly one line changes, the variable; the template's recipes are left as they are.
     assert justfile.replace('schema := "../.linkml/src/demo/schema/demo.yaml"', 'schema := ""') == original
     assert "the template's own recipes take it from there" in result.out
+    # That template's workflows run the recipe already, so they need no telling.
+    assert not matches(result.out, WORKFLOWS_HANDOFF), result.out
 
 
 def test_repair_relays_one_owned_file_from_the_sidecars_own_facts(tmp_path):

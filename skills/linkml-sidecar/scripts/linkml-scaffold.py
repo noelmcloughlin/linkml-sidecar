@@ -66,6 +66,12 @@ LICENSE_FILES = ("LICENSE", "LICENSE.md", "LICENSE.txt", "LICENCE", "LICENCE.md"
 NAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9 _\-]*[A-Za-z0-9]$")
 SLUG_RE = re.compile(r"^[a-z][a-z0-9_]+$")
 CODE_HOSTS = ("github.com", "gitlab.com", "bitbucket.org", "codeberg.org", "sourceforge.net", "github.io/")
+# The KTL workflows whose validate step runs `lokf validate --check-refs`
+# inline until ktl-sidecar's template carries the `schema` variable, and the
+# line that template runs instead. The runners have no `just`, so the step
+# runs it through uvx.
+KTL_WORKFLOWS = ("knowledge-registrar.yaml", "knowledge-librarian.yaml", "knowledge-release.yaml")
+KTL_VALIDATE_STEP = "uvx --from rust-just==1.47.0 just lokf-check-refs"
 # The files the skill owns, as (template path, destination inside .linkml/).
 # Each is in the template's `_skip_if_exists`, or outside the template. The
 # dummy schema, its test and its data come from templates/linkml/schema/<mode>/.
@@ -498,6 +504,15 @@ def pin_lokf_schema(host, dry):
     say("scaffold", f"copied {path} to .lokf/lokf.yaml")
 
 
+def say_ktl_workflows():
+    """The hand-off for KTL workflows that still validate inline, which never see the schema."""
+    say(
+        "handoff",
+        f"make the validate step of {', '.join(KTL_WORKFLOWS[:-1])} and {KTL_WORKFLOWS[-1]} run `{KTL_VALIDATE_STEP}`, "
+        "so CI checks the bundle against the schema too (the host then owns those copies)",
+    )
+
+
 def wire_lokf(host, facts, dry):
     """`schema :=` and `--schema` in .lokf/justfile (domain-schema.md, step 4); an unexpected line is printed, not patched."""
     justfile = host / ".lokf" / "justfile"
@@ -535,16 +550,15 @@ def wire_lokf(host, facts, dry):
             f".lokf/justfile does not hold the ktl-sidecar template's lines {missing!r}; "
             f"add schema := \"{schema}\" and --schema {{{{ schema }}}} to lokf-validate and lokf-check-refs by hand",
         )
+        say_ktl_workflows()
+        say("handoff", "list ExampleConcept under the KTL plugins' Known LOKF types")
         return
     for old, new in edits:
         text = text.replace(old, new, 1)
     write(justfile, text, dry)
     say("handoff", f".lokf/justfile wired: schema := \"{schema}\"; lokf-validate and lokf-check-refs run from the schema's directory")
-    say(
-        "handoff",
-        "make the validate steps of knowledge-registrar.yaml and knowledge-librarian.yaml run `just lokf-validate` and "
-        "`just lokf-check-refs` (the host then owns those copies), and list ExampleConcept under the plugins' Known LOKF types",
-    )
+    say_ktl_workflows()
+    say("handoff", "list ExampleConcept under the KTL plugins' Known LOKF types")
 
 
 # ---- root pointers ---------------------------------------------------------
