@@ -11,3 +11,7 @@ All notable changes to this project are documented here. The format follows [Kee
 - **linkml-author keeps the schema.** One sidecar-aware authoring skill that finds the project through the preflight, runs every tool through the project's own environment, states its rules (snake_case enum values, `dcterms`, slots versus attributes, string annotations, `just test` does not lint), and keeps the metamodel, generator pitfalls by version, source mapping, the lmodel profile and the KTL rules as references.
 - **A hoisted workflow template** runs `just lint` and `just test` in `.linkml/` from the host's root, builds the docs site as an artifact, and publishes it under the `linkml/` subpath of `gh-pages` only once `LINKML_DOCS_ENABLED` is `true`.
 - **Tests and a repository contract.** The scaffold, the preflight and the workflow run on throwaway hosts against an offline stand-in for copier; the slow tests run the real template and both gates.
+
+### Changed
+
+- **The README says what the sidecar is in plain words.** The two-patterns section and the sidecar note lose their figures of speech.
