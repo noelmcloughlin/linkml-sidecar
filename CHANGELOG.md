@@ -15,3 +15,4 @@ All notable changes to this project are documented here. The format follows [Kee
 ### Changed
 
 - **The README says what the sidecar is in plain words.** The two-patterns section and the sidecar note lose their figures of speech.
+- **The link check handles github.com as knowledge-trust-ladder's does.** File links are checked on raw.githubusercontent.com, other github.com pages are paced, and issue and pull request links are checked through GitHub's API, so a burst of 503s no longer fails the job.
