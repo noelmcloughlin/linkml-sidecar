@@ -23,9 +23,10 @@ sources:
   - resource: .gitignore
   - resource: .markdownlint-cli2.jsonc
   - resource: lychee.toml
+  - resource: website
 generated:
   by: process:ktl-librarian
-  at: "2026-10-21T22:30:32Z"
+  at: "2026-10-21T22:47:54Z"
 status: draft
 ---
 
@@ -43,6 +44,7 @@ This bundle is derived from the repository's own files. Each row names a source,
 | `CONTRIBUTING.md`, `.github/pull_request_template.md`, `tests/conftest.py`, `scripts/smoke-test-install.sh` | the contributing playbook and the release policy | the checklist and the Releasing section |
 | `scripts/validate-repository.sh`, `.github/workflows/validate.yml`, `.github/dependabot.yml` | the repository contract | the numbered check comments and the job names |
 | `AI_COVENANT.md`, `CODE_OF_CONDUCT.md` | `Policy` | the section headings |
+| `website/`, `.github/workflows/knowledge-website.yaml` | the knowledge website playbook | `website/README.md` and the option comments in `website/site.config.mjs` |
 
 ## Left out on purpose
 
@@ -51,4 +53,4 @@ This bundle is derived from the repository's own files. Each row names a source,
 - `llms.txt` points agents at the skills and this bundle, and states nothing the skills do not.
 - `tests/` beyond `conftest.py`, and `pytest.ini`, exercise the scripts and describe no behaviour of their own.
 - `.gitignore`, `.markdownlint-cli2.jsonc` and `lychee.toml` configure tools for this repository's own checks.
-- `.github/workflows/knowledge-*.yaml` and `.github/PULL_REQUEST_TEMPLATE/knowledge-sync.md` are ktl-sidecar's copies, which keep this bundle, not the skills.
+- The other `.github/workflows/knowledge-*.yaml` workflows and `.github/PULL_REQUEST_TEMPLATE/knowledge-sync.md` are ktl-sidecar's copies, which keep this bundle, not the skills.

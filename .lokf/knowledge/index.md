@@ -30,6 +30,7 @@ A [LOKF](https://lokf.nolan-nichols.com) knowledge base for linkml-sidecar. Ever
 * [Installing the skills](playbooks/installing-the-skills.md) - How to install linkml-sidecar and linkml-author with npx skills or as a Claude Code plugin, and how to run the preflight and the scaffold by hand without an agent.
 * [Contributing](playbooks/contributing.md) - The contributor checklist: development setup, the fast and slow tests, the install smoke test, what to run before a pull request, how to move the linkml-project-copier template pin, and how action pins in the workflow template follow Dependabot.
 * [Knowledge sources](playbooks/knowledge-sources.md) - Map of the repository locations this bundle was derived from, the classes each yields, the files left out on purpose, and how to re-check each on a future refresh.
+* [Knowledge website](playbooks/knowledge-website.md) - How the website in website/ is built, previewed and published: an Astro Starlight site with a page per concept and its trust label, the lokf export files under knowledge/, and the README as its home page, deployed to GitHub Pages by knowledge-website.yaml once KNOWLEDGE_WEBSITE_ENABLED is true.
 
 # Explanation
 

@@ -2,6 +2,8 @@
 
 ## 2026-10-21
 
+* **Added**: the knowledge website, from `website/README.md`, `site.config.mjs` and `knowledge-website.yaml`.
+* **Changed**: the knowledge sources map lists `website/` and its workflow, which the new website playbook covers.
 * **Prose**: reworded 7 concept bodies in plain English. No fact, link, number or frontmatter changed.
 * **Added**: the linkml-sidecar skill, from `skills/linkml-sidecar/SKILL.md`.
 * **Added**: the linkml-author skill, from `skills/linkml-author/SKILL.md`.
