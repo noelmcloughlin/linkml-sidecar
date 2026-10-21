@@ -33,7 +33,15 @@ It always exits 0: the skills read the lines, and nothing here is a gate. It use
 
 ## What it checks
 
-It shows the host and shell; whether the tree is under git and on which forge; whether `uv`, `copier` and `just` run and whether github.com and pypi.org answer; whether a sidecar already exists, and in which shape; whether a `.lokf/` bundle is present, which switches on KTL mode; whether the host already publishes Pages; and whether the root declares a uv workspace.
+It shows:
+
+- the host and shell;
+- whether the tree is under git, and on which forge;
+- whether `uv`, `copier` and `just` run, and whether github.com and pypi.org answer;
+- whether a sidecar already exists, and in which shape;
+- whether a `.lokf/` bundle is present, which switches on KTL mode;
+- whether the host already publishes Pages;
+- whether the root declares a uv workspace.
 
 `LINKML_PREFLIGHT_OFFLINE=1` skips the two checks that reach the network, for tests and air-gapped machines.
 

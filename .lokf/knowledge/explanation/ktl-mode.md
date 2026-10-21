@@ -35,7 +35,7 @@ The sidecar stands alone. When the host carries a `.lokf/` bundle, the preflight
 2. Lays down a dummy that imports it: one class, `ExampleConcept`, `is_a: Concept`, with one slot of its own.
 3. Excuses LOKF's camelCase relation slots in `.linkml/.linkmllint.yaml`, and nothing else, so the host's own slots are still held to snake_case.
 4. Adds `--render-imports` to gen-doc, so `is_a: Concept` links to a page that exists.
-5. Wires `.lokf/justfile`: it sets `schema :=` and makes `lokf-validate` and `lokf-check-refs` pass `--schema`.
+5. Sets `schema :=` in `.lokf/justfile`, and makes its `lokf-validate` and `lokf-check-refs` recipes pass `--schema`.
 
 ## The one workaround
 

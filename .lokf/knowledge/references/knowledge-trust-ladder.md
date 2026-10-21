@@ -22,4 +22,4 @@ status: draft
 
 A [Knowledge Trust Ladder](https://w3id.org/ktl) (KTL) bundle is a `.lokf/` folder in the host. The sidecar stands alone, and beside a KTL bundle its schema becomes the bundle's domain schema.
 
-ktl-librarian's [domain-schema page](https://github.com/noelmcloughlin/knowledge-trust-ladder/blob/main/skills/ktl-librarian/references/domain-schema.md) is the recipe and the authority on what the validator expects. linkml-sidecar's `references/ktl.md` says how the scaffold wires it.
+ktl-librarian's [domain-schema page](https://github.com/noelmcloughlin/knowledge-trust-ladder/blob/main/skills/ktl-librarian/references/domain-schema.md) is the recipe and the authority on what the validator expects. linkml-sidecar's `references/ktl.md` says how the scaffold sets it up.

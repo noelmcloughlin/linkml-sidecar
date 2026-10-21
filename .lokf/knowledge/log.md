@@ -2,6 +2,7 @@
 
 ## 2026-10-21
 
+* **Prose**: reworded 7 concept bodies in plain English. No fact, link, number or frontmatter changed.
 * **Added**: the linkml-sidecar skill, from `skills/linkml-sidecar/SKILL.md`.
 * **Added**: the linkml-author skill, from `skills/linkml-author/SKILL.md`.
 * **Added**: installing the skills, from the README's Install and Run it yourself sections.

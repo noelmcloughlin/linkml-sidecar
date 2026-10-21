@@ -32,7 +32,16 @@ status: draft
 
 ## When to use it
 
-Use it when someone asks to add, change or deprecate a class, slot, enum or type; to model a concept; to map a specification, standard or document to a schema; to replace the dummy schema with the real model; to check schema conventions; or to run lint, gen-project, gen-doc or test. It is not for installing or repairing the sidecar: a missing or broken sidecar file goes back to linkml-sidecar's `--repair`.
+Use it when someone asks to:
+
+- add, change or deprecate a class, slot, enum or type;
+- model a concept;
+- map a specification, standard or document to a schema;
+- replace the dummy schema with the real model;
+- check schema conventions;
+- run lint, gen-project, gen-doc or test.
+
+It is not for installing or repairing the sidecar: a missing or broken sidecar file goes back to linkml-sidecar's `--repair`.
 
 ## What it needs
 

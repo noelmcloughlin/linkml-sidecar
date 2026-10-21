@@ -45,7 +45,7 @@ The facts are `PROJ_NAME`, `PROJ_SLUG`, `PROJ_DESC`, `GITHUB_ORG`, `REPO_URL`, `
 5. Pre-seeds the files the skill owns, substituting facts as literal text through Python's `str.replace`, never sed.
 6. Runs copier for everything else.
 7. Neutralises the root assumptions that remain.
-8. In KTL mode, wires `.lokf/justfile`.
+8. In KTL mode, edits `.lokf/justfile` to name the schema.
 9. Adds the root pointers, then prints the hand-off facts.
 
 Every line it prints starts with `scaffold:`, `handoff:` or `next:`.

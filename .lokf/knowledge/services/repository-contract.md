@@ -26,8 +26,8 @@ status: draft
 `scripts/validate-repository.sh` is the repository contract. Its numbered checks are:
 
 1. exactly the intended skill directories exist;
-2. each `SKILL.md` exists with that exact filename, and
-3. its declared name matches its directory; each skill states `compatibility`, and each description ends in a `Keywords:` list;
+2. each `SKILL.md` exists with that exact filename;
+3. each declared name matches its directory, each skill states `compatibility`, and each description ends in a `Keywords:` list;
 4. no duplicate `SKILL.md` under `skills/`, and none under `templates/`;
 5. relative references resolve from each linking file's own directory;
 6. shell scripts pass ShellCheck, and Python scripts compile;
@@ -43,4 +43,4 @@ Check 9 leaves the `knowledge-*.yaml` workflows out of the shared-pin comparison
 
 ## The workflow
 
-`.github/workflows/validate.yml` runs on every pull request, every push to `main`, weekly on Mondays at 06:00 UTC, and on demand. Each concern is its own job: the contract and the Agent Skills spec check (`gh skill publish --dry-run`), the fast and slow tests, ShellCheck, actionlint, the install smoke test, and markdownlint, lychee, a GitHub issue and pull request link check through the API, and codespell.
+`.github/workflows/validate.yml` runs on every pull request, every push to `main`, weekly on Mondays at 06:00 UTC, and on demand. Each concern is its own job. One job runs the contract and the Agent Skills spec check (`gh skill publish --dry-run`). Others run the fast and slow tests, ShellCheck, actionlint and the install smoke test. The last runs markdownlint, lychee, a GitHub issue and pull request link check through the API, and codespell.

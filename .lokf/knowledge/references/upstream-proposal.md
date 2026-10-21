@@ -31,6 +31,11 @@ It follows the template maintainer's reply on issue #151 (2026-05-24) that a lay
 
 - `layout`: `root` (today's behaviour) or `sidecar`.
 - `sidecar_dir`: the folder name, default `.linkml`, asked only when `layout` is `sidecar`.
-- With `sidecar`, the template would render the workflows at the repository root with the sidecar as their working directory, render no `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md` or `dependabot.yml`, make `setup` skip the git steps, make `deploy` publish under a subpath or refuse, and set `site_url` to the host's Pages URL plus `/<sidecar_dir>/`.
+- With `sidecar`, the template would:
+  - render the workflows at the repository root with the sidecar as their working directory;
+  - render no `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md` or `dependabot.yml`;
+  - make `setup` skip the git steps;
+  - make `deploy` publish under a subpath or refuse;
+  - set `site_url` to the host's Pages URL plus `/<sidecar_dir>/`.
 
 Copier itself already handles the subfolder; only the template's rendering assumes a root.
