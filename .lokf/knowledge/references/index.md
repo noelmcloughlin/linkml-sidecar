@@ -1,0 +1,8 @@
+# References
+
+* [Template assumptions catalogue](template-assumptions.md) - The catalogue, at template v0.5.0, of the eighteen things linkml-project-copier assumes of a repository root (just setup, just deploy, nested workflows, the governance files, mkdocs URLs, --trust, just update and more), what the scaffold does about each, and which an upstream layout answer would remove.
+* [Upstream layout proposal](upstream-proposal.md) - A draft, not yet filed, for an issue on linkml/linkml-project-copier proposing a layout answer (root or sidecar) and a sidecar_dir, which would remove most rows of the template assumptions catalogue; filing it is a person's call.
+* [linkml-project-copier](linkml-project-copier.md) - The upstream copier template (MIT) that every sidecar is made from, pinned at tag v0.5.0 and verified against the commit the scaffold driver records before it runs with --trust.
+* [LinkML](linkml.md) - LinkML, the modelling language the sidecar's schema is written in; linkml.io is the canonical site for what it means, its schemas and its generators (JSON Schema, Pydantic, OWL, SHACL, TypeScript, docs).
+* [Agent Skills specification](agent-skills-specification.md) - The Agent Skills format both skills follow: a folder with a SKILL.md whose frontmatter carries name, description, license and compatibility, checked in CI with gh skill publish --dry-run.
+* [Knowledge Trust Ladder](knowledge-trust-ladder.md) - The Knowledge Trust Ladder (KTL), whose bundle is a .lokf/ folder in the host; beside one, the sidecar's schema becomes the bundle's domain schema, and ktl-librarian's domain-schema page is the authority on what lokf validate expects.

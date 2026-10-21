@@ -1,4 +1,6 @@
 # Services
 
-* [Example Service A](example-service-a.md) - Placeholder service; replace with a real service of linkml-sidecar.
-* [Example Service B](example-service-b.md) - Placeholder service; replace with a real service of linkml-sidecar.
+* [linkml-scaffold.sh](linkml-scaffold.md) - The scaffold script that does Steps 1 to 3 of linkml-sidecar in one deterministic run: it verifies the template pin, pre-seeds the skill's own files, runs copier, neutralises root assumptions, wires a KTL bundle, adds the root pointers, and exits 0, 2, 3, 4 or 5.
+* [linkml-preflight.sh](linkml-preflight.md) - The read-only preflight both skills run first: one screen of ok, warn, missing and info lines about the host's shell, git, forge, uv, copier, just, network, an existing sidecar, a .lokf/ bundle and Pages, ending in a summary line of what is missing and which steps that disables.
+* [linkml-sidecar workflow](linkml-sidecar-workflow.md) - The one GitHub Actions workflow the sidecar installs at .github/workflows/linkml-sidecar.yaml: lint and test in .linkml/ from the locked environment, build the docs site on the default branch, and publish it under the linkml/ subpath of gh-pages only while LINKML_DOCS_ENABLED is true.
+* [Repository contract](repository-contract.md) - scripts/validate-repository.sh and the validate.yml workflow: the checks every pull request runs on this repository, covering skill shape, links, word budgets, the one template pin, shared action pins, prerequisites rows, the changelog, invisible characters, plus pytest, ShellCheck, actionlint, markdownlint, lychee, codespell and the install smoke test.
