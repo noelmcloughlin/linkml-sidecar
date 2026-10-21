@@ -10,7 +10,10 @@
     // The lokf fixture is a LOKF bundle header in the format's own
     // convention: a frontmatter title plus body H1s. ktl-sidecar's templates
     // are its source.
-    "tests/fixtures/**"
+    "tests/fixtures/**",
+    // knowledge_bundle is a link to .lokf/knowledge, so the same files would
+    // be linted twice.
+    "knowledge_bundle/**"
   ],
   // Rules disabled for reasons specific to this repository's content:
   "config": {
@@ -21,6 +24,9 @@
     // top of each SKILL.md) separated by one blank line are two blockquotes
     // on purpose.
     "MD028": false,
+    // A .lokf/ concept carries its title in frontmatter and its sections as
+    // body H1s (`# Overview`), the LOKF format's own convention.
+    "MD025": false,
     // `<PROJ_NAME>`, `<SCHEMA_ID>` and the other placeholder tokens are not
     // HTML.
     "MD033": false,

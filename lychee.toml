@@ -28,6 +28,9 @@ exclude = [
 exclude_path = [
   "(^|/)tests/fixtures/",
   "/templates/linkml/docs/",
+  # knowledge_bundle is a link to .lokf/knowledge, so the same files would be
+  # checked twice.
+  "(^|/)knowledge_bundle/",
 ]
 
 # github.com answers automated clients with 503 or 429 on a file page
