@@ -13,7 +13,13 @@
     "tests/fixtures/**",
     // knowledge_bundle is a link to .lokf/knowledge, so the same files would
     // be linted twice.
-    "knowledge_bundle/**"
+    "knowledge_bundle/**",
+    // What the website's build writes from the files above (ktl-website Step 2).
+    "website/dist/**",
+    "website/public/**",
+    "website/src/content/**",
+    "website/src/generated/**",
+    "website/node_modules/**"
   ],
   // Rules disabled for reasons specific to this repository's content:
   "config": {
