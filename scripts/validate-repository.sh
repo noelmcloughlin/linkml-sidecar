@@ -200,9 +200,12 @@ fi
 # Dependabot bumps .github/workflows/ and never the template hosts copy, so an
 # action both use must carry the same commit in both, or the bump fails here
 # until the template follows (CONTRIBUTING.md says to bump them together).
+# The knowledge-*.yaml workflows are ktl-sidecar's copies, which knowledge-sync
+# keeps at the pinned KTL release, so they carry that release's pins and are
+# left out of the comparison.
 shared_drift=0
 while IFS= read -r action; do
-  own="$(grep -rhoE "uses:\s*$action@[^ ]+" .github/workflows/ | sed 's/.*@//' | sort -u || true)"
+  own="$(grep -rhoE --exclude='knowledge-*.yaml' "uses:\s*$action@[^ ]+" .github/workflows/ | sed 's/.*@//' | sort -u || true)"
   theirs="$(grep -hoE "uses:\s*$action@[^ ]+" "$templates/github/linkml-sidecar.yaml" | sed 's/.*@//' | sort -u || true)"
   if [[ -n "$own" && "$own" != "$theirs" ]]; then
     err "$action is pinned to $own in .github/workflows/ and to $theirs in $templates/github/linkml-sidecar.yaml; bump both together"
