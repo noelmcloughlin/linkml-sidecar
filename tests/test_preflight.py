@@ -181,28 +181,26 @@ def test_offers_to_move_the_generators_settings_and_warns_when_both_files_exist(
     assert result and matches(result.out, r"^warn    generators \.linkml/config\.yaml exists beside generators\.yaml, which the recipes read"), result.out
 
 
+def commit_as(host, name, email, message, path=None, text="x\n"):
+    """One commit by the given author; path is a file to write first, or none for an empty commit."""
+    if path is not None:
+        write(host / path, text)
+        Git(host)("add", "-A")
+    done = run(["git", "-C", host, *Git.OPTIONS, "commit", "-q", "--allow-empty", "-m", message], env={"GIT_AUTHOR_NAME": name, "GIT_AUTHOR_EMAIL": email})
+    assert done, done.out
+
+
 def test_counts_the_people_in_the_schema_folders_history(tmp_path):
     host = make_host(tmp_path / "host")  # the session fixture makes every author "Test <test@example.invalid>"
-    g = Git(host)
-
-    def commit_as(name, email, message):
-        g("add", "-A")
-        done = run(["git", "-C", host, *Git.OPTIONS, "commit", "-q", "-m", message], env={"GIT_AUTHOR_NAME": name, "GIT_AUTHOR_EMAIL": email})
-        assert done, done.out
-
-    write(host / "schema" / "demo.yaml", SCHEMA)
-    commit_as("Test", "test@example.invalid", "schema")
-    write(host / "schema" / "demo.yaml", SCHEMA + "  Other:\n")
-    commit_as("two", "Two@example.invalid", "more")
-    write(host / "schema" / "demo.yaml", SCHEMA + "  Other:\n  Third:\n")
-    commit_as("dependabot[bot]", "49699333+dependabot[bot]@users.noreply.github.com", "bump")
-    write(host / "README.md", "# Demo\n\nA demo host, changed.\n")
-    commit_as("four", "four@example.invalid", "readme")
+    commit_as(host, "Test", "test@example.invalid", "schema", "schema/demo.yaml", SCHEMA)
+    commit_as(host, "two", "Two@example.invalid", "more", "schema/demo.yaml", SCHEMA + "  Other:\n")
+    commit_as(host, "dependabot[bot]", "49699333+dependabot[bot]@users.noreply.github.com", "bump", "schema/demo.yaml", SCHEMA + "  Other:\n  Third:\n")
+    commit_as(host, "four", "four@example.invalid", "readme", "README.md", "# Demo\n\nChanged.\n")
     result = preflight(host)
-    assert result and matches(result.out, r"^info    authors    schema folder schema/: 2 people, 2 commits \(Test, two\); repository: 3 people; git shortlog -sne --no-merges -- schema for the detail$"), result.out
+    assert result and matches(result.out, r"""^info    authors    schema folder schema/: 2 people, 2 commits \("Test", "two"\), and 1 bot commit; repository: 3 people; git shortlog -sne --no-merges HEAD -- 'schema' for the detail$"""), result.out
     write(host / ".mailmap", "<test@example.invalid> <two@example.invalid>\n")
     result = preflight(host)
-    assert result and matches(result.out, r"^info    authors    schema folder schema/: 1 person, 2 commits \(Test, two\); repository: 2 people;"), result.out
+    assert result and matches(result.out, r"""^info    authors    schema folder schema/: 1 person, 2 commits \("Test", "two"\), and 1 bot commit; repository: 2 people;"""), result.out
     bare = make_host(tmp_path / "bare", git=False)
     write(bare / "schema" / "demo.yaml", SCHEMA)
     result = preflight(bare)
@@ -216,7 +214,45 @@ def test_counts_the_people_in_the_schema_folders_history(tmp_path):
     Git(side)("add", "-A")
     Git(side)("commit", "-q", "-m", "sidecar")
     result = preflight(side)
-    assert result and matches(result.out, r"^info    authors    schema folder \.linkml/src/demo/schema/: 1 person, 1 commit \(Test\); repository: 1 person;"), result.out
+    assert result and matches(result.out, r"""^info    authors    schema folder \.linkml/src/demo/schema/: 1 person, 1 commit \("Test"\); repository: 1 person;"""), result.out
+
+
+def test_the_authors_line_survives_awkward_names_folders_and_bots(tmp_path):
+    host = make_host(tmp_path / "host")
+    folder = "my schema"
+    commit_as(host, "3", "three@example.invalid", "a", f"{folder}/demo.yaml", SCHEMA)
+    for i in range(2):
+        commit_as(host, "3", "three@example.invalid", f"b{i}", f"{folder}/demo.yaml", SCHEMA + f"  C{i}:\n")
+    commit_as(host, "1 Direction", "one@example.invalid", "c", f"{folder}/demo.yaml", SCHEMA + "  D:\n")
+    commit_as(host, "Ann Lee", "Ann@Example.org", "d", f"{folder}/demo.yaml", SCHEMA + "  E:\n")
+    commit_as(host, "Ann Lee", "ann@example.org", "e", f"{folder}/demo.yaml", SCHEMA + "  F:\n")
+    commit_as(host, "Mary Abbott", "mary.abbott@example.org", "f", f"{folder}/demo.yaml", SCHEMA + "  G:\n")
+    commit_as(host, "Eve\x1b[2K\rok", "eve@example.org", "g", f"{folder}/demo.yaml", SCHEMA + "  H:\n")
+    commit_as(host, "IBM Open Source Bot", "66631603+ibm-open-source-bot@users.noreply.github.com", "h", f"{folder}/demo.yaml", SCHEMA + "  I:\n")
+    commit_as(host, "Renovate", "renovate@example.org", "i", f"{folder}/demo.yaml", SCHEMA + "  J:\n")
+    result = preflight(host)
+    # Ann's two emails differ only by case, so she is one person; the names
+    # are cut after the count, so "3" and "1 Direction" survive whole; the
+    # escape is stripped; two bots are counted apart; the hint quotes the folder.
+    assert result and matches(result.out, r"""^info    authors    schema folder my schema/: 5 people, 8 commits \("3", "Ann Lee", "1 Direction", "Eve\[2Kok", "Mary Abbott"\), and 2 bot commits; repository: 6 people; git shortlog -sne --no-merges HEAD -- 'my schema' for the detail$"""), result.out
+    assert "\x1b" not in result.out and "\r" not in result.out, repr(result.out)
+    commit_as(host, "Zed", "zed@example.org", "j", f"{folder}/demo.yaml", SCHEMA + "  K:\n")
+    result = preflight(host)
+    assert result and matches(result.out, r"""^info    authors    schema folder my schema/: 6 people, 9 commits \("3", "Ann Lee", "1 Direction", "Eve\[2Kok", and 2 more\)"""), result.out
+
+
+def test_a_folder_only_bots_touched_and_a_pathspec_lookalike(tmp_path):
+    host = make_host(tmp_path / "host")
+    commit_as(host, "dependabot[bot]", "49699333+dependabot[bot]@users.noreply.github.com", "bump", "schema/demo.yaml", SCHEMA)
+    result = preflight(host)
+    assert result and matches(result.out, r"^info    authors    schema folder schema/: no person, only 1 bot commit;"), result.out
+    magic = make_host(tmp_path / "magic")
+    commit_as(magic, "Ann", "ann@example.org", "schema", ":!x/demo.yaml", SCHEMA)
+    commit_as(magic, "Bob", "bob@example.org", "readme", "README.md", "# Demo\n\nChanged.\n")
+    result = preflight(magic)
+    # Read literally, ":!x" is a folder; as pathspec magic it would exclude itself and count everyone.
+    # The repository holds three people: the fixture's first commit is by "Test".
+    assert result and matches(result.out, r"""^info    authors    schema folder :!x/: 1 person, 1 commit \("Ann"\); repository: 3 people;"""), result.out
 
 
 def test_reads_a_ktl_bundle_and_warns_without_a_base_iri(tmp_path):
