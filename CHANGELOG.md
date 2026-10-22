@@ -7,6 +7,7 @@ All notable changes to this project are documented here. The format follows [Kee
 ### Added
 
 - **A Step 5 workflow for Forgejo, as Codeberg runs it.** It runs the same gate on Codeberg's runners and publishes the site under `linkml/` on Codeberg Pages once `LINKML_DOCS_ENABLED` is `true`. The preflight names the one workflow folder Forgejo reads.
+- **An install page and an architecture page under `docs/`.** The install page puts the GitHub CLI first, for work machines, and ends with installing from a company copy of this repository. The portability page now covers RHEL, WSL2, a company proxy or package mirror, and a template copy for hosts without github.com.
 - **The preflight asks the template's source and the package index that git and uv actually use**, a company copy or mirror included, and prints only their host names. It warns when `uv.lock` was made against another index than uv reads, and says why uvx cannot run copier, such as a certificate uv does not trust.
 
 ### Removed

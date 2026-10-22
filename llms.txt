@@ -4,7 +4,7 @@
 
 ## Agent context
 
-The skills are under `skills/`. `skills/linkml-sidecar/SKILL.md` is the installer's procedure and `skills/linkml-sidecar/references/template-assumptions.md` is the catalogue of what the upstream template assumes of a repository root and what the scaffold does about each. `skills/linkml-author/SKILL.md` is the authoring procedure, with the metamodel in its `references/`. Install either with `npx skills add noelmcloughlin/linkml-sidecar --skill <name> --yes`.
+The skills are under `skills/`. `skills/linkml-sidecar/SKILL.md` is the installer's procedure and `skills/linkml-sidecar/references/template-assumptions.md` is the catalogue of what the upstream template assumes of a repository root and what the scaffold does about each. `skills/linkml-author/SKILL.md` is the authoring procedure, with the metamodel in its `references/`. Install either with the GitHub CLI (`gh skill install noelmcloughlin/linkml-sidecar <name> --scope user --agent <yours>`) or the Open Skills CLI (`npx skills add noelmcloughlin/linkml-sidecar --skill <name> --yes`), which a company proxy or internal npm registry can block. `docs/install.md` has every route, and `docs/architecture.md` says what each skill does and who owns which file.
 
 If `.lokf/knowledge/index.md` exists in this repository, read it first. It is a queryable [LOKF](https://lokf.nolan-nichols.com) knowledge bundle with repository-specific context, conventions, and typed relationships that plain prose cannot express. A concept marked `status: draft` has not yet been confirmed by a person; one with a `human:` entry under `verified` has. Weigh them accordingly.
 

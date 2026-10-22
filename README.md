@@ -14,17 +14,17 @@ A repository that *is* a schema project, such as [lmodel/gist](https://github.co
 
 A domain codebase whose maintainers do not want a schema project in their root folder gets the sidecar.
 
-A repository that holds a LinkML schema but no project gets the sidecar around that schema (`--adopt`). It gains the pinned lock, the recipes, the tests, the workflow and the docs site, and the schema is neither moved nor changed. Both skills find the schema by its files (copier answers, a `config.public.mk`, or a YAML file that imports `linkml:types`), never by the folder's name, as [layouts.md](skills/linkml-sidecar/references/layouts.md) sets out.
+A repository that holds a LinkML schema but no project gets the sidecar around that schema (`--adopt`). It gains the pinned lock, the recipes, the tests, the workflow and the docs site, and the schema is neither moved nor changed. Both skills find the schema by its files (copier answers, a `config.public.mk`, or a YAML file that imports `linkml:types`), never by the folder's name, as [layouts.md](skills/linkml-sidecar/references/layouts.md) sets out. [The architecture](docs/architecture.md) says what each skill does in each case, and who owns which file.
 
 ## Install
 
 ```bash
-npx skills add noelmcloughlin/linkml-sidecar --skill linkml-sidecar --skill linkml-author --yes
-# or, in Claude Code:
-claude plugin marketplace add noelmcloughlin/linkml-sidecar && claude plugin install linkml-sidecar@linkml-sidecar
+gh skill install noelmcloughlin/linkml-sidecar --all --scope user --agent claude-code
+# or, where npm reaches its public registry:
+npx skills add noelmcloughlin/linkml-sidecar --skill linkml-sidecar --skill linkml-author --global --yes
 ```
 
-Then ask your agent to set up a LinkML sidecar. It runs the preflight, gathers the project's facts from its manifests, README and git remote, runs one scaffold script, validates the result with the project's own tools, and hands off to linkml-author with a list of what it guessed. The hosts need `git` and `uv`; everything else (copier, just, LinkML) runs through uv.
+[The install page](docs/install.md) has every route, the Claude Code plugin and a company copy of this repository included, and what each skill needs. Then ask your agent to set up a LinkML sidecar. It runs the preflight, gathers the project's facts from its manifests, README and git remote, runs one scaffold script, validates the result with the project's own tools, and hands off to linkml-author with a list of what it guessed. The hosts need `git` and `uv`; everything else (copier, just, LinkML) runs through uv.
 
 ## Run it yourself
 
@@ -47,7 +47,8 @@ Step 0 of [the skill](skills/linkml-sidecar/SKILL.md) says where each fact comes
 | --- | --- |
 | `skills/linkml-sidecar/` | The installer: `SKILL.md`, the scaffold under `scripts/`, every file it writes, under `templates/`, and the references (the assumption catalogue, the schema layouts, portability, prerequisites, KTL, automation). |
 | `skills/linkml-author/` | The author: `SKILL.md` and its references (the metamodel, generator pitfalls by version, source mapping, schema design for reuse, publishing and importing, the lmodel profile, KTL). |
-| `tests/` | The scaffold, the preflight and the workflow on throwaway hosts; `tests/conftest.py` says how to run them, with and without the network. |
+| `docs/` | The install and architecture pages. |
+| `tests/` | The scaffold, the preflight and the workflows on throwaway hosts; `tests/conftest.py` says how to run them, with and without the network. |
 | `scripts/validate-repository.sh` | The repository contract CI runs on every pull request. |
 
 ## With or without KTL

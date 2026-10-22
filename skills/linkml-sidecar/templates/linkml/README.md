@@ -75,7 +75,7 @@ The gate after every change: `lint`, then `gen-project`, then `test`. Example da
 ## Never run here
 
 - `just setup`: it runs `git init` and commits, which would nest a repository inside this one.
-- `just deploy`: it pushes the host's `gh-pages` branch root. The host's `.github/workflows/linkml-sidecar.yaml` runs `lint` and `test`, builds the site, and publishes it under the `linkml/` subpath only when the repository variable `LINKML_DOCS_ENABLED` is `true`.
+- `just deploy`: it pushes the host's `gh-pages` branch root. The host's workflow, `linkml-sidecar.yaml` in `.github/workflows/` (or the folder Forgejo reads), runs `lint` and `test`, builds the site, and publishes it under the `linkml/` subpath only when the repository variable `LINKML_DOCS_ENABLED` is `true`.
 
 ## Keep it current
 
@@ -91,7 +91,7 @@ When the host carries a [KTL](https://github.com/noelmcloughlin/knowledge-trust-
 
 ## Remove it
 
-Three deletions and two edits, nothing else references it: `rm -rf .linkml linkml_schema .github/workflows/linkml-sidecar.yaml`, then drop the sidecar aside from `README.md` and the `## Schema` section from `llms.txt`. A `.lokf/justfile` that names the schema is reset to `schema := ""` (or, on an older justfile, to `uv run lokf validate {{ bundle }}` in both validate recipes).
+Three deletions and two edits, nothing else references it: `rm -rf .linkml linkml_schema` and the workflow `linkml-sidecar.yaml`, then drop the sidecar aside from `README.md` and the `## Schema` section from `llms.txt`. A `.lokf/justfile` that names the schema is reset to `schema := ""` (or, on an older justfile, to `uv run lokf validate {{ bundle }}` in both validate recipes).
 
 ## Learn more
 

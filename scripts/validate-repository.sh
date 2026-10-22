@@ -121,8 +121,8 @@ while IFS= read -r file; do
     fi
   done < <(awk 'BEGIN{f=0} /^[[:space:]]*```/{f=!f; print ""; next} {print (f ? "" : $0)}' "$file" \
              | grep -noE '\]\(([^)]+)\)' || true)
-done < <(find skills README.md CONTRIBUTING.md CHANGELOG.md AI_COVENANT.md CODE_OF_CONDUCT.md .github/pull_request_template.md -name '*.md' -not -path '*/templates/*' | sort)
-[[ "$broken" -eq 0 ]] && ok "all relative Markdown links under skills/ and the root pages resolve (fenced examples ignored; templates/ render into a host)"
+done < <(find skills docs README.md CONTRIBUTING.md CHANGELOG.md AI_COVENANT.md CODE_OF_CONDUCT.md .github/pull_request_template.md -name '*.md' -not -path '*/templates/*' | sort)
+[[ "$broken" -eq 0 ]] && ok "all relative Markdown links under skills/, docs/ and the root pages resolve (fenced examples ignored; templates/ render into a host)"
 
 # A link from one skill to the other's page is absolute, because each skill is
 # installed on its own, and it names main. lychee.toml skips these links: a
