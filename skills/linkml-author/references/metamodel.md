@@ -77,19 +77,22 @@ classes:
         multivalued: true
         inlined_as_list: true
 
-  Device:
-    description: The base of every kind of device; type names the kind.
+  Notification:
+    description: The base of every kind of notification; type names the kind.
     attributes:
       type:
-        description: The kind of device, one of this class's descendants.
+        description: The kind of notification, one of this class's descendants.
         designates_type: true
         range: string
 
-  Keyboard:
-    is_a: Device
+  EmailNotification:
+    is_a: Notification
+    attributes:
+      subject:
+        description: The email's subject line.
 ```
 
-A `designates_type: true` field is a type designator: its allowed values are the names of the class and its descendants, and a holder's `devices: {range: Device, multivalued: true}` then takes every kind, with each subclass declaring the fields its kind admits. Inheritance is monotonic: `slot_usage` adds constraints and never removes one. `union_of` on a class is a choice type; see the generator note on `any_of` in [generators.md](generators.md).
+A `designates_type: true` field is a type designator: its allowed values are the names of the class and its descendants, and a holder's `notifications: {range: Notification, multivalued: true}` then takes every kind, with each subclass declaring the fields its kind admits. Inheritance is monotonic: `slot_usage` adds constraints and never removes one. `union_of` on a class is a choice type; see the generator note on `any_of` in [generators.md](generators.md).
 
 ## Slots
 
@@ -157,7 +160,7 @@ slots:
 | a list of objects | `inlined: true`, `inlined_as_list: true` |
 | a dict keyed by identifier | `inlined: true`, `inlined_as_list: false` (the range needs an identifier) |
 
-A range class with no identifier is always inlined. Write `inlined_as_list` explicitly whenever `inlined: true` is set; the specification leaves its default open.
+A range class with no identifier is always inlined. Write `inlined_as_list` explicitly whenever `inlined: true` is set, so the data's shape never rests on a default.
 
 ## Enums
 
@@ -301,7 +304,7 @@ classes:
           inputs: [rating, query]
 ```
 
-Prefer one list-valued key over many keys with a prefix, so "every X on this class" is one lookup. An annotation the schema itself describes is a metamodel extension: a class whose attributes are the annotation keys, named on each annotated element by URI through `instantiates: [acme:AcmeVersionable]` ([schema-design.md](schema-design.md)); the validator does not enforce it ([generators.md](generators.md)).
+Prefer one list-valued key over many keys with a prefix, so "every X on this class" is one lookup. An annotation the schema itself describes is a metamodel extension: a class whose attributes are the annotation keys, named on each annotated element by URI through `instantiates: [acme:AcmeChangeNote]` ([schema-design.md](schema-design.md)); the validator does not enforce it ([generators.md](generators.md)).
 
 ## Arrays (LinkML 1.8+)
 
