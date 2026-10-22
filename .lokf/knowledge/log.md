@@ -2,6 +2,10 @@
 
 ## 2026-10-22
 
+* **Changed**: the schema design concept says that a name defined twice across imports passes lint but fails the gate's gen-project, as the page now does.
+* **Changed**: the publishing concept follows the page's corrected importmap rules: the base directory of a relative value, and gen-project's route through generator_args.
+* **Changed**: the preflight concept says the authors line counts bot commits apart and quotes the names it prints.
+* **Changed**: the linkml-author playbook says how the skill reads the authors line.
 * **Added**: the publishing page, on where a schema is served, how an importer takes it, the importmap and lokf's adapt.
 * **Changed**: the schema design page gained the collision gradient, a core plus modules, and the refactoring moves that touch no record.
 * **Changed**: the linkml-author playbook names the refactor offer, the preflight's `authors` line and the publishing page.

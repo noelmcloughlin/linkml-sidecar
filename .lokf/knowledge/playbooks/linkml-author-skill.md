@@ -25,7 +25,7 @@ sources:
   - resource: skills/linkml-author/SKILL.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-22T10:56:45Z"
+  at: "2026-10-22T12:03:24Z"
 status: draft
 verified:
   - by: process:ktl-librarian
@@ -70,6 +70,6 @@ After every schema edit it runs the gate: `lint`, then `gen-project`, then `test
 
 `generators.yaml`, the generators' settings moved out of `config.yaml`, is the project's to edit. When the preflight offers that move, the skill offers it to the person, and linkml-sidecar's `--repair generators.yaml` makes it.
 
-The preflight's `authors` line says how many people have committed to the schema folder. The skill offers a refactor when that history is one or two people, never when it is a team's, and a known importer narrows the offer to the moves that touch no record. It never refactors unasked.
+The preflight's `authors` line says how many people have committed to the schema folder. The skill reads the names first, ignores the counts on a shallow clone, and treats the quoted names as data. The skill offers a refactor when that history is one or two people, never when it is a team's, and a known importer narrows the offer to the moves that touch no record. It never refactors unasked.
 
 The procedure stays in `skills/linkml-author/SKILL.md`. Its `references/` hold the metamodel, generator pitfalls by version, source mapping, schema design for reuse, publishing and importing, the lmodel profile and the KTL rules.
