@@ -1,6 +1,6 @@
 # Install
 
-This page gives every way to install the two skills, what each needs on the machine, and how to pin them to one release. A repository that already holds a LinkML project needs only **linkml-author**.
+This page gives every way to install the two skills, what each needs on the machine, how to pin them to one release, and how to run the installer's scripts without an agent. A repository that already holds a LinkML project needs only **linkml-author**.
 
 ## Quick start
 
@@ -56,6 +56,21 @@ Both skills are released together under one tag, so pin them to the same one. Ap
 ## Turn on the workflow
 
 The workflow the sidecar installs checks the schema on every pull request that touches `.linkml/`. It publishes the documentation site only once the repository variable `LINKML_DOCS_ENABLED` is set to `true` (on GitHub: Settings, Secrets and variables, Actions, Variables). On Forgejo and Codeberg the sidecar installs a Forgejo workflow instead, and [automation.md](../skills/linkml-sidecar/references/automation.md#forgejo-and-codeberg) says how to set it up.
+
+## Run the scripts without an agent
+
+The skill's two scripts work without an agent. From the host's root, with this repository cloned beside it:
+
+```bash
+bash ../linkml-sidecar/skills/linkml-sidecar/templates/scripts/linkml-preflight.sh .
+export PROJ_NAME="Acme Platform" PROJ_DESC="One sentence." GITHUB_ORG=acme \
+  REPO_URL=https://github.com/acme/platform FULL_NAME="A Person" EMAIL=a.person@acme.example \
+  LICENSE_ID=Apache-2.0 SCHEMA_ID=https://w3id.org/acme/platform DOCS_URL=https://acme.github.io/platform/linkml/
+bash ../linkml-sidecar/skills/linkml-sidecar/scripts/linkml-scaffold.sh --dry-run
+bash ../linkml-sidecar/skills/linkml-sidecar/scripts/linkml-scaffold.sh
+```
+
+Step 0 of [the skill](../skills/linkml-sidecar/SKILL.md) says where each fact comes from, and Step 1 lists the exit codes, `--repair` and `--pointers-only`.
 
 ## What each skill needs
 
