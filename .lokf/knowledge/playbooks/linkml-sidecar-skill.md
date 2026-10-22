@@ -26,7 +26,7 @@ sources:
   - resource: skills/linkml-sidecar/SKILL.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-22T09:04:50Z"
+  at: "2026-10-22T15:14:26Z"
 status: draft
 ---
 
@@ -38,7 +38,7 @@ status: draft
 
 - A repository that is itself a schema project, such as lmodel/gist, runs copier at its root and needs nothing from this skill.
 - A domain codebase whose maintainers would resist a schema project in their root folder gets the sidecar: one hidden folder, one visible doorway, one workflow, and a README that says so.
-- A repository that holds a schema but no project, which is most of them, gets the sidecar around that schema, untouched where it lies.
+- A repository that holds a schema but no project gets the sidecar around that schema, which is neither moved nor changed.
 
 ## When to use it
 

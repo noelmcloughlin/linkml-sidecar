@@ -19,7 +19,7 @@ sources:
   - resource: skills/linkml-sidecar/references/layouts.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-22T09:04:50Z"
+  at: "2026-10-22T15:14:26Z"
 status: draft
 verified:
   - by: process:ktl-librarian
@@ -28,7 +28,7 @@ verified:
 
 # Overview
 
-`skills/linkml-sidecar/references/layouts.md` states where a LinkML schema may live and how both skills find it. Most schemas were never made with linkml-project-copier or its predecessor, linkml-project-cookiecutter, and a project's folder has no fixed name. So both skills find the schema by what files say, never by where they sit. The preflight applies the rule in shell, and the scaffold applies it in Python.
+`skills/linkml-sidecar/references/layouts.md` states where a LinkML schema may live and how both skills find it. A schema need not come from linkml-project-copier or its predecessor, linkml-project-cookiecutter, and a project's folder has no fixed name. So both skills find the schema by its files, never by its folder. The preflight applies the rule in shell, and the scaffold applies it in Python.
 
 ## The signals
 

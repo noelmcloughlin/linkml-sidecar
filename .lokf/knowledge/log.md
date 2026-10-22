@@ -2,6 +2,11 @@
 
 ## 2026-10-22
 
+* **Changed**: The linkml-sidecar skill playbook drops the claim that most schema repositories have no project, as SKILL.md has.
+* **Changed**: Releasing now describes the semantic-release and publish.yml workflows that replaced tagging by hand, as CONTRIBUTING.md states.
+* **Changed**: Two patterns no longer claims that most schema repositories have no project, and names the files that mark a schema, as README.md now does.
+* **Changed**: Schema layouts follows layouts.md, which no longer says most schemas were made without a template.
+* **Changed**: KTL mode says a bundle beside a schema may be about the repository, where ktl.md no longer says often.
 * **Changed**: the preflight concept drops the repository count, which the authors line no longer prints.
 * **Changed**: the schema design concept says that a name defined twice across imports passes lint but fails the gate's gen-project, as the page now does.
 * **Changed**: the publishing concept follows the page's corrected importmap rules: the base directory of a relative value, and gen-project's route through generator_args.

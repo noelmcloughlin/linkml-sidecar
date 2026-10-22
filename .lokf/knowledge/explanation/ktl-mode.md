@@ -22,7 +22,7 @@ sources:
   - resource: README.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-22T01:26:03Z"
+  at: "2026-10-22T15:14:26Z"
 status: draft
 verified:
   - by: process:ktl-librarian
@@ -33,7 +33,7 @@ verified:
 
 The sidecar stands alone. When the host carries a `.lokf/` bundle, the preflight switches on KTL mode, and the sidecar's dummy schema becomes the bundle's domain schema. It imports LOKF's core schema, each class in it that is `is_a: Concept` is a type the bundle's concepts may carry, and `lokf validate --schema` checks the bundle against both.
 
-A schema the host already held (`--adopt`) is not made the domain schema: the scaffold runs in plain mode beside the bundle and says so in the hand-off. A bundle beside a schema is often a bundle *about* the repository, as in a schema repository that documents itself. The schema is the bundle's domain schema only when `.lokf/justfile` names it or it imports `.lokf/lokf.yaml`, and its maintainers decide that.
+A schema the host already held (`--adopt`) is not made the domain schema: the scaffold runs in plain mode beside the bundle and says so in the hand-off. A bundle beside a schema may be a bundle *about* the repository, as in a schema repository that documents itself. The schema is the bundle's domain schema only when `.lokf/justfile` names it or it imports `.lokf/lokf.yaml`, and its maintainers decide that.
 
 ## What the scaffold does in KTL mode
 
