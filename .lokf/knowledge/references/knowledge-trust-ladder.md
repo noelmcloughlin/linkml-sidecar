@@ -11,10 +11,11 @@ tags:
   - knowledge bundle
 sources:
   - resource: README.md
+  - resource: docs/architecture.md
   - resource: skills/linkml-sidecar/references/ktl.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-22T01:26:03Z"
+  at: "2026-10-22T18:19:05Z"
 status: draft
 verified:
   - by: process:ktl-librarian

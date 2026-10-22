@@ -13,9 +13,10 @@ sources:
   - resource: skills/linkml-sidecar/scripts/linkml-scaffold.sh
   - resource: CONTRIBUTING.md
   - resource: skills/linkml-sidecar/SKILL.md
+  - resource: scripts/validate-repository.sh
 generated:
   by: process:ktl-librarian
-  at: "2026-10-21T22:30:32Z"
+  at: "2026-10-22T18:19:05Z"
 status: draft
 verified:
   - by: process:ktl-librarian
@@ -26,4 +27,4 @@ verified:
 
 The **template pin** is held in one place, the scaffold driver: `LINKML_TEMPLATE_REF` (the tag, `v0.5.0`) and `LINKML_TEMPLATE_SHA` (the commit it names). Before copier runs with `--trust`, the scaffold checks with `git ls-remote` that the tag still names that commit, so a moved tag stops the scaffold. A finished sidecar records the pin in `.copier-answers.yml` as `_commit: v0.5.0`.
 
-The repository contract holds every other mention under `skills/` and in `README.md` to these two values. Moving the pin is a contributor's checklist item: change both values, re-walk the assumptions catalogue, re-run the slow tests, and update the Sources note in `SKILL.md`. In a host, `cd .linkml && just update` on a clean tree moves the template.
+The repository contract holds every other mention under `skills/` and `docs/`, and in `README.md` and `CONTRIBUTING.md`, to these two values. Moving the pin is a contributor's checklist item: change both values, re-walk the assumptions catalogue, re-run the slow tests, and update the Sources note in `SKILL.md`. In a host, `cd .linkml && just update` on a clean tree moves the template.

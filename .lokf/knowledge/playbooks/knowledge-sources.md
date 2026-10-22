@@ -7,6 +7,7 @@ genre: how-to
 resource: .
 sources:
   - resource: README.md
+  - resource: docs
   - resource: CONTRIBUTING.md
   - resource: CHANGELOG.md
   - resource: AI_COVENANT.md
@@ -26,7 +27,7 @@ sources:
   - resource: website
 generated:
   by: process:ktl-librarian
-  at: "2026-10-22T01:26:03Z"
+  at: "2026-10-22T18:19:05Z"
 status: draft
 verified:
   - by: process:ktl-librarian
@@ -40,10 +41,12 @@ This bundle is derived from the repository's own files. Each row names a source,
 | Source | Yields | Re-check |
 | --- | --- | --- |
 | `skills/linkml-sidecar/SKILL.md`, `skills/linkml-author/SKILL.md` | one `Playbook` per skill | the frontmatter `description` and `compatibility`, and the Scope section |
-| `skills/linkml-sidecar/scripts/`, `templates/scripts/`, `templates/github/` | `Service` for the scaffold, the preflight and the workflow | each script's header comment and the workflow's jobs |
-| `skills/linkml-sidecar/references/`, `skills/linkml-author/references/` | `Document`, `Explanation` and `GlossaryTerm` concepts | the headings, and the template version in `template-assumptions.md` |
+| `skills/linkml-sidecar/scripts/`, `templates/scripts/`, `templates/github/`, `templates/forgejo/` | `Service` for the scaffold, the preflight and the workflow | each script's header comment and the workflow's jobs |
+| `skills/linkml-sidecar/references/`, `skills/linkml-author/references/` | `Document`, `Explanation` and `GlossaryTerm` concepts, the portability page among them | the headings, and the template version in `template-assumptions.md` |
 | `skills/linkml-sidecar/templates/linkml/` | the dummy schema term | the `plain/` and `lokf/` schema files |
-| `README.md`, `.claude-plugin/` | the install playbook, the three cases, the sidecar term, the KTL and LinkML references | the Three cases, Install and Layout sections |
+| `README.md` | the KTL reference and the sidecar term's opening | the doorway paragraph and its links |
+| `docs/install.md`, `.claude-plugin/` | the install playbook | the section headings and the commands |
+| `docs/architecture.md` | the three cases, the sidecar term, file ownership, and the KTL and linkml-project-copier references | the section headings |
 | `CONTRIBUTING.md`, `.github/pull_request_template.md`, `tests/conftest.py`, `scripts/smoke-test-install.sh` | the contributing playbook and the release policy | the checklist and the Releasing section |
 | `scripts/validate-repository.sh`, `.github/workflows/validate.yml`, `.github/dependabot.yml` | the repository contract | the numbered check comments and the job names |
 | `AI_COVENANT.md`, `CODE_OF_CONDUCT.md` | `Policy` | the section headings |
@@ -51,7 +54,7 @@ This bundle is derived from the repository's own files. Each row names a source,
 
 ## Left out on purpose
 
-- `LICENSE` is the Apache-2.0 text, which the README's License section states.
+- `LICENSE` is the Apache-2.0 text, which the License section of `docs/architecture.md` states.
 - `CHANGELOG.md` records history; the release policy cites it for its format only.
 - `llms.txt` points agents at the skills and this bundle, and states nothing the skills do not.
 - `tests/` beyond `conftest.py`, and `pytest.ini`, exercise the scripts and describe no behaviour of their own.

@@ -2,25 +2,27 @@
 type: Playbook
 id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/installing-the-skills
 title: Installing the skills
-description: How to install linkml-sidecar and linkml-author with npx skills or as a Claude Code plugin, and how to run the preflight and the scaffold by hand without an agent.
+description: How to install linkml-sidecar and linkml-author with gh skill, npx skills, the Claude Code plugin or a copy of the repository, for your user or a team, pinned to one tag, and how to turn on the workflow and run the preflight and scaffold without an agent.
 genre: how-to
-resource: README.md
+resource: docs/install.md
 tags:
   - install
+  - gh skill
   - npx skills
   - claude plugin
+  - pin
 references:
   - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/linkml-sidecar-skill
   - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/linkml-author-skill
   - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/services/linkml-scaffold
   - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/services/linkml-preflight
 sources:
-  - resource: README.md
+  - resource: docs/install.md
   - resource: .claude-plugin/plugin.json
   - resource: .claude-plugin/marketplace.json
 generated:
   by: process:ktl-librarian
-  at: "2026-10-21T22:30:32Z"
+  at: "2026-10-22T18:19:05Z"
 status: draft
 verified:
   - by: process:ktl-librarian
@@ -29,28 +31,79 @@ verified:
 
 # Overview
 
-Install both skills with the Open Skills CLI:
+Install both skills for your user, then ask your agent to set up a LinkML sidecar. **linkml-sidecar** runs once and hands off to **linkml-author**, which you keep using. A repository that already holds a LinkML project needs only **linkml-author**.
+
+## GitHub CLI
+
+This route needs `gh skill` version 2.90.0 or later. It defaults to GitHub Copilot, so pass `--agent` to name yours (`claude-code`, `github-copilot`, `cursor`, `codex`, `gemini-cli`, or another from `gh skill install --help`).
 
 ```bash
-npx skills add noelmcloughlin/linkml-sidecar --skill linkml-sidecar --skill linkml-author --yes
+gh skill install noelmcloughlin/linkml-sidecar --all --scope user --agent claude-code
 ```
 
-In Claude Code, add the marketplace and install the plugin instead:
+This is the route for a work machine: it needs github.com but no npm registry.
+
+## Open Skills CLI
+
+The Open Skills CLI, `npx skills`, installs both skills. This route could fail behind a company proxy or an internal npm registry. Take the GitHub CLI route there instead.
 
 ```bash
-claude plugin marketplace add noelmcloughlin/linkml-sidecar && claude plugin install linkml-sidecar@linkml-sidecar
+npx skills add noelmcloughlin/linkml-sidecar --global --yes \
+  --skill linkml-sidecar --skill linkml-author
 ```
 
-Then ask the agent to set up a LinkML sidecar. Hosts need `git` and `uv`; copier, just and LinkML run through uv.
+In PowerShell or cmd, type the command on one line without the `\` continuation.
 
-## Without an agent
+## Claude Code plugin
 
-The skill's two scripts work without an agent. From the host's root, with this repository cloned beside it, run the preflight, export the facts, and run the scaffold with `--dry-run` first:
+```text
+/plugin marketplace add noelmcloughlin/linkml-sidecar
+/plugin install linkml-sidecar@linkml-sidecar
+```
+
+## From a copy of the repository
+
+Where github.com is out of reach, install from a company copy of this repository, or from a release archive. `npx skills add` and `/plugin marketplace add` take a git URL on any host, or a local path. The GitHub CLI takes a local folder, and needs no network for it:
+
+```bash
+git clone https://git.example.com/mirrors/linkml-sidecar.git
+gh skill install ./linkml-sidecar/skills --from-local --all --scope user --agent claude-code
+```
+
+Point it at the copy's `skills/` folder, not its root: a working copy's `website/node_modules/` can hold other skills.
+
+## For your user, not the repository
+
+The commands above install for your user, which keeps the instructions an agent follows under your control. Install into the repository only when a team wants every member on one version: leave out `--global`, or pass `--scope project`, and commit what the installer writes.
+
+## Pin to one tag
+
+Both skills are released together under one tag, so pin them to the same one. Append it to the skill name (`linkml-author@v0.1.1`) or pass `--pin v0.1.1`. The changelog says what each release changed.
+
+## Turn on the workflow
+
+The workflow the sidecar installs checks the schema on every pull request that touches `.linkml/`. It publishes the documentation site only once the repository variable `LINKML_DOCS_ENABLED` is set to `true` (on GitHub: Settings, Secrets and variables, Actions, Variables). On Forgejo and Codeberg the sidecar installs a Forgejo workflow instead, and `skills/linkml-sidecar/references/automation.md` says how to set it up.
+
+## Run the scripts without an agent
+
+The two scripts of **linkml-sidecar** work without an agent. From the host's root, with this repository cloned beside it:
 
 ```bash
 bash ../linkml-sidecar/skills/linkml-sidecar/templates/scripts/linkml-preflight.sh .
+export PROJ_NAME="Acme Platform" PROJ_DESC="One sentence." GITHUB_ORG=acme \
+  REPO_URL=https://github.com/acme/platform FULL_NAME="A Person" EMAIL=a.person@acme.example \
+  LICENSE_ID=Apache-2.0 SCHEMA_ID=https://w3id.org/acme/platform DOCS_URL=https://acme.github.io/platform/linkml/
 bash ../linkml-sidecar/skills/linkml-sidecar/scripts/linkml-scaffold.sh --dry-run
 bash ../linkml-sidecar/skills/linkml-sidecar/scripts/linkml-scaffold.sh
 ```
 
-The README lists the variables to export. Step 0 of the linkml-sidecar skill says where each fact comes from, and Step 1 lists the exit codes, `--repair` and `--pointers-only`.
+Step 0 of linkml-sidecar's `SKILL.md` says where each fact comes from, and Step 1 lists the exit codes, `--repair` and `--pointers-only`.
+
+## What each skill needs
+
+Both skills run from a POSIX shell: on Windows, the bash of Git for Windows. **linkml-sidecar** starts with a preflight that prints what this machine can do, and which steps are switched off by what it lacks.
+
+- `linkml-sidecar` needs `git`, and `uv`, which runs copier, just and the project's Python: 3.10 or later, which uv downloads when the machine has none. It needs network access once: the template from github.com and packages from PyPI, or a company copy and mirror of each.
+- `linkml-author` needs the project's own recipes (`just` or `make`), or `uv`, or the host's own environment where it already installs `linkml`.
+
+Behind a company proxy or package mirror, on RHEL, or under WSL2, `skills/linkml-sidecar/references/portability.md` says what to set. If you cannot act on a line the preflight prints, `skills/linkml-sidecar/references/prerequisites.md` gives a request note for whoever can.

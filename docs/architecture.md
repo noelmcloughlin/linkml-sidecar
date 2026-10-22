@@ -4,7 +4,7 @@ This page explains how linkml-sidecar gives a repository a LinkML data model wit
 
 ## A sidecar beside the code
 
-A **sidecar** is one hidden folder, `.linkml/`, beside the host's code. It holds a complete [linkml-project-copier](https://github.com/linkml/linkml-project-copier) project: the schema in one file, and every generator one `just` recipe away, from JSON Schema and Pydantic models to OWL, SHACL, TypeScript and a documentation site. One visible doorway, `linkml_schema`, links to the schema's folder for file managers that hide dot-folders. One workflow checks the schema on every pull request that touches it. Nothing in the host's build depends on any of it, and the README inside says how to remove it.
+A **sidecar** is one hidden folder, `.linkml/`, beside the host's code. It holds a complete [linkml-project-copier](https://github.com/linkml/linkml-project-copier) project: the schema in one file, and a `just` recipe for every generator, from JSON Schema and Pydantic models to OWL, SHACL, TypeScript and a documentation site. One visible doorway, `linkml_schema`, links to the schema's folder for file managers that hide dot-folders. One workflow checks the schema on every pull request that touches it. Nothing in the host's build depends on any of it, and the README inside says how to remove it.
 
 The schema is the source: everything the generators write is build output.
 
@@ -29,9 +29,9 @@ Both skills find a schema by its files, never by its folder's name, as [layouts.
 
 ## Who owns which file
 
-The template owns most of `.linkml/`: the justfile, `pyproject.toml`, `mkdocs.yml` and the rest that copier renders, and only `just update` changes them. The host owns the schema, its tests and example data, the sidecar's README, license and docs pages, and `generators.yaml`. The skill owns the preflight it installed, and `.linkmllint.yaml` beside a KTL bundle; its repair rewrites them. [The README every sidecar carries](../skills/linkml-sidecar/templates/linkml/README.md) maps every file to its owner.
+The template owns most of `.linkml/`: the justfile, `pyproject.toml`, `mkdocs.yml` and the rest that copier renders, and only `just update` changes them. The host owns the schema, its tests and example data, the sidecar's README, license and docs pages, and `generators.yaml`. The skill owns the preflight it installed, and `.linkmllint.yaml` beside a KTL bundle. Its repair rewrites them. [The README every sidecar carries](../skills/linkml-sidecar/templates/linkml/README.md) maps every file to its owner.
 
-The template assumes it owns a repository root, so it renders workflows, governance files, a `setup` recipe and a `deploy` recipe that are inert or harmful in a subfolder. The scaffold switches each of them off, and [template-assumptions.md](../skills/linkml-sidecar/references/template-assumptions.md) says how, row by row. Its last column marks the rows that the `layout: sidecar` answer proposed upstream, in [linkml-project-copier#187](https://github.com/linkml/linkml-project-copier/issues/187), would remove.
+The template assumes it owns a repository root, so it renders workflows, governance files, a `setup` recipe and a `deploy` recipe that are inert or harmful in a subfolder. The scaffold switches each of them off, and [template-assumptions.md](../skills/linkml-sidecar/references/template-assumptions.md) says how, row by row. Its last column marks the rows that a `layout: sidecar` answer would remove. [linkml-project-copier#187](https://github.com/linkml/linkml-project-copier/issues/187) proposes that answer upstream.
 
 ## The scaffold trusts the template only at its pin
 
@@ -43,7 +43,7 @@ Copier runs template code while it renders (`--trust`), so the scaffold first ch
 
 ## With Knowledge Trust Ladder
 
-Beside a [Knowledge Trust Ladder (KTL)](https://w3id.org/ktl/) bundle, `.lokf/`, the sidecar's schema becomes the bundle's domain schema. It imports LOKF's core schema, each class in it that is `is_a: Concept` is a type the bundle's concepts may carry, and `lokf validate --schema` checks the bundle against both. [ktl.md](../skills/linkml-sidecar/references/ktl.md) says what each piece does. Without a bundle, the sidecar stands alone.
+Beside a [Knowledge Trust Ladder (KTL)](https://w3id.org/ktl/) bundle, `.lokf/`, the sidecar's schema becomes the bundle's domain schema. It imports LOKF's core schema. Each of its own classes that is `is_a: Concept` is a type the bundle's concepts may carry, and `lokf validate --schema` checks the bundle against both schemas. [ktl.md](../skills/linkml-sidecar/references/ktl.md) says what each piece does. Without a bundle, the sidecar stands alone.
 
 ## Keeping it current
 
@@ -62,7 +62,7 @@ Beside a [Knowledge Trust Ladder (KTL)](https://w3id.org/ktl/) bundle, `.lokf/`,
 
 ## Credits
 
-- The [LinkML community](https://linkml.io/), creators of LinkML and of [linkml-project-copier](https://github.com/linkml/linkml-project-copier), under the MIT License, from which every sidecar is made.
+- The [LinkML community](https://linkml.io/), creators of LinkML and of [linkml-project-copier](https://github.com/linkml/linkml-project-copier), the template every sidecar is made from, under the MIT License.
 - [copier](https://copier.readthedocs.io/), which renders a sidecar and keeps it current.
 
 ## License

@@ -17,7 +17,7 @@ sources:
   - resource: .github/dependabot.yml
 generated:
   by: process:ktl-librarian
-  at: "2026-10-21T22:30:32Z"
+  at: "2026-10-22T18:19:05Z"
 status: draft
 verified:
   - by: process:ktl-librarian
@@ -35,14 +35,14 @@ verified:
 5. relative references resolve from each linking file's own directory;
 6. shell scripts pass ShellCheck, and Python scripts compile;
 7. word budgets, for each `SKILL.md` and for `CONTRIBUTING.md`;
-8. the one template pin, held in the scaffold driver, and every other mention of it;
-9. every action in the workflow template and this repository's own workflows is pinned to a commit, and an action both use carries the same commit in both;
+8. the one template pin, held in the scaffold driver, and every other mention of it under `skills/` and `docs/` and in `README.md` and `CONTRIBUTING.md`;
+9. every action in the workflow templates and this repository's own workflows is pinned to a commit, and an action a template shares with this repository's workflows carries the same commit in both;
 10. every line the preflight can print as missing or a warning has a row in `prerequisites.md`;
 11. `CHANGELOG.md` never carries two headings for one released version;
 12. no tracked file holds a character a reader cannot see;
 13. the lokf fixture's justfile is ktl-sidecar's template, rendered.
 
-Check 9 leaves the `knowledge-*.yaml` workflows out of the shared-pin comparison, because they are ktl-sidecar's copies and carry the pinned KTL release's pins.
+Check 9 leaves the `knowledge-*.yaml` workflows out of the shared-pin comparison, because they are ktl-sidecar's copies and carry the pinned KTL release's pins. The Forgejo template names each action by its full address, so check 9 drops the host part before it compares.
 
 ## The workflow
 

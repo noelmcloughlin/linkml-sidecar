@@ -16,7 +16,7 @@ sources:
   - resource: skills/linkml-sidecar/SKILL.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-22T12:07:45Z"
+  at: "2026-10-22T18:19:05Z"
 status: draft
 verified:
   - by: process:ktl-librarian
@@ -41,13 +41,16 @@ It shows:
 
 - the host and shell;
 - whether the tree is under git, and on which forge;
-- whether `uv`, `copier` and `just` run, and whether github.com and pypi.org answer;
+- whether `uv`, `copier` and `just` run, and, when copier does not, why uv says it cannot: a certificate it does not trust, no Python of 3.9 or later, or no answer from the package index;
+- whether the template's source and the package index answer, as git and uv reach them: the template through `LINKML_TEMPLATE_SRC` or a git `insteadOf` rule, the index through `UV_DEFAULT_INDEX` or a `uv.toml`, with only host names printed;
 - what the host already holds: a sidecar, a schema project elsewhere, configuration files in `.linkml/`, or schema files outside any project;
 - how lint and the generators run there, on its `tools` line;
 - where the generators' settings are, with an offer to move a `config.yaml` to `.linkml/generators.yaml`;
+- whether the sidecar's `uv.lock` was made against another package index than the one uv reads here, on its `lock` line;
 - how many people have committed to the schema folder, with bot commits counted apart and up to five names quoted as data, on its `authors` line, which linkml-author reads before offering a refactor;
 - whether a `.lokf/` bundle is present, which switches on KTL mode;
 - whether the host already publishes Pages;
+- which workflows the host has in the folder its forge reads, and whether the sidecar's is among them, on its `workflows` line; on Forgejo that folder is the first of `.forgejo/workflows/`, `.gitea/workflows/` and `.github/workflows/` that exists;
 - whether the root declares a uv workspace.
 
 `LINKML_PREFLIGHT_OFFLINE=1` skips the two checks that reach the network, for tests and air-gapped machines.

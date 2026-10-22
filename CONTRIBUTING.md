@@ -13,7 +13,14 @@ bash scripts/validate-repository.sh
 uv run --no-project --with-requirements tests/requirements.txt pytest
 ```
 
-The slow tests run the real template: clone the pinned tag into `.template-cache/linkml-project-copier` (the README has the command) and run pytest with `LINKML_SIDECAR_SLOW=1`. To try a change end to end, install from your clone into a throwaway consumer repository: `bash scripts/smoke-test-install.sh "$PWD"` does exactly that, then runs the installed preflight and the scaffold's dry run.
+The slow tests run the real template. Clone the pinned tag, then run pytest with `LINKML_SIDECAR_SLOW=1`:
+
+```bash
+git clone --branch v0.5.0 https://github.com/linkml/linkml-project-copier .template-cache/linkml-project-copier
+LINKML_SIDECAR_SLOW=1 uv run --no-project --with-requirements tests/requirements.txt pytest -m slow
+```
+
+To try a change end to end, install from your clone into a throwaway consumer repository: `bash scripts/smoke-test-install.sh "$PWD"` does exactly that, then runs the installed preflight and the scaffold's dry run.
 
 ## Layout
 
