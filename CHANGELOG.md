@@ -4,6 +4,11 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed
+
+- **Both skills' pages lose their dead phrases.** Adoption reads as "neither moved nor changed", and the schema is found by its files, which layouts.md lists, never by its folder. The reference pages were read through for the same faults.
+- **The workflow template pins setup-uv v10.3.0**, as the repository's own workflows do.
+
 ## [0.1.0] - 2026-10-22
 
 ### Added
