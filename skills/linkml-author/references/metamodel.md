@@ -33,7 +33,19 @@ A prefix key is an NCName: no hyphens. When the schema's name has one, the key t
 
 ## Classes
 
-Names are `PascalCase`. The slots a class uses: `is_a` (single parent; slots inherit down), `mixins` (cross-cutting behaviour, `mixin: true` on the mixin), `abstract: true` (never instantiated), `tree_root: true` (the containment root for serialisation), `slots` (top-level slots the class uses), `attributes` (slots only this class owns, declared inline), `slot_usage` (per-class refinement), `id_prefixes` (CURIE namespaces its instances carry), `class_uri`, `*_mappings`, `see_also`, `aliases`, `annotations`, `comments`, `in_subset`, `union_of`, `rules`, `deprecated`. A class starts with `attributes:`; a top-level slot is for a field more than one class shares ([schema-design.md](schema-design.md)).
+Names are `PascalCase`. The slots a class uses:
+
+- `is_a`: the single parent; slots inherit down;
+- `mixins`: cross-cutting behaviour, with `mixin: true` on the mixin;
+- `abstract: true`: never instantiated;
+- `tree_root: true`: the containment root for serialisation;
+- `slots`: the top-level slots the class uses;
+- `attributes`: slots only this class owns, declared inline;
+- `slot_usage`: per-class refinement;
+- `id_prefixes`: the CURIE namespaces its instances carry;
+- `class_uri`, `*_mappings`, `see_also`, `aliases`, `annotations`, `comments`, `in_subset`, `union_of`, `rules` and `deprecated`.
+
+A class starts with `attributes:`. A top-level slot is for a field more than one class shares ([schema-design.md](schema-design.md)).
 
 ```yaml
 classes:
@@ -81,7 +93,7 @@ A `designates_type: true` field is a type designator: its allowed values are the
 
 ## Slots
 
-Names are `snake_case`. Define a shared slot once at the top level and refine it per class with `slot_usage`. The fields: `range` (a type, class or enum; `default_range` otherwise), `identifier: true` (the key; one per class), `required`, `recommended`, `multivalued`, `inlined` and `inlined_as_list`, `slot_uri`, `inverse` (declared on both sides), `any_of`, `values_from`, `pattern`, `minimum_value`, `maximum_value`, `ifabsent`, `unit`, `deprecated`, `aliases`, and the logical flags `transitive`, `symmetric`, `antisymmetric`, `reflexive`.
+Names are `snake_case`. Define a shared slot once at the top level and refine it per class with `slot_usage`. The fields are `range` (a type, class or enum; `default_range` otherwise), `identifier: true` (the key; one per class), `required`, `recommended`, `multivalued`, `inlined` and `inlined_as_list`, `slot_uri` and `inverse` (declared on both sides). The others are `any_of`, `values_from`, `pattern`, `minimum_value`, `maximum_value`, `ifabsent`, `unit`, `deprecated`, `aliases`, and the logical flags `transitive`, `symmetric`, `antisymmetric`, `reflexive`.
 
 ```yaml
 slots:
@@ -258,7 +270,9 @@ The boolean forms, on a class or a slot: `any_of` (at least one holds), `all_of`
 
 ## Descriptions, comments and notes
 
-`description` is the element's definition (`skos:definition`), and it travels: `gen-json-schema`, `gen-pydantic` and the OpenAPI generators copy it into every schema, model field and UI hint they write, and nothing else from the element goes with it. Keep it to one or two plain sentences that say what the element is, as a form field's hint or an API field's help text would. The rest has a place of its own. `comments` (multivalued, `skos:note`) carries what a user of the schema should know: a caveat, a limit, a usage rule. `notes` (`skos:editorialNote`) carries what its maintainers should know: a decision and why, an open question. `see_also` carries the link, `examples` the sample, and an annotation the clause reference. `gen-doc` renders all of them on the element's page; the JSON Schema and Pydantic generators carry none of them. The rule comes from the KTL Obsidian plugins, whose settings hints showed how a long description renders in a small UI.
+`description` is the element's definition (`skos:definition`). `gen-json-schema`, `gen-pydantic` and `gen-openapi` copy it into every schema, model field and UI hint they write, and they copy nothing else from the element. Keep it to one or two plain sentences that say what the element is, as a form field's hint or an API field's help text would.
+
+The rest has a place of its own. `comments` (multivalued, `skos:note`) carries what a user of the schema should know: a caveat, a limit, a usage rule. `notes` (`skos:editorialNote`) carries what its maintainers should know: a decision and why, an open question. `see_also` carries the link, `examples` the sample, and an annotation the clause reference. `gen-doc` renders all of them on the element's page. The JSON Schema and Pydantic generators carry none of them. The rule comes from the KTL Obsidian plugins, whose settings hints showed how a long description renders in a small UI.
 
 ```yaml
 slots:

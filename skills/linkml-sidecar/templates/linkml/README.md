@@ -90,7 +90,7 @@ When the host carries a [KTL](https://github.com/noelmcloughlin/knowledge-trust-
 
 ## Remove it
 
-Three deletions and two edits, nothing else references it: `rm -rf .linkml linkml_schema .github/workflows/linkml-sidecar.yaml`, then drop the sidecar aside from `README.md` and the `## Schema` section from `llms.txt`. A `.lokf/justfile` that names the schema goes back to `schema := ""` (or, on an older justfile, to `uv run lokf validate {{ bundle }}` in both validate recipes).
+Three deletions and two edits, nothing else references it: `rm -rf .linkml linkml_schema .github/workflows/linkml-sidecar.yaml`, then drop the sidecar aside from `README.md` and the `## Schema` section from `llms.txt`. A `.lokf/justfile` that names the schema is reset to `schema := ""` (or, on an older justfile, to `uv run lokf validate {{ bundle }}` in both validate recipes).
 
 ## Learn more
 

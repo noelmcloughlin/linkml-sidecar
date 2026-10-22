@@ -16,18 +16,18 @@ A `.linkml/` directory is a strong sign that LinkML is in use, but not of what i
 
 The candidates, in the order the first match wins: `.linkml/`, the repository root, the directory the preflight was started in, then every directory one level down, hidden or not. A second project found is reported as `also`, and a person says which one is meant.
 
-With no project anywhere, the schema files are found by content, among what git tracks or would track (else the whole tree), skipping the folders that by convention hold copies, fixtures or rendered output: `.git`, `.github`, `.venv`, `node_modules`, `tmp`, `site`, `project`, `docs`, `tests`, `test`, `fixtures`, `templates`, `.lokf` and `.linkml`.
+With no project anywhere, the preflight finds the schema files by content, among what git tracks or would track, or else in the whole tree. It skips the folders that by convention hold copies, fixtures or rendered output: `.git`, `.github`, `.venv`, `node_modules`, `tmp`, `site`, `project`, `docs`, `tests`, `test`, `fixtures`, `templates`, `.lokf` and `.linkml`.
 
 ## What each line means for each skill
 
 | The preflight says | linkml-author | linkml-sidecar |
 | --- | --- | --- |
-| `ok sidecar .linkml/ from <template> at <tag>` | works there | nothing to do; `--repair` re-lays one file |
+| `ok sidecar .linkml/ from <template> at <tag>` | works there | nothing to do; `--repair` rewrites one file |
 | `info sidecar <dir>/ is a LinkML schema project`, or `this repository is itself one` | works there, with the project's own recipes | refuses: the project has the toolchain already |
 | `info sidecar .linkml/ holds configuration files` | looks on | installs around them; a name both hold is refused, never overwritten |
 | `warn sidecar .linkml/ holds <project files> but no answers` | works there if it is a project | refuses until a person says which it is |
 | `ok schema <file>` (one or more) | works on the file in place | `--adopt <file>` gives it the toolchain; several files: a person chooses |
-| `missing sidecar no LinkML project or schema` | waits for one | lays down the dummy |
+| `missing sidecar no LinkML project or schema` | waits for one | installs the sidecar with the dummy |
 
 ## How the tools run
 
@@ -35,4 +35,6 @@ Always through the host's own environment, never through a `linkml-lint` or `gen
 
 ## Adoption
 
-A schema found outside any project can be given the sidecar's toolchain without moving it. `--adopt <file>` lays the sidecar down with no dummy, sets the slug from the file's stem and the id from the file, and points `config.public.mk`'s `LINKML_SCHEMA_SOURCE_DIR` at the file's folder, relative to `.linkml/`. Every recipe derives its paths from that one line, so lint, the generators, the docs and the tests read the schema where it is; the file is never moved, copied, linked or edited. The folder the template expects, `src/<slug>/schema/`, holds a README that says where the schema is, and no data: the host's classes are not the dummy's, so the hand-off asks for one example per class. The file must be `<slug>.yaml` (the template names the schema after the slug, and reads `.yaml`), and beside a `.lokf/` bundle the adopted schema is not wired as the domain schema; that is a decision for its maintainers, and linkml-author's work afterwards.
+A schema found outside any project can be given the sidecar's toolchain without moving it. `--adopt <file>` installs the sidecar with no dummy, sets the slug from the file's stem and the id from the file, and points `config.public.mk`'s `LINKML_SCHEMA_SOURCE_DIR` at the file's folder, relative to `.linkml/`. Every recipe derives its paths from that one line, so lint, the generators, the docs and the tests read the schema where it is. The file is never moved, copied, linked or edited.
+
+The folder the template expects, `src/<slug>/schema/`, holds a README that says where the schema is, and no data: the host's classes are not the dummy's, so the hand-off asks for one example per class. The file must be `<slug>.yaml`, because the template names the schema after the slug and reads `.yaml`. Beside a `.lokf/` bundle the adopted schema is not made the domain schema. That is a decision for its maintainers, and linkml-author's work afterwards.

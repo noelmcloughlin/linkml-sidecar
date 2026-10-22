@@ -13,7 +13,7 @@ This page is for whoever maintains this skill: it is the catalogue the scaffold 
 | 7 | `LICENSE`, `CODE_OF_CONDUCT.md` and `CONTRIBUTING.md` are generated as the repository's | `LICENSE` is the host's, pre-seeded (`existing_license_file: LICENSE`); the other two stay as template copies and the README says the host's own govern | yes |
 | 8 | `README.md` describes "the repository", and the after-copy message says to run `just setup` | A skill-owned README; the scaffold prints its own next step and drops that line | yes |
 | 9 | `project_name` doubles as the GitHub repository name in URLs | `PROJ_NAME` is the host repository's name | yes |
-| 10 | The upstream example fails `just lint` (`ALIVE/DEAD/UNKNOWN` and an undescribed slot under the recommended rules) | `add_example: false` and a skill-owned dummy that lints clean; a deleted `_skip_if_exists` file would come back on update, so the example is never generated at all | partly |
+| 10 | The upstream example fails `just lint` (`ALIVE/DEAD/UNKNOWN` and an undescribed slot under the recommended rules) | `add_example: false` and a skill-owned dummy that lints clean. A deleted `_skip_if_exists` file would be rendered again on update, so the example is never generated | partly |
 | 11 | uv-dynamic-versioning reads the repository's git tags for the package version | Documented: the sidecar's version is the host's tag, `0.0.0` without one | no |
 | 12 | A root `.python-version` is read inside `.linkml/` too | The preflight warns when it pins below 3.10 | no |
 | 13 | A five-version CI matrix, PyPI publishing and a docs preview on by default | One Python version in the hoisted workflow; `gh_action_pypi` and `gh_action_docs_preview` answered `false` | yes |
