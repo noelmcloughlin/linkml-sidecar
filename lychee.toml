@@ -20,6 +20,11 @@ exclude = [
   # step checks each such link through GitHub's API instead, so a deleted or
   # moved issue still fails.
   '^https://github\.com/[^/]+/[^/]+/(issues|pull)/[0-9]+',
+  # This repository's own files on main. A page a change adds is not on main
+  # until the change merges, so validate-repository.sh checks these links
+  # against the change's own files instead. The remap below turns a file link
+  # into its raw address before this list applies.
+  '^https://raw\.githubusercontent\.com/noelmcloughlin/linkml-sidecar/main/',
 ]
 
 # Regular expressions over the file path. The fixtures and the pages rendered
