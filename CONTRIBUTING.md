@@ -34,7 +34,8 @@ The slow tests run the real template: clone the pinned tag into `.template-cache
 - Run `gh skill publish --dry-run` if you have the GitHub CLI: the Agent Skills spec check `validate.yml` runs.
 - If a change alters what a skill *does*, add a line or two under `## [Unreleased]` in `CHANGELOG.md`. The reasoning belongs beside the code.
 - Moving the template pin: change `LINKML_TEMPLATE_REF` and `LINKML_TEMPLATE_SHA` in the scaffold driver, re-walk `template-assumptions.md` against the new version and bump its heading, re-run the slow tests, and update the version in `SKILL.md`'s Sources note. The contract holds every mention to the one pin.
-- A template file under `templates/github/` names every action by commit SHA with its version in a comment; Dependabot does not reach it, so copy each bump of the repository's own workflows into it in the same pull request. The contract fails until the two agree.
+- A template file under `templates/github/` or `templates/forgejo/` names every action by commit SHA with its version in a comment; Dependabot does not reach either, so copy each bump of the repository's own workflows into both in the same pull request. The contract fails until they agree.
+- `actionlint` cannot read the Forgejo template, which names Codeberg's runner label and each action by its full address, so `tests/test_forgejo_workflow.py` holds its shape. Run a change to it once with `forgejo-runner exec --image ghcr.io/catthehacker/ubuntu:act-latest`, Codeberg's default image.
 - The pull request template's checklist is the short form of this list.
 
 ## Editing scope

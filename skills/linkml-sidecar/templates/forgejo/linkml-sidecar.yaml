@@ -1,0 +1,115 @@
+# The LinkML sidecar's workflow for Forgejo Actions, as Codeberg runs it,
+# laid down by linkml-sidecar Step 5 on a Forgejo host. It runs the gate of
+# templates/github/linkml-sidecar.yaml, with every step in the sidecar's
+# directory, and differs only where Forgejo does:
+#
+# - Both jobs run on Codeberg's codeberg-small runner (two CPUs, five minutes
+#   a job), since Codeberg's runners carry no ubuntu-latest label. On a
+#   self-hosted Forgejo, name one of its runners' labels in the two runs-on
+#   lines; the host owns that copy from then on.
+# - There is no harden-runner, which does nothing off GitHub's own runners,
+#   and no permissions block, which Forgejo does not document. Forgejo gives
+#   a pull request from a fork a read-only token.
+# - Each action is named by its full address, so the file does not depend on
+#   the instance's default action mirror: actions/checkout from Forgejo's
+#   mirror at the commit the GitHub template pins, setup-uv from GitHub,
+#   which that mirror does not carry, and git-pages from Codeberg.
+# - The docs job builds the site and publishes it in one job, because the
+#   stock upload-artifact and download-artifact actions fail on Forgejo.
+# - It publishes with Codeberg's git-pages action under the linkml/ subpath
+#   of https://<owner>.codeberg.page/<repo>/, once the repository variable
+#   LINKML_DOCS_ENABLED is `true`. A self-hosted Forgejo has no Pages: leave
+#   the variable unset, and the job builds the site and stops.
+#
+# Forgejo reads one workflow folder only: .forgejo/workflows/, else
+# .gitea/workflows/, else .github/workflows/, whichever exists first. Step 5
+# puts this file in the one the host already has, so no workflow is hidden.
+name: LinkML sidecar
+
+on:
+  pull_request:
+    paths:
+      - ".linkml/**"
+      - ".lokf/lokf.yaml"
+      - "**/workflows/linkml-sidecar.yaml"
+  push:
+    paths:
+      - ".linkml/**"
+      - ".lokf/lokf.yaml"
+      - "**/workflows/linkml-sidecar.yaml"
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: .linkml
+
+jobs:
+  lint-and-test:
+    name: Lint and test the schema
+    runs-on: codeberg-small
+    steps:
+      - uses: https://data.forgejo.org/actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv and Python
+        uses: https://github.com/astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Install just
+        run: |
+          uv tool install rust-just==1.47.0
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      # --locked: the lock the host committed is what runs here. A missing
+      # lock, or one made against another package index, fails here.
+      - name: Install the project from its lock
+        run: uv sync --locked --group dev
+
+      - name: Lint the schema
+        run: just lint
+
+      - name: Generate, test and run the examples
+        run: just test
+
+  docs:
+    name: Build the documentation site, and publish it on Codeberg
+    # The default branch only, read from the event, as in the GitHub template.
+    if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    needs: lint-and-test
+    runs-on: codeberg-small
+    steps:
+      - uses: https://data.forgejo.org/actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv and Python
+        uses: https://github.com/astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Install just
+        run: |
+          uv tool install rust-just==1.47.0
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install the project from its lock
+        run: uv sync --locked --group dev
+
+      - name: Build the site
+        run: |
+          just gen-doc
+          uv run mkdocs build --site-dir site
+
+      # git-pages uploads the site under the path below and leaves the rest
+      # of the host's site as it is, as peaceiris's destination_dir does on
+      # GitHub. The automatic token is enough for a codeberg.page site.
+      - name: Publish under the linkml/ subpath of the Codeberg Pages site
+        if: vars.LINKML_DOCS_ENABLED == 'true'
+        uses: https://codeberg.org/git-pages/action@2b24bbb7ff943d3c8fe1df91326adec66daea6dd # v2.2.0
+        with:
+          site: https://${{ github.repository_owner }}.codeberg.page/${{ github.event.repository.name }}/
+          path: linkml
+          source: .linkml/site/
+          token: ${{ github.token }}

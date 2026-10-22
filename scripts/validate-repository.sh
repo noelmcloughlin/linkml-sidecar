@@ -201,16 +201,16 @@ else
   if grep -qE "^_commit: $pin\$|_commit: $pin" "$sidecar/SKILL.md"; then ok "Step 3 checks _commit against $pin"; else err "SKILL.md Step 3 does not check _commit: $pin"; fi
 fi
 
-# 9. Every action in the workflow template and this repository's own
+# 9. Every action in the workflow templates and this repository's own
 #    workflows is pinned to a commit, with the version in a comment.
 say ""
 say "Checking action pins..."
-if grep -rnE '^\s*-?\s*uses:' .github/workflows/ "$templates/github/" \
+if grep -rnE '^\s*-?\s*uses:' .github/workflows/ "$templates/github/" "$templates/forgejo/" \
   | grep -vE 'uses:\s*[^@ ]+@([0-9a-f]{40}|sha256:[0-9a-f]{64})\b' \
   | grep -vE 'uses:\s*\./'; then
   err "the action(s) above are not pinned to a commit SHA"
 else
-  ok "every action in .github/workflows/ and $templates/github/ is pinned to a commit"
+  ok "every action in .github/workflows/ and the workflow templates is pinned to a commit"
 fi
 # Dependabot bumps .github/workflows/ and never the template hosts copy, so an
 # action both use must carry the same commit in both, or the bump fails here
@@ -218,16 +218,21 @@ fi
 # The knowledge-*.yaml workflows are ktl-sidecar's copies, which knowledge-sync
 # keeps at the pinned KTL release, so they carry that release's pins and are
 # left out of the comparison.
+# The Forgejo template names each action by its full address, so the host
+# part is dropped before the comparison; an action only it uses, such as
+# git-pages, has nothing to compare with.
 shared_drift=0
-while IFS= read -r action; do
-  own="$(grep -rhoE --exclude='knowledge-*.yaml' "uses:\s*$action@[^ ]+" .github/workflows/ | sed 's/.*@//' | sort -u || true)"
-  theirs="$(grep -hoE "uses:\s*$action@[^ ]+" "$templates/github/linkml-sidecar.yaml" | sed 's/.*@//' | sort -u || true)"
-  if [[ -n "$own" && "$own" != "$theirs" ]]; then
-    err "$action is pinned to $own in .github/workflows/ and to $theirs in $templates/github/linkml-sidecar.yaml; bump both together"
-    shared_drift=1
-  fi
-done < <(grep -hoE 'uses:\s*[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@' "$templates/github/linkml-sidecar.yaml" | sed -E 's/uses:\s*//; s/@$//' | sort -u)
-[[ "$shared_drift" -eq 0 ]] && ok "every action the template shares with .github/workflows/ is pinned to the same commit in both"
+for template in "$templates/github/linkml-sidecar.yaml" "$templates/forgejo/linkml-sidecar.yaml"; do
+  while IFS= read -r action; do
+    own="$(grep -rhoE --exclude='knowledge-*.yaml' "uses:\s*$action@[^ ]+" .github/workflows/ | sed 's/.*@//' | sort -u || true)"
+    theirs="$(grep -hoE "uses:\s*(https://[^/ ]+/)?$action@[^ ]+" "$template" | sed 's/.*@//' | sort -u || true)"
+    if [[ -n "$own" && "$own" != "$theirs" ]]; then
+      err "$action is pinned to $own in .github/workflows/ and to $theirs in $template; bump them together"
+      shared_drift=1
+    fi
+  done < <(grep -hoE 'uses:\s*(https://[^/ ]+/)?[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@' "$template" | sed -E 's#uses:\s*(https://[^/ ]+/)?##; s/@$//' | sort -u)
+done
+[[ "$shared_drift" -eq 0 ]] && ok "every action a template shares with .github/workflows/ is pinned to the same commit in both"
 
 # 10. Every line the preflight can print as missing or a warning has a row on
 #     the prerequisites page, so a person can be told who fixes it.

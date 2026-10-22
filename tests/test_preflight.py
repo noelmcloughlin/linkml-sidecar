@@ -161,7 +161,7 @@ def test_a_root_project_gets_no_sidecar_hints(tmp_path):
     write(host / "pyproject.toml", "[tool.uv.workspace]\nmembers = []\n")
     result = preflight(host)
     assert result and not matches(result.out, r"^warn    pages") and not matches(result.out, r"^warn    workspace"), result.out
-    assert matches(result.out, r"^info    workflows  1 workflow\(s\); the project's own are its gate"), result.out
+    assert matches(result.out, r"^info    workflows  1 workflow\(s\) in \.github/workflows/; the project's own are its gate"), result.out
 
 
 def test_offers_to_move_the_generators_settings_and_warns_when_both_files_exist(tmp_path):
@@ -280,7 +280,7 @@ def test_reports_the_hoisted_workflow_when_present(tmp_path):
     host = make_host(tmp_path)
     write(host / ".github" / "workflows" / "linkml-sidecar.yaml", "defaults:\n  run:\n    working-directory: .linkml\n")
     result = preflight(host)
-    assert result and matches(result.out, r"^ok      workflows  linkml-sidecar\.yaml present"), result.out
+    assert result and matches(result.out, r"^ok      workflows  \.github/workflows/linkml-sidecar\.yaml present"), result.out
 
 
 def test_notes_gitignored_mode(tmp_path):
@@ -309,7 +309,7 @@ def test_the_sidecars_own_workflow_is_no_pages_collision(tmp_path):
     host = make_host(tmp_path)
     write(host / ".github" / "workflows" / "linkml-sidecar.yaml", read(WORKFLOW))
     result = preflight(host)
-    assert result and matches(result.out, r"^ok      workflows  linkml-sidecar\.yaml present"), result.out
+    assert result and matches(result.out, r"^ok      workflows  \.github/workflows/linkml-sidecar\.yaml present"), result.out
     assert not matches(result.out, r"^warn    pages "), result.out
 
 
@@ -411,3 +411,16 @@ def test_names_what_it_cannot_reach(tmp_path):
     result = preflight_at(make_host(tmp_path / "host"), tmp_path, env=stubs(tmp_path, curl_rc=7), unset=NO_INDEX + ("LINKML_PREFLIGHT_OFFLINE",))
     assert result and matches(result.out, r"^warn    network    github\.com unreachable - copier cannot fetch the template; a company copy goes in LINKML_TEMPLATE_SRC"), result.out
     assert matches(result.out, r"^warn    network    pypi\.org unreachable - uv cannot install copier, just or linkml; a company mirror goes in UV_DEFAULT_INDEX"), result.out
+
+
+def test_on_forgejo_names_the_one_workflow_folder_it_reads(tmp_path):
+    host = make_host(tmp_path / "host")
+    Git(host)("remote", "add", "origin", "https://codeberg.org/acme/demo.git")
+    result = preflight(host)
+    assert result and matches(result.out, r"^info    workflows  no workflow folder yet; on Forgejo, Step 5 lays down \.forgejo/workflows/linkml-sidecar\.yaml"), result.out
+    write(host / ".github" / "workflows" / "ci.yaml", "name: ci\n")
+    result = preflight(host)
+    assert result and matches(result.out, r"^info    workflows  1 workflow\(s\) in \.github/workflows/, none for the sidecar"), result.out
+    write(host / ".forgejo" / "workflows" / "linkml-sidecar.yaml", "defaults:\n  run:\n    working-directory: .linkml\n")
+    result = preflight(host)
+    assert result and matches(result.out, r"^ok      workflows  \.forgejo/workflows/linkml-sidecar\.yaml present"), result.out

@@ -97,6 +97,17 @@ else
   miss git "git not installed - copier fetches the template with it, and the scaffold checks the template's tag with git ls-remote" "Step 1 (the scaffold)"
 fi
 
+# The folder the forge reads workflows from. Forgejo, Codeberg's forge, reads
+# only the first of .forgejo/, .gitea/ and .github/workflows/ that exists, so
+# the sidecar's workflow goes in that one, and a new folder would hide it.
+wfdir=.github/workflows
+if [ "$forge" = forgejo ]; then
+  wfdir=.forgejo/workflows
+  for d in .forgejo/workflows .gitea/workflows .github/workflows; do
+    if [ -d "$root/$d" ]; then wfdir="$d"; break; fi
+  done
+fi
+
 # ---- package index ---------------------------------------------------------
 # The index uv installs from: UV_DEFAULT_INDEX (a URL, or name=URL), the
 # older UV_INDEX_URL, else the default index of a user or system uv.toml,
@@ -309,7 +320,7 @@ if [ -n "$sidecar" ]; then
         [ -f "$sidecar/config.yaml" ] && warn generators "${sdisp}config.yaml exists beside $gens, which the recipes read - carry any change into $gens, then delete ${sdisp}config.yaml" ;;
     esac
   fi
-  if [ "$ingit" -eq 1 ] && [ "$tracked" = tracked ] && [ -f "$root/.github/workflows/linkml-sidecar.yaml" ] \
+  if [ "$ingit" -eq 1 ] && [ "$tracked" = tracked ] && [ -f "$root/$wfdir/linkml-sidecar.yaml" ] \
      && [ -z "$(git -C "$root" ls-files .linkml/uv.lock 2>/dev/null | head -n 1)" ]; then
     warn project ".linkml/uv.lock is not in git - the workflow installs with uv sync --locked and fails without it; run just --justfile .linkml/justfile install and commit the file"
   fi
@@ -326,7 +337,7 @@ if [ -n "$sidecar" ]; then
   for f in "$sidecar"/.github/workflows/*.yaml "$sidecar"/.github/workflows/*.yml "$sidecar"/.github/dependabot.yml "$sidecar"/.pre-commit-config.yaml; do
     [ -f "$f" ] && inert=$((inert + 1))
   done
-  [ "$inert" -gt 0 ] && [ "$sidecar" != "$root" ] && info nested "$inert file(s) under $sdisp.github/ and .pre-commit-config.yaml are inert there (GitHub and pre-commit read the root only); the hoisted workflow is .github/workflows/linkml-sidecar.yaml"
+  [ "$inert" -gt 0 ] && [ "$sidecar" != "$root" ] && info nested "$inert file(s) under $sdisp.github/ and .pre-commit-config.yaml are inert there (forges and pre-commit read the root only); the hoisted workflow is $wfdir/linkml-sidecar.yaml"
 fi
 
 # ---- authors: whose history the schema folder carries -----------------------
@@ -463,15 +474,17 @@ done
 if [ -n "$pages" ] && [ "$kind" != project ]; then
   warn pages "the host already publishes Pages ($pages) - never run just deploy from .linkml/; the Step 5 docs job publishes under the linkml/ subpath only"
 fi
-if [ -d "$root/.github/workflows" ]; then
-  if [ -f "$root/.github/workflows/linkml-sidecar.yaml" ]; then
-    if grep -q 'working-directory: .linkml' "$root/.github/workflows/linkml-sidecar.yaml"; then ok workflows "linkml-sidecar.yaml present"
-    else warn workflows "a linkml-sidecar.yaml exists that is not the sidecar's hoisted workflow - rename one of them"; fi
+if [ -d "$root/$wfdir" ]; then
+  if [ -f "$root/$wfdir/linkml-sidecar.yaml" ]; then
+    if grep -q 'working-directory: .linkml' "$root/$wfdir/linkml-sidecar.yaml"; then ok workflows "$wfdir/linkml-sidecar.yaml present"
+    else warn workflows "a linkml-sidecar.yaml exists in $wfdir/ that is not the sidecar's hoisted workflow - rename one of them"; fi
   else
-    n="$(find "$root/.github/workflows" -maxdepth 1 -name '*.y*ml' | wc -l | tr -d ' ')"
-    if [ "$kind" = project ]; then info workflows "$n workflow(s); the project's own are its gate, and no hoisted sidecar workflow applies"
-    else info workflows "$n workflow(s), none for the sidecar (Step 5 lays down linkml-sidecar.yaml)"; fi
+    n="$(find "$root/$wfdir" -maxdepth 1 -name '*.y*ml' | wc -l | tr -d ' ')"
+    if [ "$kind" = project ]; then info workflows "$n workflow(s) in $wfdir/; the project's own are its gate, and no hoisted sidecar workflow applies"
+    else info workflows "$n workflow(s) in $wfdir/, none for the sidecar (Step 5 lays down linkml-sidecar.yaml there)"; fi
   fi
+elif [ "$forge" = forgejo ] && [ "$kind" != project ]; then
+  info workflows "no workflow folder yet; on Forgejo, Step 5 lays down $wfdir/linkml-sidecar.yaml"
 fi
 if [ "$kind" != project ] && [ -f "$root/pyproject.toml" ] && grep -q '^\[tool.uv.workspace\]' "$root/pyproject.toml"; then
   warn workspace "the root pyproject.toml declares a uv workspace; .linkml/ is not a member and uv sync inside it is untested (references/template-assumptions.md)"

@@ -8,7 +8,8 @@ The scaffold writes files, so any directory tree works. What varies is the shell
 | macOS | everything, on the stock bash 3.2 | - | - |
 | Windows, Git for Windows | everything from its bash; the template's justfile already names that shell | the `ln -s` doorway | a junction (below) |
 | Windows, PowerShell | uv, copier, just, the generators | the two scripts, which are bash | run them through Git for Windows' bash (below) |
-| GitLab, Forgejo, Gitea | the sidecar, the gate, the docs build | the GitHub Actions workflow | the gate as a job of the host's CI ([automation.md](automation.md)) |
+| Codeberg, Forgejo | everything; the site is published on Codeberg only | the GitHub Actions workflow | the Forgejo workflow ([automation.md](automation.md#forgejo-and-codeberg)) |
+| GitLab, Gitea | the sidecar, the gate, the docs build | the GitHub Actions workflow | the gate as a job of the host's CI ([automation.md](automation.md#other-forges)) |
 | No forge, git only | everything local; `just update` | the workflow, pull requests | the host's own review |
 | git installed, the folder not a repository | the sidecar, the gate, the docs | `copier update`, which needs the destination under git; the package version (`0.0.0`) | re-run the scaffold into a scratch clone to see what a new template version changes, and copy by hand |
 | git not installed | nothing: copier fetches the template with git, and the scaffold checks the tag with it | the sidecar | install git; the preflight reports it as `missing` |
@@ -28,4 +29,4 @@ OneDrive, Dropbox, Drive and iCloud carry `.linkml/` but drop the `linkml_schema
 
 ## Another forge
 
-The workflow is GitHub Actions. [automation.md](automation.md) says which steps port unchanged (all the shell) and what each forge's Pages needs instead of the publish job.
+Step 5 has a workflow for GitHub and one for Forgejo, which Codeberg runs. [automation.md](automation.md) says how to set up the Forgejo one, which steps port unchanged to any other CI (all the shell), and what GitLab's Pages needs instead of the publish job.

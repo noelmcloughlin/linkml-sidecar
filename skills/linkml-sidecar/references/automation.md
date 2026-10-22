@@ -1,6 +1,6 @@
 # Step 5 automation: the hoisted workflow
 
-`templates/github/linkml-sidecar.yaml` is the one workflow the sidecar installs, at `.github/workflows/linkml-sidecar.yaml` of the host. It has no placeholders, so every host carries the same bytes and a later fix is a plain copy. The template's own workflows under `.linkml/.github/` stay as inert copies: GitHub reads `.github/workflows/` at the root only.
+`templates/github/linkml-sidecar.yaml` is the workflow the sidecar installs on GitHub, at `.github/workflows/linkml-sidecar.yaml` of the host; on Forgejo and Codeberg, `templates/forgejo/linkml-sidecar.yaml` takes its place ([below](#forgejo-and-codeberg)). It has no placeholders, so every host carries the same bytes and a later fix is a plain copy. The template's own workflows under `.linkml/.github/` stay as inert copies: GitHub reads `.github/workflows/` at the root only.
 
 ## Jobs
 
@@ -22,6 +22,16 @@
 
 Every `uses:` names a commit, with the version in a trailing comment for Dependabot. `peaceiris/actions-gh-pages`'s pin was read from the release tag on 2026-10-07. Dependabot updates only linkml-sidecar's own workflows, so its `scripts/validate-repository.sh` fails until a bump is copied into this template too.
 
+## Forgejo and Codeberg
+
+`templates/forgejo/linkml-sidecar.yaml` runs the same gate on Forgejo Actions, as Codeberg runs them; its header says what differs from the GitHub template and why. To set it up:
+
+1. Put it in the folder the preflight's `workflows` line names. Forgejo reads only the first of `.forgejo/workflows/`, `.gitea/workflows/` and `.github/workflows/` that exists, so a new `.forgejo/workflows/` beside an existing `.github/workflows/` would hide every workflow there from it.
+2. On Codeberg, turn on Actions in the repository's settings, under Units, Overview; they are off by default. The jobs run on Codeberg's `codeberg-small` runner, which Codeberg offers to public repositories under a free licence. On a self-hosted Forgejo, change the two `runs-on` lines to a label its runners carry; the host owns that copy from then on.
+3. To publish, set the repository variable `LINKML_DOCS_ENABLED` to `true`. The site appears at `https://<owner>.codeberg.page/<repo>/linkml/`, which is what `DOCS_URL` should have been set to. A self-hosted Forgejo has no Pages, so leave the variable unset there; the docs job then builds the site and stops.
+
 ## Other forges
 
-The `uv sync --locked --group dev`, `just lint`, `just test` and `mkdocs build` steps port unchanged: all are plain shell in `.linkml/`. The publishing has to be rewritten. GitLab Pages serves a `public/` artifact from the pipeline, so copy `.linkml/site` to `public/linkml/` and let the host's own Pages job pick it up. Forgejo and Gitea have no Pages of their own, so publish the artifact wherever the host publishes docs. Run the gate as a job of the host's existing CI with `.linkml` as its working directory.
+On GitLab, Gitea or a forge with no CI of its own, the `uv sync --locked --group dev`, `just lint`, `just test` and `mkdocs build` steps port unchanged: all are plain shell in `.linkml/`. Run them as a job of the host's existing CI with `.linkml` as its working directory. GitLab Pages serves a `public/` folder from the pipeline, so copy `.linkml/site` to `public/linkml/` in the host's own Pages job. Gitea runs the GitHub Actions syntax, so the Forgejo template is the nearer start there, but it has not been run on Gitea.
+
+A self-hosted runner that installs through a company package mirror needs a lock made against that mirror: [portability.md](portability.md) has the rule.
