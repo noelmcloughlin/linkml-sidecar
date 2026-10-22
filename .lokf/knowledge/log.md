@@ -2,6 +2,14 @@
 
 ## 2026-10-22
 
+* **Changed**: the scaffold renames the template's config.yaml to generators.yaml, and `--repair generators.yaml` moves an existing project's file.
+* **Changed**: the preflight's generators line offers to move a project's config.yaml to .linkml/generators.yaml.
+* **Changed**: the linkml-sidecar skill keeps the generators' settings in .linkml/generators.yaml, and offers the move to an existing project.
+* **Changed**: the linkml-author skill edits generators.yaml as the project's own, and offers the move from config.yaml.
+* **Changed**: the gate's gen-project reads generators.yaml, or config.yaml before the move.
+* **Changed**: the catalogue has a twentieth row, on the generators' settings and what copier update leaves alone after the move.
+* **Changed**: where a LinkML schema lives says both uses of .linkml/ keep the generators' settings at .linkml/generators.yaml.
+* **Changed**: the copier reference cites the catalogue for why the template needs --trust.
 * **Changed**: schema design for reuse follows its source page, now written in its own words and examples.
 * **Prose**: reworded 3 concept bodies in plain English. No fact, link, number or frontmatter changed.
 * **Changed**: the linkml-author skill finds a schema by what files say in any repository, runs tools through the host's justfile, Makefile or environment, and follows the new design rules.

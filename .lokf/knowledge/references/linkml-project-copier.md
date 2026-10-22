@@ -14,10 +14,11 @@ references:
 sources:
   - resource: skills/linkml-sidecar/SKILL.md
   - resource: skills/linkml-sidecar/scripts/linkml-scaffold.sh
+  - resource: skills/linkml-sidecar/references/template-assumptions.md
   - resource: README.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-21T22:30:32Z"
+  at: "2026-10-22T09:04:50Z"
 status: draft
 verified:
   - by: process:ktl-librarian

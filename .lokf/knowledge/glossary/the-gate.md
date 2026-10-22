@@ -14,7 +14,7 @@ sources:
   - resource: skills/linkml-author/SKILL.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-22T01:26:03Z"
+  at: "2026-10-22T09:04:50Z"
 status: draft
 ---
 
@@ -24,7 +24,7 @@ status: draft
 
 ```bash
 just --justfile <project>/justfile lint          # linkml-lint, the recommended rules: warnings fail it
-just --justfile <project>/justfile gen-project   # every generator in config.yaml
+just --justfile <project>/justfile gen-project   # every generator in generators.yaml or config.yaml
 just --justfile <project>/justfile test          # generate into tmp/, pytest, then the example runner
 ```
 

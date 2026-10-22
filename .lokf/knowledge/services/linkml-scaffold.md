@@ -2,7 +2,7 @@
 type: Service
 id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/services/linkml-scaffold
 title: linkml-scaffold.sh
-description: "The scaffold script that does Steps 1 to 3 of linkml-sidecar in one deterministic run: it verifies the template pin, stages the skill's files and copier's output, moves them into .linkml/ around what is already there, adopts a schema the host holds with --adopt, names the schema in a KTL bundle's justfile, adds the root pointers, and exits 0, 2, 3, 4 or 5."
+description: "The scaffold script that does Steps 1 to 3 of linkml-sidecar in one deterministic run: it verifies the template pin, stages the skill's files and copier's output, moves them into .linkml/ around what is already there, keeps the generators' settings in generators.yaml, adopts a schema the host holds with --adopt, names the schema in a KTL bundle's justfile, adds the root pointers, and exits 0, 2, 3, 4 or 5."
 resource: skills/linkml-sidecar/scripts/linkml-scaffold.sh
 tags:
   - scaffold
@@ -21,7 +21,7 @@ sources:
   - resource: skills/linkml-sidecar/SKILL.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-22T01:26:03Z"
+  at: "2026-10-22T09:04:50Z"
 status: draft
 ---
 
@@ -45,12 +45,14 @@ The facts are `PROJ_NAME`, `PROJ_SLUG`, `PROJ_DESC`, `GITHUB_ORG`, `REPO_URL`, `
 4. Verifies the pin: the tag must name the commit the driver records before the template runs with `--trust`.
 5. Pre-seeds the files the skill owns into a staging directory beside `.linkml/`, substituting facts as literal text through Python's `str.replace`, never sed.
 6. Runs copier for everything else, into the same staging directory.
-7. Neutralises the root assumptions that remain. With `--adopt`, it points `config.public.mk`'s `LINKML_SCHEMA_SOURCE_DIR` at the schema's folder, relative to `.linkml/`.
+7. Neutralises the root assumptions that remain. With `--adopt`, it points `config.public.mk`'s `LINKML_SCHEMA_SOURCE_DIR` at the schema's folder, relative to `.linkml/`. It renames `config.yaml` to `generators.yaml` and names it in `config.public.mk`, unless the host already keeps a `.linkml/generators.yaml`.
 8. Moves the staged files into `.linkml/`, around whatever is already there. A name both hold is a clash: nothing moves, and the run ends with exit 3.
 9. In KTL mode, edits `.lokf/justfile` to name the schema.
 10. Adds the root pointers, then prints the hand-off facts.
 
 Every line it prints starts with `scaffold:`, `handoff:` or `next:`. It never removes anything but its own staging directory, so a failed run leaves `.linkml/` as it was.
+
+`--repair generators.yaml` moves a finished project's `config.yaml` to `.linkml/generators.yaml`: the sidecar's, or a root project's into `.linkml/`. It changes the one line of `config.public.mk` that names the file, and moves nothing when it cannot finish. After the move, `copier update` leaves the file alone, so the template's later changes to its settings no longer arrive.
 
 ## Exit codes
 

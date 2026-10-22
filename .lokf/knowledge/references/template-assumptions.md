@@ -2,7 +2,7 @@
 type: Document
 id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/template-assumptions
 title: Template assumptions catalogue
-description: The catalogue, at template v0.5.0, of the nineteen things linkml-project-copier assumes of a repository root (just setup, just deploy, nested workflows, the governance files, mkdocs URLs, --trust, just update, config.public.mk and more), what the scaffold does about each, and which an upstream layout answer would remove.
+description: The catalogue, at template v0.5.0, of the twenty things linkml-project-copier assumes of a repository root (just setup, just deploy, nested workflows, the governance files, mkdocs URLs, --trust, just update, config.public.mk, the generators' settings and more), what the scaffold does about each, and which an upstream layout answer would remove.
 genre: reference
 resource: skills/linkml-sidecar/references/template-assumptions.md
 tags:
@@ -18,7 +18,7 @@ sources:
   - resource: skills/linkml-sidecar/references/template-assumptions.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-22T01:26:03Z"
+  at: "2026-10-22T09:04:50Z"
 status: draft
 ---
 
@@ -34,5 +34,6 @@ Some of the rows:
 - The upstream example fails `just lint`, so `add_example: false` and a skill-owned dummy that lints clean.
 - `--trust` is required, so the tag and its commit are verified before copier runs.
 - `config.public.mk` names the schema, every recipe derives its paths from it, and upstream calls the file a convenience it may retire. Adoption points `LINKML_SCHEMA_SOURCE_DIR` at the host's folder, and the preflight falls back to the answers' `project_slug` when the file is absent.
+- `config.yaml` holds the generators' settings and `config.public.mk` names it. A new sidecar renames it `generators.yaml`, and `--repair generators.yaml` moves an existing project's file. After the move, `copier update` no longer carries the template's changes to the settings.
 
 Rows marked *no* are facts about LinkML, uv or git rather than about the template, and stay whatever upstream does. When the pin moves, bump the page's heading and re-walk the rows.

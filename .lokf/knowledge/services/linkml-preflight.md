@@ -16,7 +16,7 @@ sources:
   - resource: skills/linkml-sidecar/SKILL.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-22T01:26:03Z"
+  at: "2026-10-22T09:04:50Z"
 status: draft
 ---
 
@@ -41,6 +41,7 @@ It shows:
 - whether `uv`, `copier` and `just` run, and whether github.com and pypi.org answer;
 - what the host already holds: a sidecar, a schema project elsewhere, configuration files in `.linkml/`, or schema files outside any project;
 - how lint and the generators run there, on its `tools` line;
+- where the generators' settings are, with an offer to move a `config.yaml` to `.linkml/generators.yaml`;
 - whether a `.lokf/` bundle is present, which switches on KTL mode;
 - whether the host already publishes Pages;
 - whether the root declares a uv workspace.

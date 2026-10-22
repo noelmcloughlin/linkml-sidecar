@@ -26,7 +26,7 @@ sources:
   - resource: skills/linkml-sidecar/SKILL.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-22T01:26:03Z"
+  at: "2026-10-22T09:04:50Z"
 status: draft
 ---
 
@@ -43,6 +43,8 @@ status: draft
 ## When to use it
 
 Use it when a repository has no LinkML schema project yet and someone asks to add, scaffold, bootstrap or set up a LinkML sidecar, schema project, data model or domain schema. It works with or without a KTL `.lokf/` bundle. Use it also to repair a missing or broken sidecar file (`--repair`), or to re-add the root pointers (`--pointers-only`). It never authors classes.
+
+A new sidecar keeps the generators' settings in `.linkml/generators.yaml` without asking. For an existing project, the skill offers `--repair generators.yaml` when the preflight notices a `config.yaml`, and moves the file only when the person agrees.
 
 A `.linkml/.copier-answers.yml` means a sidecar exists, so use linkml-author instead. A schema project anywhere else, told by copier answers naming the template or by a `config.public.mk`, is reported and never migrated unasked. A `.linkml/` that holds only configuration files is installed around and never emptied, and a name both hold is refused.
 

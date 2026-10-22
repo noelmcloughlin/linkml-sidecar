@@ -19,7 +19,7 @@ sources:
   - resource: skills/linkml-sidecar/references/layouts.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-22T01:26:03Z"
+  at: "2026-10-22T09:04:50Z"
 status: draft
 ---
 
@@ -34,6 +34,8 @@ status: draft
 - A `*.yaml` or `*.yml` file that imports `linkml:types` or names the `linkml:` prefix, and has a top-level `classes:`, `slots:`, `enums:`, `types:`, `subsets:` or `imports:` key, is a schema on its own.
 
 A `.linkml/` folder shows that LinkML is in use, but not what it holds: upstream LinkML may name it for configuration files, and the sidecar names it for a whole project. Only `.linkml/.copier-answers.yml` means the sidecar, and anything else there is left alone.
+
+Both uses keep the generators' settings at `.linkml/generators.yaml`: a sidecar renames the template's `config.yaml` to that, and `--repair generators.yaml` moves a root project's file there.
 
 ## Where the preflight looks
 
