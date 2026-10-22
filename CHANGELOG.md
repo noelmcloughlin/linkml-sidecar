@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-22
+
 ### Fixed
 
 - **Both skills' pages lose their dead phrases.** Adoption reads as "neither moved nor changed", and the schema is found by its files, which layouts.md lists, never by its folder. The reference pages were read through for the same faults.
