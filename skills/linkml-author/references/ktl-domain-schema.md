@@ -22,7 +22,7 @@ classes:
     slots: [source_kind, reviewed_at]
 ```
 
-A class `is_a: Concept` joins the bundle's concept union, and so does any descendant of it. Subclass a built-in whose meaning fits; give a class of its own to what no built-in describes; never leave extra keys on a built-in unchanged.
+A class `is_a: Concept` joins the bundle's concept union, and so does any descendant of it. Subclass a built-in whose meaning fits; give a class of its own to what no built-in describes; never leave extra keys on a built-in unchanged. A published vocabulary the domain schema needs comes in beside `lokf.yaml` through lokf's `adapt` ([publishing.md](publishing.md)), never by a raw import: its `id`, `type` and `name` would merge silently with LOKF's.
 
 ## What the generators cannot do here
 

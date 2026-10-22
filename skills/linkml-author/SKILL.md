@@ -1,6 +1,6 @@
 ---
 name: linkml-author
-description: 'Author and evolve the LinkML schema of any repository that holds one: a linkml-project-copier or linkml-project-cookiecutter project wherever it sits, the `.linkml/` sidecar linkml-sidecar installs, or a schema file on its own. Use when: someone asks to add, change or deprecate a class, slot, enum or type; to model a concept, map a specification, standard or document to a schema, or replace the dummy schema with the real model; to check schema conventions; or to run lint, gen-project, gen-doc or test. Not for installing or repairing the sidecar; that is linkml-sidecar. Keywords: LinkML, schema authoring, data model, classes, slots, enums, mappings, linkml-lint, gen-project, JSON Schema, Pydantic, OWL, LOKF domain schema, KTL.'
+description: 'Author and evolve the LinkML schema of any repository that holds one: a linkml-project-copier or linkml-project-cookiecutter project wherever it sits, the `.linkml/` sidecar linkml-sidecar installs, or a schema file on its own. Use when: someone asks to add, change or deprecate a class, slot, enum or type; to model a concept, map a specification, standard or document to a schema, or replace the dummy schema with the real model; to refactor or split a schema; to check schema conventions; or to run lint, gen-project, gen-doc or test. Not for installing or repairing the sidecar; that is linkml-sidecar. Keywords: LinkML, schema authoring, data model, classes, slots, enums, mappings, linkml-lint, gen-project, JSON Schema, Pydantic, OWL, LOKF domain schema, KTL.'
 license: Apache-2.0
 compatibility: 'Requires bash; every LinkML tool runs through the host''s own environment (`just`, `make`, `uv run` or `poetry run` in the schema project), or through a pinned `uvx --from linkml` when the host has none, never a globally installed one. Works with or without a `.lokf/` KTL bundle.'
 ---
@@ -9,7 +9,7 @@ compatibility: 'Requires bash; every LinkML tool runs through the host''s own en
 
 Turn a project's LinkML schema into the model its code, data and documents describe, and keep it linted, generated, documented and tested after every change. The schema is one YAML file (or a few modules) and everything else is generated from it, so this skill edits the schema and runs the recipes; it never edits a generated file.
 
-> Sources: linkml.io is the canonical site for the language ([schemas](https://linkml.io/linkml/schemas/), [generators](https://linkml.io/linkml/generators/)). [references/metamodel.md](references/metamodel.md) holds the metamodel detail this page leaves out. [references/schema-design.md](references/schema-design.md) gives the reasons behind the design rules below, for a schema others will import or extend. [references/generators.md](references/generators.md) lists the pitfalls of particular generators, each stamped with the LinkML version it was seen on.
+> Sources: linkml.io is the canonical site for the language ([schemas](https://linkml.io/linkml/schemas/), [generators](https://linkml.io/linkml/generators/)). [references/metamodel.md](references/metamodel.md) holds the metamodel detail this page leaves out. [references/schema-design.md](references/schema-design.md) gives the reasons behind the design rules below, for a schema others will import or extend. [references/generators.md](references/generators.md) lists the pitfalls of particular generators, each stamped with the LinkML version it was seen on. [references/publishing.md](references/publishing.md) says how a schema is served, imported and brought in beside another.
 
 > Model: keep this skill on the calling agent's normal model. Mapping a document to classes and slots is judgement, and a wrong mapping validates fine.
 
@@ -18,11 +18,11 @@ Turn a project's LinkML schema into the model its code, data and documents descr
 - **linkml-sidecar** installs the project once, with a dummy schema, or adopting a schema the host already holds.
 - **This skill** writes and evolves the model, as often as the domain changes, wherever the schema lives. When the project is the `.linkml/` sidecar, linkml-sidecar's `--repair` restores a missing or broken sidecar file (the preflight, the README, a dummy data file). Another project restores its files through its own `copier update` or from its history.
 
-> Guardrails: never edit a template-owned file (`justfile`, `pyproject.toml`, `config.yaml`, most of `mkdocs.yml`); `just update` is how those change, and `project.justfile` takes the project's own recipes. `generators.yaml`, the generators' settings moved out of `config.yaml`, is the project's to edit. When the preflight's `generators` line offers that move, offer it to the person; linkml-sidecar's `--repair generators.yaml` makes it. Never edit anything under `project/`, `docs/elements/` or `src/<slug>/datamodel/`: those are generated, and the next recipe overwrites them. Never run `just setup` or `just deploy` in a sidecar. Never loosen a validator to admit data: fix the schema or the data. Never move a schema into a sidecar unasked; it is authored where it is.
+> Guardrails: never edit a template-owned file (`justfile`, `pyproject.toml`, `config.yaml`, most of `mkdocs.yml`); `just update` is how those change, and `project.justfile` takes the project's own recipes. `generators.yaml`, the generators' settings moved out of `config.yaml`, is the project's to edit. When the preflight's `generators` line offers that move, offer it to the person; linkml-sidecar's `--repair generators.yaml` makes it. Read the preflight's `authors` line before proposing a refactor: offer one, by [references/schema-design.md](references/schema-design.md), when the schema folder's history is one or two people, and never when it is a team's; a known importer narrows the offer to the moves that touch no record. Never refactor unasked. Never edit anything under `project/`, `docs/elements/` or `src/<slug>/datamodel/`: those are generated, and the next recipe overwrites them. Never run `just setup` or `just deploy` in a sidecar. Never loosen a validator to admit data: fix the schema or the data. Never move a schema into a sidecar unasked; it is authored where it is.
 
 ## Step 0 - Find the schema
 
-A LinkML schema can live in any repository, and most were never made from a template, so the schema is found by what files say, never by where they sit. Run the preflight: the copy a sidecar installed, `.linkml/scripts/linkml-preflight.sh`, or linkml-sidecar's `templates/scripts/linkml-preflight.sh` when that skill is installed beside this one. Its `sidecar`, `project`, `schema` and `tools` lines name the layout, the schema file and the way to run the tools. Without either copy, apply the same rule by hand ([layouts.md](https://github.com/noelmcloughlin/linkml-sidecar/blob/main/skills/linkml-sidecar/references/layouts.md) is the full statement):
+A LinkML schema can live in any repository, and most were never made from a template, so the schema is found by what files say, never by where they sit. Run the preflight: the copy a sidecar installed, `.linkml/scripts/linkml-preflight.sh`, or linkml-sidecar's `templates/scripts/linkml-preflight.sh` when that skill is installed beside this one. Its `sidecar`, `project`, `schema` and `tools` lines name the layout, the schema file and the way to run the tools; its `authors` line says whose history the schema folder carries. Without either copy, apply the same rule by hand ([layouts.md](https://github.com/noelmcloughlin/linkml-sidecar/blob/main/skills/linkml-sidecar/references/layouts.md) is the full statement):
 
 | Layout | How to tell | Where the schema is |
 | --- | --- | --- |
@@ -79,17 +79,20 @@ These settle the questions an author meets most, each stated once:
 | `name` of the schema | the slug, snake_case, the same as the file, the package and `LINKML_SCHEMA_NAME`; `title` carries the human name |
 | Element names | classes and enums `PascalCase`, slots and types `snake_case`, enum values `snake_case`; `linkml-lint`'s `standard_naming` rule enforces this, and a project that wants `UPPER_CASE` values says so in a `.linkmllint.yaml`. In a schema meant to be imported, class names carry a prefix of the schema's own (`AcmeOrder`), a mixin ends in `Mixin`, and an enum is singular with no `Enum` suffix |
 | Permissible values | one style throughout; a value that must carry punctuation, start with a digit or differ from another only by case gets a `title` free of them |
-| Slots or attributes | every field starts as an `attributes:` entry of its class. It becomes a top-level `slots:` entry only when a second class needs the same field with the same meaning, or when it carries a `slot_uri` identity. Fields that unrelated classes share go in a mixin. Never use both forms for one name |
+| Slots or attributes | every field starts as an `attributes:` entry of its class. It becomes a top-level `slots:` entry only when a second class needs the same field with the same meaning, or when it carries a `slot_uri` identity. Fields that unrelated classes share go in a mixin. Never use both forms for one name. The more fundamental the name (`id`, `name`, `type`, `description`), the likelier it clashes on import, so such a field stays an attribute or sits in one mixin, and a base slot the schema means to share carries a `slot_uri` |
+| Modules | a core that imports only `linkml:types`; topic modules that import the core and lint alone; an umbrella that holds only the tree root and is the file the project names; no import cycle |
 | `slot_usage` | refines a slot for one class (range, cardinality, description); it never changes the slot's identity |
 | References between classes | `identifier: true` on the target's key and `range: <Class>` on the referring field, never a string key described in prose; where the objects live, `inlined: true` with `inlined_as_list: true` |
 | Variants of one thing | a hierarchy whose base carries a `designates_type: true` field, never one class with a kind enum and fields that apply "only when"; a holder takes one multivalued field of the base class, not a field per kind |
 | Enum inheritance | none: `is_a` and `inherits` are unsettled upstream and the generators do not apply them; repeat the values, or share their `meaning` terms |
 | Versions | `version:` carries the full version; element IRIs carry only the part that breaks compatibility; a minor release only adds, never removes, renames or tightens, and a tightening is a major release |
+| Publishing | the `id` is a persistent-identifier namespace the project controls; every module is served at `<id>/schema/<module>.yaml` and a merged import-free file at `<id>/<name>.yaml`; an importer vendors a tag or imports by the identifier, never by a code-host URL, and an `importmap` bridges a path that differs |
 | Annotation values | strings by default. A nested YAML value (LinkML 1.6+) is used only when a comment names the consumer that parses it, since generators ignore annotations. A fact the metamodel has no metaslot for goes in a structured annotation that the schema declares as a metamodel extension (`instantiates:`), not in a description |
 | Dublin Core prefix | `dcterms: http://purl.org/dc/terms/` |
 | Identity versus mappings | `class_uri` and `slot_uri` use the schema's own prefix (they render as the element's IRI); an upstream term goes in `exact_mappings` or `close_mappings` |
 | Mappings | never guessed; a term with no sure match stays unmapped, or takes `related_mappings` with a comment |
 | Deprecation | `deprecated:` with a reason, and `deprecated_element_has_exact_replacement:` when one exists; nothing is deleted while data may still carry it |
+| Refactoring | offered when the schema folder's history is one or two people, never done unasked; a slot one class uses becomes its attribute, modules split or merge, IRIs are pinned first; a slot, value or designator rename is a major release |
 | Generated files | never edited; regenerate |
 | An lmodel project | [references/lmodel-profile.md](references/lmodel-profile.md), opted into by the project's own conventions, never assumed |
 
@@ -98,7 +101,9 @@ These settle the questions an author meets most, each stated once:
 - **Add** a class, slot, enum or type by the patterns in [references/metamodel.md](references/metamodel.md); then the gate.
 - **Change** a range or cardinality only in the direction the existing data allows; a narrowing is a major-version change and goes with a counter-example that shows what it now rejects.
 - **Rename** by adding the new element, marking the old one deprecated with its replacement, and removing the old one in a later release.
-- **Split** a growing schema into modules under the same folder, imported by the main file (`imports: [./module]`), without redeclaring an imported element.
+- **Split** a growing schema into modules under the same folder, imported by the main file (`imports: [./module]`), without redeclaring an imported element; a core and topic modules under an umbrella is the shape importers can take a slice of ([references/schema-design.md](references/schema-design.md)).
+- **Refactor** only on offer and on a yes: fold a single-class slot into its attribute, split or merge modules, pin the IRIs; a rename goes the deprecation route above.
+- **Publish** a release: the tag, the merged file beside the modules, their addresses and the asset ([references/publishing.md](references/publishing.md)); the hand-off names the address importers use.
 - **Update the template** with `just update` on a clean tree, then the gate, then commit `uv.lock` and `.copier-answers.yml` with the diff.
 
 ## Beside a KTL bundle
@@ -121,6 +126,7 @@ After a change, tell the person:
 
 - which layout Step 0 found and which tools ran, and through uvx, which LinkML version;
 - which elements were added, changed or deprecated;
+- what the `authors` line said, and which refactoring moves were offered or made;
 - what was guessed, and from which source;
 - whether the gate passed, and `lokf validate` beside a bundle that names the schema;
 - which docs pages were updated;

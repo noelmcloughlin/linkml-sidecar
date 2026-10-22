@@ -1,12 +1,13 @@
 # The lmodel profile
 
-The [lmodel](https://github.com/lmodel) organisation publishes LinkML renderings of standards (ISO, NIST, OSCAL, FIX, gist and others) under one set of conventions. A project opts into them by following them already; this skill never assumes them for a host that does not.
+The [lmodel](https://github.com/lmodel) organisation publishes LinkML renderings of standards (ISO, NIST, OSCAL, FIX, gist and others) under one set of conventions. It is its maintainer's experiment area for LinkML patterns, so the conventions are one tried answer and not an authority. A project opts into them by following them already; this skill never assumes them for a host that does not.
 
 ## Identity
 
 - `id: https://w3id.org/lmodel/<schema-name>` (kebab-case) and `name: <schema-name>`; the prefix key is the snake_case form of the same name, and its IRI is the `id` plus `/`, so a CURIE expands to the w3id path the redirect table serves.
 - `license: Apache-2.0`; `see_also` names the published docs site.
 - `class_uri` and `slot_uri` use the schema's own prefix, which resolves through w3id to the docs; the upstream term goes in `exact_mappings`.
+- A schema of several files is served at `https://w3id.org/lmodel/<schema-name>/schema/<module>.yaml` per file, and `<schema-name>/<anything>.yaml` gives the root file. The redirect table is lmodel's trial of the addresses [publishing.md](publishing.md) describes.
 
 ## Shape
 

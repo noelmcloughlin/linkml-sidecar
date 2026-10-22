@@ -325,3 +325,5 @@ slots:
 ## Modules and imports
 
 A module is a schema file beside the main one, imported as `./module`; a module's name is `snake_case`. Never redeclare an imported class or slot: refine an imported slot with `slot_usage` on the class that uses it. `linkml:types` is the built-in type library.
+
+An import resolves in this order: an importmap entry, a URL, a CURIE expanded through the schema's prefixes, else a path relative to the importing file, with `.yaml` appended in every case. A module's own imports resolve relative to the module, on disk or behind a URL (1.12.1), so a module tree served at the same relative paths imports over HTTP. [publishing.md](publishing.md) has the addresses and the importmap; [schema-design.md](schema-design.md) has the shape of a core and its modules.
