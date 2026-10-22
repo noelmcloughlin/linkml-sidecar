@@ -59,7 +59,7 @@ The workflow the sidecar installs checks the schema on every pull request that t
 
 ## Run the scripts without an agent
 
-The skill's two scripts work without an agent. From the host's root, with this repository cloned beside it:
+The two scripts of **linkml-sidecar** work without an agent. From the host's root, with this repository cloned beside it:
 
 ```bash
 bash ../linkml-sidecar/skills/linkml-sidecar/templates/scripts/linkml-preflight.sh .
@@ -70,11 +70,11 @@ bash ../linkml-sidecar/skills/linkml-sidecar/scripts/linkml-scaffold.sh --dry-ru
 bash ../linkml-sidecar/skills/linkml-sidecar/scripts/linkml-scaffold.sh
 ```
 
-Step 0 of [the skill](../skills/linkml-sidecar/SKILL.md) says where each fact comes from, and Step 1 lists the exit codes, `--repair` and `--pointers-only`.
+Step 0 of [linkml-sidecar's SKILL.md](../skills/linkml-sidecar/SKILL.md) says where each fact comes from, and Step 1 lists the exit codes, `--repair` and `--pointers-only`.
 
 ## What each skill needs
 
-Both skills run from a POSIX shell: on Windows, the bash of Git for Windows. **linkml-sidecar** starts with a preflight that prints what this machine can do and which steps that disables.
+Both skills run from a POSIX shell: on Windows, the bash of Git for Windows. **linkml-sidecar** starts with a preflight that prints what this machine can do, and which steps are switched off by what it lacks.
 
 | Skill | Needs |
 | --- | --- |
