@@ -1,0 +1,104 @@
+name: Publish
+
+# Maintainer-gated release, in the same shape as the Knowledge Trust Ladder's. `gh skill publish` creates the tag and the GitHub
+# release itself, so this workflow must never be tag-triggered. A tag-push
+# trigger here would race the very tag `gh skill publish` is about to
+# create. `workflow_dispatch` keeps release timing an explicit human
+# decision. The `release` environment (configure required reviewers on it in
+# repo settings) adds a maintainer-approval gate in front of the write scope.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release tag, e.g. v0.2.0 (both skills are released together under this one tag)'
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish the skills
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+      actions: write # dispatch knowledge-release.yaml for the new tag
+    steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Validate semantic version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'$VERSION' is not vMAJOR.MINOR.PATCH."
+            exit 1
+          fi
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "::error::Tag '$VERSION' already exists."
+            exit 1
+          fi
+
+      # semantic-release.yml computes each release's version from commits and
+      # promotes it into CHANGELOG.md on every qualifying push to main (see
+      # that workflow's header comment for why it stops short of tagging
+      # itself). This step only checks that the human-typed input above still
+      # agrees with what it promoted. It catches the transcription error a
+      # manual version number invites; it does not re-decide the version.
+      - name: Cross-check against the promoted changelog
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          bare="${VERSION#v}"
+          top="$(grep -m1 -E '^## \[[0-9]' CHANGELOG.md | sed -E 's/^## \[([^]]+)\].*/\1/')"
+          if [ "$bare" != "$top" ]; then
+            echo "::error::Typed version '$VERSION' (bare '$bare') doesn't match CHANGELOG.md's top entry '## [$top]'. If semantic-release.yml already promoted the changelog for this release, publish '$top' instead; if it hasn't run yet on the merge you mean to release, this input is premature."
+            exit 1
+          fi
+
+      # The contract and the tests run through uv, as validate.yml runs them:
+      # a release runs the same checks a pull request did.
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
+      - name: Verify repository contract
+        run: bash scripts/validate-repository.sh
+
+      - name: Test the scaffold, the preflight and the workflow
+        run: uv run --no-project --with-requirements tests/requirements.txt pytest
+
+      - name: Validate Agent Skills spec (dry run)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh skill publish --dry-run
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: gh skill publish --tag "$VERSION"
+
+      # The release above is made with GITHUB_TOKEN, and GitHub starts no
+      # workflow from an event that token causes, so knowledge-release.yaml's
+      # release trigger never fires here. A dispatch is the one exception, so
+      # this step asks for the bundle zip directly, built from the tag.
+      - name: Attach the knowledge bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          gh workflow run knowledge-release.yaml --ref "$VERSION" -f tag="$VERSION" \
+            || { echo "::error::The skills published under $VERSION, but the bundle zip was not requested. Run the Knowledge Release workflow by hand with tag=$VERSION."; exit 1; }

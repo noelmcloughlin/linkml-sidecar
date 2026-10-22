@@ -1,0 +1,188 @@
+name: Semantic release (version + changelog only)
+
+# Computes the next version from Conventional Commits on `main`, using the
+# same pinned semantic-release tool and the same steps as the Knowledge Trust
+# Ladder (KTL) skills repository and the sibling plugin repositories, but
+# never lets it create a tag or a release itself. `publish.yml`'s
+# `gh skill publish --tag` is this repository's one and only tag creator
+# (see that workflow's own header comment for why). Two tools racing to
+# create the same tag would be worse than either alone. So this workflow
+# only ever runs semantic-release with `--dry-run`, which performs no
+# writes, no commit, no tag and no publish. That run learns the next
+# version and this repository's CHANGELOG.md "## [Unreleased]" section text
+# via .github/scripts/changelog-release.mjs. The workflow then promotes that
+# section and commits it itself in a plain, reviewable step below, outside
+# the tool's own publish lifecycle.
+#
+# `plan` previews every pull request into main. `release` runs on push to
+# main behind the `release` GitHub Environment, the same gate `publish.yml`
+# already uses. Configure required reviewers on it once, in this
+# repository's Settings > Environments, and both workflows honor it.
+# `publish.yml` itself is unchanged in spirit: a maintainer still runs it
+# by hand with an explicit version. But that version must now match what
+# this workflow already promoted into CHANGELOG.md, so a typo can no longer
+# release a version nobody wrote release notes for.
+
+on:
+  pull_request:
+    # `edited` matters: the title check below is the one check a person clears
+    # by retitling the pull request rather than by pushing. Without it the
+    # default types (opened, synchronize, reopened) never fire again, so the
+    # fix the error message asks for could not clear the check it failed.
+    types: [opened, synchronize, reopened, edited]
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: semantic-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Install semantic-release (pinned, not a project dependency)
+        run: |
+          npm install --no-save --no-audit --no-fund --ignore-scripts \
+            semantic-release@25.0.9 \
+            @semantic-release/commit-analyzer@13.0.1 \
+            @semantic-release/exec@7.1.0
+
+      # Would these commits release? The types are .releaserc.json's: the
+      # Angular preset's feat/fix plus this repository's `security`, and any
+      # type marked breaking by a `!` or a BREAKING CHANGE footer. Both checks
+      # below key off this one answer. Only the pull request's own commits
+      # count: HEAD is GitHub's trial merge with today's main, so on a branch
+      # that main has moved past, "$BASE..HEAD" would read main's commits too.
+      - name: Read whether these commits would release
+        id: commits
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if git log --format='%s%n%b' "$(git merge-base "$BASE" "$HEAD_SHA")..$HEAD_SHA" \
+            | grep -qE '^((feat|fix|security)(\([^)]*\))?!?:|[a-z]+(\([^)]*\))?!:|BREAKING CHANGE:)'; then
+            echo "releases=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "releases=false" >> "$GITHUB_OUTPUT"
+            echo "No feat/fix/security or breaking commit here, so this pull request releases nothing."
+          fi
+
+      # semantic-release detects a pull_request event itself and exits before
+      # running any plugin, including @semantic-release/exec's verifyRelease
+      # hook. So the --dry-run below never calls changelog-release.mjs check
+      # on this event. An empty "## [Unreleased]" would otherwise pass a
+      # pull request and only fail at release time. Call it directly, but
+      # only when these commits would release, or a chore-only pull request
+      # (a Dependabot bump, a docs tidy) fails for lacking notes it was never
+      # meant to write.
+      - name: Refuse an empty changelog entry when these commits would release
+        if: steps.commits.outputs.releases == 'true'
+        run: node .github/scripts/changelog-release.mjs check
+
+      # A squash merge takes its commit subject from the pull request title,
+      # and GitHub's default title is the branch name in words, such as "Fix
+      # deps and empty changelog (#46)", which carries no type. That merge
+      # reached main and released nothing while its notes waited in
+      # "## [Unreleased]". So when the commits would release, the title must
+      # too: then either merge strategy releases. The title is read through
+      # `env:`, never interpolated into the script, since anyone can open a
+      # pull request.
+      - name: Refuse a title that would lose the release on a squash merge
+        if: steps.commits.outputs.releases == 'true'
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if printf '%s\n' "$TITLE" \
+            | grep -qE '^((feat|fix|security)(\([^)]*\))?!?:|[a-z]+(\([^)]*\))?!:)'; then
+            echo "Title carries a releasing type, so a squash merge releases too."
+          else
+            echo "::error::These commits would release, but the pull request title '$TITLE' has no releasing type (feat:, fix:, security:, or a breaking '!'). A squash merge uses the title as the commit subject and would release nothing - retitle the pull request, or use a merge commit."
+            exit 1
+          fi
+
+      - name: Preview the next version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx --no-install semantic-release --dry-run
+
+  release:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+
+      # This job pushes a commit to `main` itself (see below), so it keeps the
+      # checkout action's default credential helper rather than disabling it,
+      # like the equivalent job in the sibling plugin repositories. Nothing
+      # untrusted runs here, only the pinned release tool above and this
+      # repository's own reviewed script below.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Install semantic-release (pinned, not a project dependency)
+        run: |
+          npm install --no-save --no-audit --no-fund --ignore-scripts \
+            semantic-release@25.0.9 \
+            @semantic-release/commit-analyzer@13.0.1 \
+            @semantic-release/exec@7.1.0
+
+      # Always --dry-run: semantic-release computes the next version and
+      # this repository's Unreleased notes but writes nothing and creates no
+      # tag; see this workflow's header comment for why. The command
+      # writes `next_version` to $GITHUB_OUTPUT itself (see
+      # changelog-release.mjs's `notes` subcommand) only when a release is
+      # due; a push with no feat/fix/etc. commit since the last tag
+      # leaves it unset and the step below is skipped. So does a push with
+      # nothing new after a promotion, such as a docs merge before
+      # publish.yml runs: the version it computes is already promoted.
+      - name: Compute the next version (writes nothing)
+        id: plan
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx --no-install semantic-release --dry-run
+
+      - name: Promote CHANGELOG.md and commit
+        if: steps.plan.outputs.next_version != ''
+        env:
+          VERSION: ${{ steps.plan.outputs.next_version }}
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+        run: |
+          node .github/scripts/changelog-release.mjs promote "$VERSION" "$(date -u +%Y-%m-%d)"
+          git add CHANGELOG.md
+          git commit -m "chore(release): $VERSION - changelog promoted [skip ci]"
+          git push origin HEAD:main

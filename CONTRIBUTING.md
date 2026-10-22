@@ -51,4 +51,4 @@ AI assistance is welcome; these skills exist for agents to run. You are still th
 
 ## Releasing (maintainers)
 
-Tag a release by hand once `## [Unreleased]` has been promoted to a version heading with its date; both skills release together under that tag. Installers read the tag; the plugin marketplace reads `main`, and `plugin.json` carries no `version` so that it always does.
+Each merge to `main` that carries a `feat:`, `fix:`, `security:` or breaking commit waits in `semantic-release.yml` for a reviewer of the `release` environment; once approved, it promotes `## [Unreleased]` to the next version. Then run `publish.yml` by hand with that version: it checks the contract and the tests again, and `gh skill publish` creates the tag and the release, so both skills release together under that tag. A pull request whose commits would release needs a typed title, since a squash merge takes its subject from it. Installers read the tag; the plugin marketplace reads `main`, and `plugin.json` carries no `version` so that it always does.
