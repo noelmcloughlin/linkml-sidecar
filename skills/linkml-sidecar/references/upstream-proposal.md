@@ -16,4 +16,6 @@ The template renders a repository root. A project that already has a root (a dom
 
 Copier itself already handles the subfolder: `copier update` scopes its dirty check and its `_skip_if_exists` patterns to the subproject. Only the template's rendering assumes a root.
 
+One caveat on the default folder name: `.linkml/` is also the name proposed for LinkML's own configuration files, so a `sidecar` layout should render around files already in the folder (and refuse a name both hold) rather than take the folder as its own. The linkml-sidecar skill does that today.
+
 I can open a pull request for this if the shape is right.

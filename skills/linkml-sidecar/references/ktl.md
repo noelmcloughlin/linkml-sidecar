@@ -1,6 +1,8 @@
 # KTL mode: the sidecar's schema as the bundle's domain schema
 
-This page is for the **scaffold** and for whoever reads its KTL hand-off lines. When the host carries a `.lokf/` bundle, the sidecar's schema is the *domain schema* that ktl-librarian's [domain-schema.md](https://github.com/noelmcloughlin/knowledge-trust-ladder/blob/main/skills/ktl-librarian/references/domain-schema.md) describes: a LinkML schema importing LOKF's, whose `is_a: Concept` classes the bundle's concepts may name in `type`, checked by `lokf validate --schema`. That page is the recipe and the authority on what the validator expects (every class is closed; `type` names the class exactly). This page says how the sidecar meets it.
+This page is for the **scaffold** and for whoever reads its KTL hand-off lines. When the host carries a `.lokf/` bundle, the sidecar's dummy schema is the *domain schema* that ktl-librarian's [domain-schema.md](https://github.com/noelmcloughlin/knowledge-trust-ladder/blob/main/skills/ktl-librarian/references/domain-schema.md) describes: a LinkML schema importing LOKF's, whose `is_a: Concept` classes the bundle's concepts may name in `type`, checked by `lokf validate --schema`. That page is the recipe and the authority on what the validator expects (every class is closed; `type` names the class exactly). This page says how the sidecar meets it.
+
+A schema the host already held (`--adopt`) is not made the domain schema: the scaffold runs in plain mode beside the bundle and says so in the hand-off. A bundle beside a schema is often a bundle *about* the repository, as in a schema repository that documents itself, and the schema stays what it is until its maintainers decide otherwise; then linkml-author adds the import, the lint config and the justfile variable, the same three pieces, by hand.
 
 ## What the scaffold does in KTL mode
 

@@ -1,8 +1,8 @@
 ---
 name: linkml-author
-description: 'Author and evolve the LinkML schema of a project: the `.linkml/` sidecar linkml-sidecar installs, a visible `linkml/` one, or a repository that is itself a linkml-project-copier project. Use when: someone asks to add, change or deprecate a class, slot, enum or type; to model a concept, map a specification, standard or document to a schema, or replace the dummy schema with the real model; to check schema conventions; or to run lint, gen-project, gen-doc or test. Not for installing or repairing the sidecar; that is linkml-sidecar. Keywords: LinkML, schema authoring, data model, classes, slots, enums, mappings, linkml-lint, gen-project, JSON Schema, Pydantic, OWL, LOKF domain schema, KTL.'
+description: 'Author and evolve the LinkML schema of any repository that holds one: a linkml-project-copier or linkml-project-cookiecutter project wherever it sits, the `.linkml/` sidecar linkml-sidecar installs, or a schema file on its own. Use when: someone asks to add, change or deprecate a class, slot, enum or type; to model a concept, map a specification, standard or document to a schema, or replace the dummy schema with the real model; to check schema conventions; or to run lint, gen-project, gen-doc or test. Not for installing or repairing the sidecar; that is linkml-sidecar. Keywords: LinkML, schema authoring, data model, classes, slots, enums, mappings, linkml-lint, gen-project, JSON Schema, Pydantic, OWL, LOKF domain schema, KTL.'
 license: Apache-2.0
-compatibility: 'Requires bash and uv; every LinkML tool runs through the project''s own environment (`uv run` inside the schema project), never a globally installed one. Works on any host that holds a linkml-project-copier project, with or without a `.lokf/` KTL bundle.'
+compatibility: 'Requires bash; every LinkML tool runs through the host''s own environment (`just`, `make`, `uv run` or `poetry run` in the schema project), or through a pinned `uvx --from linkml` when the host has none, never a globally installed one. Works with or without a `.lokf/` KTL bundle.'
 ---
 
 # linkml-author
@@ -15,42 +15,45 @@ Turn a project's LinkML schema into the model its code, data and documents descr
 
 ## Scope
 
-- **linkml-sidecar** installs the project and its dummy schema, once.
-- **This skill** replaces the dummy with the real model and evolves it, as often as the domain changes. A missing or broken sidecar file (the preflight, the README, a dummy data file) goes back to linkml-sidecar's `--repair`.
+- **linkml-sidecar** installs the project once, with a dummy schema, or adopting a schema the host already holds.
+- **This skill** writes and evolves the model, as often as the domain changes, wherever the schema lives. A missing or broken sidecar file (the preflight, the README, a dummy data file) goes back to linkml-sidecar's `--repair` when the project is the `.linkml/` sidecar; another project's files come back through its own `copier update` or history.
 
-> Guardrails: never edit a template-owned file (`justfile`, `pyproject.toml`, `config.yaml`, most of `mkdocs.yml`); `just update` is how those change, and `project.justfile` takes the project's own recipes. Never edit anything under `project/`, `docs/elements/` or `src/<slug>/datamodel/`: those are generated, and the next recipe overwrites them. Never run `just setup` or `just deploy` in a sidecar. Never loosen a validator to admit data: fix the schema or the data.
+> Guardrails: never edit a template-owned file (`justfile`, `pyproject.toml`, `config.yaml`, most of `mkdocs.yml`); `just update` is how those change, and `project.justfile` takes the project's own recipes. Never edit anything under `project/`, `docs/elements/` or `src/<slug>/datamodel/`: those are generated, and the next recipe overwrites them. Never run `just setup` or `just deploy` in a sidecar. Never loosen a validator to admit data: fix the schema or the data. Never move a schema into a sidecar unasked; it is authored where it is.
 
-## Step 0 - Find the project
+## Step 0 - Find the schema
 
-Run the preflight the sidecar installed, `.linkml/scripts/linkml-preflight.sh`, or linkml-sidecar's `templates/scripts/linkml-preflight.sh` when none is installed; its `sidecar` and `project` lines name the project directory and the schema file. The layouts it knows, in the order it looks:
+A LinkML schema can live in any repository, and most were never made from a template, so the schema is found by what files say, never by where they sit. Run the preflight: the copy a sidecar installed, `.linkml/scripts/linkml-preflight.sh`, or linkml-sidecar's `templates/scripts/linkml-preflight.sh` when that skill is installed beside this one. Its `sidecar`, `project`, `schema` and `tools` lines name the layout, the schema file and the way to run the tools. Without either copy, apply the same rule by hand ([layouts.md](https://github.com/noelmcloughlin/linkml-sidecar/blob/main/skills/linkml-sidecar/references/layouts.md) is the full statement):
 
-| Layout | Project directory | How to tell |
+| Layout | How to tell | Where the schema is |
 | --- | --- | --- |
-| the sidecar | `.linkml/` | `.linkml/.copier-answers.yml` |
-| a visible sidecar, made by hand | `linkml/` | `linkml/.copier-answers.yml` |
-| the repository is the project | `.` | `.copier-answers.yml` at the root |
+| the sidecar | `.linkml/.copier-answers.yml` | `config.public.mk` in `.linkml/` names it; an adopted schema sits where `LINKML_SCHEMA_SOURCE_DIR` points, outside `.linkml/` |
+| a schema project elsewhere: the root, `linkml/`, any directory one level down, or the one you were started in | a `.copier-answers.yml` whose `_src_path` names `linkml-project-copier`, or a `config.public.mk` (the older cookiecutter renders it too; upstream may retire it, and then the answers' `project_slug` names the schema) | `<dir>/<slug>.yaml` from `config.public.mk`, else `src/<slug>/schema/<slug>.yaml` |
+| a schema file on its own | a `*.yaml` that imports `linkml:types` or names the `linkml:` prefix and has a top-level `classes:`, `slots:`, `enums:`, `types:` or `imports:` key, outside `docs/`, `tests/`, `project/` and the other folders that hold copies and output | where it is |
+| `.linkml/` holding only configuration files | no answers file and no project files in it | not a layout: leave it alone and look on |
 
-Inside the project directory, `config.public.mk` names the schema: `LINKML_SCHEMA_NAME` is the slug and `LINKML_SCHEMA_SOURCE_DIR` the folder, so the file is `<dir>/<slug>.yaml`. Read `README.md` there before editing: in a sidecar it says which files are the template's, which are the host's, and which recipes never to run.
+One schema: work on it. Several, in a project that names none or in a repository with no project: ask the person which one when the session is attended, and list them and stop when it is not. Read the project's `README.md` before editing: in a sidecar it says which files are the template's, which are the host's, and which recipes never to run.
 
-Run every recipe with `just --justfile <project>/justfile <recipe>`; `just` changes into the project directory itself, so this works from the host's root. Without `just`, `uvx --from rust-just just --justfile <project>/justfile <recipe>` does the same. Run every LinkML tool through the project (`uv run linkml-lint ...` inside it, or the recipes), never a `linkml-lint` or `gen-project` found on the path: the versions in `uv.lock` are the ones the host tested with.
+**The tools.** Run everything through the host's own environment, in the first form that applies: the project's `justfile` (`just --justfile <project>/justfile <recipe>`; `just` changes into the project directory itself, and `uvx --from rust-just just` stands in without `just`), its `Makefile` (`make -C <project> <target>`, the same names), `uv run` or `poetry run` when the host's `pyproject.toml` names `linkml`, else `uvx --from linkml linkml-lint` and `uvx --from linkml gen-project`, naming the version uvx resolved in the hand-off. Never a `linkml-lint` or `gen-project` found on the path: the versions the host tested with are the ones that count.
 
 ## The gate
 
 After every schema edit, in this order:
 
 ```bash
-just --justfile .linkml/justfile lint          # linkml-lint, the recommended rules: warnings fail it
-just --justfile .linkml/justfile gen-project   # every generator in config.yaml, plus Python, Pydantic, Java, TypeScript, OWL
-just --justfile .linkml/justfile test          # generate into tmp/, pytest, then the example runner (it does not lint)
+just --justfile <project>/justfile lint          # linkml-lint, the recommended rules: warnings fail it
+just --justfile <project>/justfile gen-project   # every generator in config.yaml, plus Python, Pydantic, Java, TypeScript, OWL
+just --justfile <project>/justfile test          # generate into tmp/, pytest, then the example runner (it does not lint)
 ```
 
-`just test` runs no lint, so `lint` comes first. A generator that fails on a schema `lint` accepted is a schema error too; the message names the element. `just gen-doc` then `just testdoc` shows the docs site locally, and `just site` regenerates everything at once. When a project installs its tools for the first time, `just install` comes before the gate.
+`just test` runs no lint, so `lint` comes first. A generator that fails on a schema `lint` accepted is a schema error too; the message names the element. `just gen-doc` then `just testdoc` shows the docs site locally, and `just site` regenerates everything at once. When a project installs its tools for the first time, `just install` comes before the gate. A project with a `Makefile` runs the same targets through `make`.
 
-Example data sits beside the schema's tests: `tests/data/valid/<ClassName>-<anything>.yaml` must validate against `ClassName`, and `tests/data/invalid/<ClassName>-<anything>.yaml` must fail; the class is read from the file name. Every class that carries data in the host gets at least one valid example, and every constraint worth having gets one counter-example.
+A schema on its own has no recipes: the gate is `linkml-lint <schema>`, then `gen-project -d <a temporary folder> <schema>`, then `linkml-validate -s <schema> -C <Class> <file>` over whatever example data the host keeps, each through the environment Step 0 named. Say in the hand-off that the host has no test harness, and that linkml-sidecar `--adopt <schema>` would give it one.
+
+Example data sits beside the schema's tests: `tests/data/valid/<ClassName>-<anything>.yaml` must validate against `ClassName`, and `tests/data/invalid/<ClassName>-<anything>.yaml` must fail; the class is read from the file name. Every class that carries data in the host gets at least one valid example, and every constraint worth having gets one counter-example. An adopted schema's sidecar starts with none; add them first.
 
 ## Replacing the dummy
 
-A fresh sidecar holds the `Person` example (or, beside a KTL bundle, `ExampleConcept`). Read the host first, then write the model in one pass and run the gate:
+A fresh sidecar holds the `Person` example (or, beside a KTL bundle, `ExampleConcept`); an adopted or found schema is already the model, so this section is skipped and the next applies. Read the host first, then write the model in one pass and run the gate:
 
 1. **Collect the sources.** The code's types and records (`src/`, `models/`, migrations, OpenAPI or GraphQL documents, JSON samples, database DDL), the documents that define the domain (a specification, a standard, a glossary), and any existing vocabulary the domain already publishes as LinkML or OWL, which is imported rather than redescribed.
 2. **Map, do not transcribe.** [references/source-mapping.md](references/source-mapping.md) is the table: a persistent noun becomes a class, a controlled list an enum, a property a slot, a relationship a slot with an object range and an inverse, a containment root a `tree_root` class. Paraphrase descriptions; never paste a standard's text into the schema.
@@ -87,11 +90,11 @@ These settle the questions an author meets most, each stated once:
 
 ## Beside a KTL bundle
 
-When the host carries `.lokf/`, the schema is the bundle's domain schema (linkml-sidecar's [references/ktl.md](https://github.com/noelmcloughlin/linkml-sidecar/blob/main/skills/linkml-sidecar/references/ktl.md), and ktl-librarian's [domain-schema.md](https://github.com/noelmcloughlin/knowledge-trust-ladder/blob/main/skills/ktl-librarian/references/domain-schema.md), which is the authority):
+The schema is the bundle's *domain schema* when `.lokf/justfile` names it (`schema :=`; the preflight's `lokf` line says `wired`) or it imports `.lokf/lokf.yaml`. A `.lokf/` beside a schema that is neither is a bundle *about* the repository, as in a schema repository that documents itself, and the schema stays what it is; wiring it is its maintainers' decision, made by adding the import, the lint config and the justfile variable, never assumed from the bundle's presence. For a domain schema (linkml-sidecar's [references/ktl.md](https://github.com/noelmcloughlin/linkml-sidecar/blob/main/skills/linkml-sidecar/references/ktl.md), and ktl-librarian's [domain-schema.md](https://github.com/noelmcloughlin/knowledge-trust-ladder/blob/main/skills/ktl-librarian/references/domain-schema.md), which is the authority):
 
 - a class the bundle's concepts may use is `is_a: Concept`, or a subclass of a LOKF built-in whose meaning fits; its concepts write that class name in `type`, exactly;
 - every class is closed, so a concept carries only the slots its class declares; a built-in plus one key of its own is not valid, which is why the subclass exists;
-- keep the `imports:` line and `.lokf/lokf.yaml` as the sidecar set them; when the `lokf` floor in `.lokf/pyproject.toml` moves, refresh the pinned copy and regenerate `.linkml/.linkmllint.yaml` (linkml-sidecar `--repair .linkmllint.yaml`);
+- keep the `imports:` line and `.lokf/lokf.yaml` as the sidecar set them; when the `lokf` floor in `.lokf/pyproject.toml` moves, refresh the pinned copy and regenerate the project's `.linkmllint.yaml` (in a sidecar, linkml-sidecar `--repair .linkmllint.yaml`);
 - a valid example goes under `tests/data/problem/valid/`, not `tests/data/valid/`: the example runner cannot instantiate beside LOKF's `from` slot, and the validator-based `tests/test_data.py` reads both folders; counter-examples stay under `tests/data/invalid/`;
 - after the gate, `cd .lokf && just lokf-validate && just lokf-check-refs`: the bundle against both schemas;
 - never loosen the validator to admit a concept; add the class, or fit the concept to a built-in;
@@ -101,4 +104,4 @@ When the host carries `.lokf/`, the schema is the bundle's domain schema (linkml
 
 ## Hand-off
 
-After a change, tell the person: which elements were added, changed or deprecated; what was guessed and from which source; whether the gate passed, and `lokf validate` beside a bundle; which docs pages were updated; and anything left for linkml-sidecar (a broken sidecar file) or for the KTL plugins (a new type).
+After a change, tell the person: which layout Step 0 found and which tools ran (and, through uvx, which LinkML version); which elements were added, changed or deprecated; what was guessed and from which source; whether the gate passed, and `lokf validate` beside a wired bundle; which docs pages were updated; and anything left for linkml-sidecar (a broken sidecar file, or a schema that could be adopted) or for the KTL plugins (a new type).

@@ -1,6 +1,6 @@
 # linkml-sidecar
 
-Two [Agent Skills](https://agentskills.io) that give a code repository a [LinkML](https://linkml.io) data model without touching its own build: **linkml-sidecar** installs a hidden `.linkml/` folder holding a complete, pinned [linkml-project-copier](https://github.com/linkml/linkml-project-copier) project, and **linkml-author** turns its dummy schema into the model the code describes and keeps it linted, generated, documented and tested.
+Two [Agent Skills](https://agentskills.io) that give a code repository a [LinkML](https://linkml.io) data model without touching its own build: **linkml-sidecar** installs a hidden `.linkml/` folder holding a complete, pinned [linkml-project-copier](https://github.com/linkml/linkml-project-copier) project, around a dummy schema or around a schema the repository already holds, and **linkml-author** writes and keeps the schema of any repository that has one, linted, generated, documented and tested.
 
 > **It is a sidecar.** One hidden folder, one visible doorway (`linkml_schema/`), one workflow, and a README inside that says how to remove it. Nothing in the host's build depends on it. The schema is the source: the JSON Schema, Pydantic and dataclass models, OWL and SHACL, TypeScript and the docs site are generated from it, one `just` recipe each.
 
@@ -8,11 +8,13 @@ Two [Agent Skills](https://agentskills.io) that give a code repository a [LinkML
 >
 > **Agents:** if `.lokf/knowledge/index.md` exists, read it first. `llms.txt` says how to weigh it.
 
-## Two patterns
+## Three cases
 
-A repository that *is* a schema project, such as [lmodel/gist](https://github.com/lmodel/gist), runs copier at its root and needs nothing here.
+A repository that *is* a schema project, such as [lmodel/gist](https://github.com/lmodel/gist), runs copier at its root and needs no sidecar; linkml-author works there as it is.
 
 A domain codebase whose maintainers do not want a schema project in their root folder gets the sidecar.
+
+A repository that holds a LinkML schema but no project, which is most of them, gets the sidecar around that schema (`--adopt`): the pinned lock, the recipes, the tests, the workflow and the docs site, with the schema untouched where it lies. linkml-author works on the schema either way. Both skills find the schema by what files say, never by the folder's name; [layouts.md](skills/linkml-sidecar/references/layouts.md) is the rule.
 
 ## Install
 
