@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+
+- **The website's home page offers an Install button**, which opens the install page, beside the four default buttons.
+
 ## [0.2.0] - 2026-10-22
 
 ### Added
