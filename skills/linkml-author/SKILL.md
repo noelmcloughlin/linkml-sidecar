@@ -18,7 +18,7 @@ Turn a project's LinkML schema into the model its code, data and documents descr
 - **linkml-sidecar** installs the project once, with a dummy schema, or adopting a schema the host already holds.
 - **This skill** writes and evolves the model, as often as the domain changes, wherever the schema lives. When the project is the `.linkml/` sidecar, linkml-sidecar's `--repair` restores a missing or broken sidecar file (the preflight, the README, a dummy data file). Another project restores its files through its own `copier update` or from its history.
 
-> Guardrails: never edit a template-owned file (`justfile`, `pyproject.toml`, `config.yaml`, most of `mkdocs.yml`); `just update` is how those change, and `project.justfile` takes the project's own recipes. Never edit anything under `project/`, `docs/elements/` or `src/<slug>/datamodel/`: those are generated, and the next recipe overwrites them. Never run `just setup` or `just deploy` in a sidecar. Never loosen a validator to admit data: fix the schema or the data. Never move a schema into a sidecar unasked; it is authored where it is.
+> Guardrails: never edit a template-owned file (`justfile`, `pyproject.toml`, `config.yaml`, most of `mkdocs.yml`); `just update` is how those change, and `project.justfile` takes the project's own recipes. `generators.yaml`, the generators' settings moved out of `config.yaml`, is the project's to edit. When the preflight's `generators` line offers that move, offer it to the person; linkml-sidecar's `--repair generators.yaml` makes it. Never edit anything under `project/`, `docs/elements/` or `src/<slug>/datamodel/`: those are generated, and the next recipe overwrites them. Never run `just setup` or `just deploy` in a sidecar. Never loosen a validator to admit data: fix the schema or the data. Never move a schema into a sidecar unasked; it is authored where it is.
 
 ## Step 0 - Find the schema
 
@@ -48,7 +48,7 @@ After every schema edit, in this order:
 
 ```bash
 just --justfile <project>/justfile lint          # linkml-lint, the recommended rules: warnings fail it
-just --justfile <project>/justfile gen-project   # every generator in config.yaml, plus Python, Pydantic, Java, TypeScript, OWL
+just --justfile <project>/justfile gen-project   # every generator in generators.yaml or config.yaml, plus Python, Pydantic, Java, TypeScript, OWL
 just --justfile <project>/justfile test          # generate into tmp/, pytest, then the example runner (it does not lint)
 ```
 

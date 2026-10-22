@@ -17,6 +17,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 
+- **The generators' settings are `.linkml/generators.yaml`.** A new sidecar renames the template's `config.yaml` and changes the one line of `config.public.mk` that names it. `--repair generators.yaml` moves an existing sidecar's or root project's file, and the preflight offers it.
 - **The scaffold renders into a staging directory and never removes `.linkml/`.** A `.linkml/` that holds only configuration files is installed around; a name both hold is refused, never overwritten; a failed run removes the staging directory alone.
 - **A bundle beside a schema does not make it the domain schema.** linkml-author treats a schema as a bundle's domain schema only when `.lokf/justfile` names it or it imports `lokf.yaml`.
 

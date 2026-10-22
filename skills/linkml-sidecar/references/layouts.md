@@ -10,7 +10,7 @@ A LinkML schema can live in any repository. Most were never made with linkml-pro
 | `config.public.mk` | a project from copier or from the older cookiecutter, which both render it; it names the schema (`LINKML_SCHEMA_NAME`, `LINKML_SCHEMA_SOURCE_DIR`) | a convenience file upstream may retire; when it is gone, the answers' `project_slug` names the schema (`src/<slug>/schema/<slug>.yaml`) |
 | a `*.yaml` or `*.yml` file that imports `linkml:types` or names the `linkml:` prefix and has a top-level `classes:`, `slots:`, `enums:`, `types:`, `subsets:` or `imports:` key | a schema on its own | the language's own |
 
-A `.linkml/` directory is a strong sign that LinkML is in use, but not of what it holds: upstream LinkML may name it for configuration files, and the sidecar names it for a whole project. The two uses coexist by files. `.linkml/.copier-answers.yml` means the sidecar; anything else in there is left alone.
+A `.linkml/` directory is a strong sign that LinkML is in use, but not of what it holds: upstream LinkML may name it for configuration files, and the sidecar names it for a whole project. The two uses coexist by files. `.linkml/.copier-answers.yml` means the sidecar; anything else in there is left alone. Both uses keep the generators' settings at `.linkml/generators.yaml`: a sidecar renames the template's `config.yaml` to that, and `--repair generators.yaml` moves a root project's file there.
 
 ## Where the preflight looks
 
