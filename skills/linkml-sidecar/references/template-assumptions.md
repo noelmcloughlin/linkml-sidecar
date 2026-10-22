@@ -1,6 +1,6 @@
 # What linkml-project-copier assumes of a repository root, and what the sidecar does about it
 
-This page is for whoever maintains this skill: it is the catalogue the scaffold implements, row by row, at template **v0.5.0**. The template is built for a repository that *is* a schema project, so it renders workflows, governance files, a README and a `setup` recipe for a repository root. In a sidecar each of those is wrong, inert or harmful. The skill neutralises them one by one; the last column says which rows an upstream `layout: sidecar` answer would remove ([upstream-proposal.md](upstream-proposal.md)). Bump the heading and re-walk the rows when the pin moves.
+This page is for whoever maintains this skill: it is the catalogue the scaffold implements, row by row, at template **v0.5.0**. The template is built for a repository that *is* a schema project, so it renders workflows, governance files, a README and a `setup` recipe for a repository root. In a sidecar each of those is wrong, inert or harmful. The skill neutralises them one by one; the last column says which rows a `layout: sidecar` answer, proposed upstream in [linkml-project-copier#187](https://github.com/linkml/linkml-project-copier/issues/187), would remove. Bump the heading and re-walk the rows when the pin moves.
 
 | # | Root-install assumption in v0.5.0 | What the skill does | Gone with an upstream `layout: sidecar` |
 | --- | --- | --- | --- |

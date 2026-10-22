@@ -17,8 +17,8 @@
 # Usage: linkml-preflight.sh [repo-root]   (default: the nearest ancestor of
 # the current directory holding `.linkml/`, `.lokf/` or `.git`, else the
 # current directory). LINKML_PREFLIGHT_OFFLINE=1 skips the two checks that
-# reach the network (copier through uvx, and github.com and pypi.org), for
-# tests and air-gapped machines.
+# reach the network (copier through uvx, and the template's source and the
+# package index), for tests and air-gapped machines.
 [ -n "${BASH_VERSION:-}" ] || { echo "run this with bash: bash ${0##*/} [repo-root]" >&2; exit 2; }
 set -u
 
@@ -33,6 +33,9 @@ have() { command -v "$1" >/dev/null 2>&1; }
 mkvalue() { sed -n "s/^$2=//p" "$1" 2>/dev/null | head -n 1 | sed -e 's/^"//' -e 's/"$//'; }
 # One value out of a `key: value` line of a copier answers file.
 answer() { sed -n "s/^$2: *//p" "$1" 2>/dev/null | head -n 1 | tr -d '"'"'"''; }
+# The host of a URL, without its scheme, user, password, port and path. An
+# index URL may carry a password, so a URL is only ever printed this way.
+hostof() { printf '%s\n' "$1" | sed -e 's#^[A-Za-z][A-Za-z0-9+.-]*://##' -e 's#^[^/@]*@##' -e 's#[/:?].*$##'; }
 
 # ---- root ------------------------------------------------------------------
 start="$(pwd -P)"
@@ -94,6 +97,42 @@ else
   miss git "git not installed - copier fetches the template with it, and the scaffold checks the template's tag with git ls-remote" "Step 1 (the scaffold)"
 fi
 
+# The folder the forge reads workflows from. Forgejo, Codeberg's forge, reads
+# only the first of .forgejo/, .gitea/ and .github/workflows/ that exists, so
+# the sidecar's workflow goes in that one, and a new folder would hide it.
+wfdir=.github/workflows
+if [ "$forge" = forgejo ]; then
+  wfdir=.forgejo/workflows
+  for d in .forgejo/workflows .gitea/workflows .github/workflows; do
+    if [ -d "$root/$d" ]; then wfdir="$d"; break; fi
+  done
+fi
+
+# ---- package index ---------------------------------------------------------
+# The index uv installs from: UV_DEFAULT_INDEX (a URL, or name=URL), the
+# older UV_INDEX_URL, else the default index of a user or system uv.toml,
+# else PyPI. The copier, lock and network lines name its host.
+index="${UV_DEFAULT_INDEX:-${UV_INDEX_URL:-}}"
+case "$index" in *=http*) index="${index#*=}" ;; esac
+if [ -z "$index" ]; then
+  for f in "${XDG_CONFIG_HOME:-${HOME:-}/.config}/uv/uv.toml" /etc/uv/uv.toml; do
+    [ -f "$f" ] || continue
+    # An [[index]] table with `default = true` names the default index; a
+    # top-level index-url is the older spelling of the same.
+    index="$(awk '
+      function flush() { if (inidx && dflt && url != "") found = url }
+      /^[[:space:]]*\[\[index\]\]/ { flush(); inidx = 1; url = ""; dflt = 0; next }
+      /^[[:space:]]*\[/ { flush(); inidx = 0; next }
+      inidx && /^[[:space:]]*url[[:space:]]*=/ { url = $0; sub(/^[^"]*"/, "", url); sub(/".*$/, "", url) }
+      inidx && /^[[:space:]]*default[[:space:]]*=[[:space:]]*true/ { dflt = 1 }
+      !inidx && /^[[:space:]]*index-url[[:space:]]*=/ { top = $0; sub(/^[^"]*"/, "", top); sub(/".*$/, "", top) }
+      END { flush(); if (found != "") print found; else if (top != "") print top }' "$f")"
+    [ -n "$index" ] && break
+  done
+fi
+index="${index:-https://pypi.org/simple}"
+ihost="$(hostof "$index")"
+
 # ---- tooling ---------------------------------------------------------------
 if have uv; then
   ok uv "uv $(uv --version 2>/dev/null | sed 's/^uv //')"
@@ -110,10 +149,18 @@ if have uv; then
   copier_hint="uvx --from 'copier>=9.4.0,<10' --with jinja2-time copier --version"
   if [ "${LINKML_PREFLIGHT_OFFLINE:-}" = 1 ]; then
     info copier "not checked (LINKML_PREFLIGHT_OFFLINE=1): $copier_hint"
-  elif cv="$("${copier_cmd[@]}" --version 2>/dev/null | head -n 1)" && [ -n "$cv" ]; then
+  elif cout="$("${copier_cmd[@]}" --version 2>&1)" && cv="$(printf '%s\n' "$cout" | grep -m 1 '^copier [0-9]')"; then
     ok copier "$cv through uvx, with jinja2-time (the template needs both)"
   else
-    miss copier "uvx cannot run copier (offline, or a uv cache problem) - try: $copier_hint" "Step 1 (the scaffold)"
+    # uv says why it failed; a certificate error also mentions the request,
+    # so it is matched first.
+    case "$cout" in
+      *system-certs*|*native-tls*|*certificate*) why="uv does not trust this network's certificates - set UV_SYSTEM_CERTS=true, or SSL_CERT_FILE to the system's bundle" ;;
+      *"No interpreter found"*|*"current Python version"*) why="uv finds no Python that copier runs on (3.9 or later)" ;;
+      *"error sending request"*|*"dns error"*|*"Connection refused"*|*"timed out"*) why="uv cannot reach the package index $ihost" ;;
+      *) why="uvx cannot run copier" ;;
+    esac
+    miss copier "$why - try: $copier_hint" "Step 1 (the scaffold)"
   fi
   if have just; then ok just "just $(just --version 2>/dev/null | sed 's/^just //')"
   else info just "just not installed - uvx --from rust-just just works the same, and so does uv tool install rust-just"; fi
@@ -273,15 +320,24 @@ if [ -n "$sidecar" ]; then
         [ -f "$sidecar/config.yaml" ] && warn generators "${sdisp}config.yaml exists beside $gens, which the recipes read - carry any change into $gens, then delete ${sdisp}config.yaml" ;;
     esac
   fi
-  if [ "$ingit" -eq 1 ] && [ "$tracked" = tracked ] && [ -f "$root/.github/workflows/linkml-sidecar.yaml" ] \
+  if [ "$ingit" -eq 1 ] && [ "$tracked" = tracked ] && [ -f "$root/$wfdir/linkml-sidecar.yaml" ] \
      && [ -z "$(git -C "$root" ls-files .linkml/uv.lock 2>/dev/null | head -n 1)" ]; then
     warn project ".linkml/uv.lock is not in git - the workflow installs with uv sync --locked and fails without it; run just --justfile .linkml/justfile install and commit the file"
+  fi
+  # A lock records the index it was made against, and every file's address
+  # there. Where uv reads another index, uv sync --locked fails on it, and
+  # just install rewrites every address to the index uv reads.
+  if [ -f "$sidecar/uv.lock" ]; then
+    lhost="$(hostof "$(sed -n 's/.*registry = "\([^"]*\)".*/\1/p' "$sidecar/uv.lock" | sort | uniq -c | sort -rn | head -n 1 | sed 's/^ *[0-9]* *//')")"
+    if [ -n "$lhost" ] && [ "$lhost" != "$ihost" ]; then
+      warn lock "${sdisp}uv.lock was made against $lhost, and uv here reads $ihost - just install rewrites it to $ihost; commit that only where CI reads $ihost too"
+    fi
   fi
   inert=0
   for f in "$sidecar"/.github/workflows/*.yaml "$sidecar"/.github/workflows/*.yml "$sidecar"/.github/dependabot.yml "$sidecar"/.pre-commit-config.yaml; do
     [ -f "$f" ] && inert=$((inert + 1))
   done
-  [ "$inert" -gt 0 ] && [ "$sidecar" != "$root" ] && info nested "$inert file(s) under $sdisp.github/ and .pre-commit-config.yaml are inert there (GitHub and pre-commit read the root only); the hoisted workflow is .github/workflows/linkml-sidecar.yaml"
+  [ "$inert" -gt 0 ] && [ "$sidecar" != "$root" ] && info nested "$inert file(s) under $sdisp.github/ and .pre-commit-config.yaml are inert there (forges and pre-commit read the root only); the hoisted workflow is $wfdir/linkml-sidecar.yaml"
 fi
 
 # ---- authors: whose history the schema folder carries -----------------------
@@ -418,15 +474,17 @@ done
 if [ -n "$pages" ] && [ "$kind" != project ]; then
   warn pages "the host already publishes Pages ($pages) - never run just deploy from .linkml/; the Step 5 docs job publishes under the linkml/ subpath only"
 fi
-if [ -d "$root/.github/workflows" ]; then
-  if [ -f "$root/.github/workflows/linkml-sidecar.yaml" ]; then
-    if grep -q 'working-directory: .linkml' "$root/.github/workflows/linkml-sidecar.yaml"; then ok workflows "linkml-sidecar.yaml present"
-    else warn workflows "a linkml-sidecar.yaml exists that is not the sidecar's hoisted workflow - rename one of them"; fi
+if [ -d "$root/$wfdir" ]; then
+  if [ -f "$root/$wfdir/linkml-sidecar.yaml" ]; then
+    if grep -q 'working-directory: .linkml' "$root/$wfdir/linkml-sidecar.yaml"; then ok workflows "$wfdir/linkml-sidecar.yaml present"
+    else warn workflows "a linkml-sidecar.yaml exists in $wfdir/ that is not the sidecar's hoisted workflow - rename one of them"; fi
   else
-    n="$(find "$root/.github/workflows" -maxdepth 1 -name '*.y*ml' | wc -l | tr -d ' ')"
-    if [ "$kind" = project ]; then info workflows "$n workflow(s); the project's own are its gate, and no hoisted sidecar workflow applies"
-    else info workflows "$n workflow(s), none for the sidecar (Step 5 lays down linkml-sidecar.yaml)"; fi
+    n="$(find "$root/$wfdir" -maxdepth 1 -name '*.y*ml' | wc -l | tr -d ' ')"
+    if [ "$kind" = project ]; then info workflows "$n workflow(s) in $wfdir/; the project's own are its gate, and no hoisted sidecar workflow applies"
+    else info workflows "$n workflow(s) in $wfdir/, none for the sidecar (Step 5 lays down linkml-sidecar.yaml there)"; fi
   fi
+elif [ "$forge" = forgejo ] && [ "$kind" != project ]; then
+  info workflows "no workflow folder yet; on Forgejo, Step 5 lays down $wfdir/linkml-sidecar.yaml"
 fi
 if [ "$kind" != project ] && [ -f "$root/pyproject.toml" ] && grep -q '^\[tool.uv.workspace\]' "$root/pyproject.toml"; then
   warn workspace "the root pyproject.toml declares a uv workspace; .linkml/ is not a member and uv sync inside it is untested (references/template-assumptions.md)"
@@ -439,17 +497,33 @@ for v in CI GITHUB_ACTIONS GITLAB_CI TF_BUILD; do
 done
 if [ -n "$unattended" ]; then info session "unattended ($unattended set): guessed facts cannot be confirmed here; the hand-off lists them"
 else info session "attended: a person can confirm each guessed fact, and choose among several schemas"; fi
+# The template's source and the package index, as git and uv reach them:
+# LINKML_TEMPLATE_SRC or the pinned template, after any git
+# url.<base>.insteadOf rule, which applies when copier clones it too. Any
+# HTTP answer counts as reachable, and curl asks through the same proxy
+# variables git and uv read.
+tsrc="${LINKML_TEMPLATE_SRC:-gh:linkml/linkml-project-copier}"
+case "$tsrc" in gh:*) tsrc="https://github.com/${tsrc#gh:}.git" ;; esac
+have git && tsrc="$(git ls-remote --get-url "$tsrc" 2>/dev/null || printf '%s' "$tsrc")"
+thost="$(hostof "$tsrc")"; thost="${thost:-$tsrc}"
 if [ "${LINKML_PREFLIGHT_OFFLINE:-}" = 1 ]; then
-  info network "not checked (LINKML_PREFLIGHT_OFFLINE=1); the scaffold needs github.com and pypi.org"
+  info network "not checked (LINKML_PREFLIGHT_OFFLINE=1); the scaffold needs the template from $thost and packages from $ihost"
 elif have curl; then
   net=""
-  if curl -sI --max-time 4 https://github.com/linkml/linkml-project-copier >/dev/null 2>&1; then net="github.com"
-  else warn network "github.com unreachable - copier cannot fetch the template"; fi
-  if curl -sI --max-time 4 https://pypi.org/simple/linkml/ >/dev/null 2>&1; then net="${net}${net:+, }pypi.org"
-  else warn network "pypi.org unreachable - uv cannot install copier, just or linkml"; fi
+  case "$tsrc" in
+    http://*|https://*)
+      if curl -sI --max-time 4 "$tsrc" >/dev/null 2>&1; then net="$thost"
+      else warn network "$thost unreachable - copier cannot fetch the template; a company copy goes in LINKML_TEMPLATE_SRC, or in a git url.<copy>.insteadOf rule"; fi ;;
+    *://*|*@*) ;;
+    *)
+      if [ -d "$tsrc" ]; then net="the template copy at $tsrc"
+      else warn network "the template source $tsrc is not a directory here"; fi ;;
+  esac
+  if curl -sI --max-time 4 "${index%/}/linkml/" >/dev/null 2>&1; then net="${net}${net:+, }$ihost"
+  else warn network "$ihost unreachable - uv cannot install copier, just or linkml; a company mirror goes in UV_DEFAULT_INDEX"; fi
   [ -n "$net" ] && info network "$net reachable"
 else
-  warn network "curl not installed - reachability not checked; the scaffold needs github.com and pypi.org"
+  warn network "curl not installed - reachability not checked; the scaffold needs the template from $thost and packages from $ihost"
 fi
 
 printf 'Preflight: %d missing, %d warning(s).%s\n' "$missing" "$warns" "${disables:+ Missing disables: $disables.}"

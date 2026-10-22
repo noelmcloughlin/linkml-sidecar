@@ -2,7 +2,7 @@
 name: linkml-sidecar
 description: 'Install a `.linkml/` LinkML schema sidecar (a pinned linkml-project-copier project with its generators, docs and tests, a dummy schema, and a `linkml_schema` doorway link beside it) in the repository this skill sits in, without touching the host''s build, or give a schema the repository already holds that toolchain in place (`--adopt`). Use when: a repo has no LinkML schema project yet and someone asks to add, scaffold, bootstrap or set up a LinkML sidecar, schema project, data model or domain schema, with or without a KTL `.lokf/` bundle; or to repair a missing or broken sidecar file. Not for authoring classes, slots or enums; that is the linkml-author skill, which this one hands off to when done. Keywords: LinkML, schema, data model, copier, linkml-project-copier, sidecar, JSON Schema, Pydantic, OWL, SHACL, LOKF, KTL, domain schema.'
 license: Apache-2.0
-compatibility: 'Requires bash (Git for Windows on Windows) and uv, which runs copier, just and the project''s own Python; one network run to github.com and pypi.org for the scaffold; Python 3.10+ for the project. Any forge or none; Step 5''s workflow is GitHub Actions. Works with or without a `.lokf/` KTL bundle.'
+compatibility: 'Requires bash (Git for Windows on Windows) and uv, which runs copier, just and the project''s own Python; one network run to github.com and pypi.org for the scaffold; Python 3.10+ for the project. Any forge or none; Step 5''s workflow is GitHub Actions or Forgejo Actions. Works with or without a `.lokf/` KTL bundle.'
 ---
 
 # linkml-sidecar
@@ -133,13 +133,14 @@ just --justfile .linkml/justfile test      # generate into tmp/, pytest, run the
 
 ## Step 5 - Install the automation (optional)
 
-**Skip this step if `.linkml/` is gitignored.** The workflow template has no placeholders.
+**Skip this step if `.linkml/` is gitignored.** The workflow templates have no placeholders.
 
 | Template | Destination |
 | --- | --- |
 | `templates/github/linkml-sidecar.yaml` | `.github/workflows/linkml-sidecar.yaml`: on a pull request or push that touches `.linkml/**`, every step runs in `.linkml/` (`working-directory`), installs from `uv.lock` with `--locked`, then `just lint` and `just test` on one Python version. On the repository's default branch, whatever its name, a second job builds the docs site and keeps it as an artifact. A third publishes it under the `linkml/` subpath of the host's `gh-pages` branch, replacing that subpath alone, only once the repository variable `LINKML_DOCS_ENABLED` is `true` |
+| `templates/forgejo/linkml-sidecar.yaml` | On Forgejo or Codeberg instead: the same gate, in the folder the preflight's `workflows` line names, publishing to Codeberg Pages |
 
-With `--adopt`, add the schema's folder (`"<dir>/**"`) to both `paths:` lists, so an edit to the schema runs the gate too. The template's own workflows under `.linkml/.github/` are inert there and stay as the template's copies. The host's root `dependabot.yml`, if any, can gain a `uv` entry for `/.linkml`; suggest it in one line, do not scaffold it. Check whether the host already runs ShellCheck and `actionlint` over its tree; if not, suggest coverage for `.linkml/scripts/linkml-preflight.sh` and the workflow, in one line. [references/automation.md](references/automation.md) says what each job does, the variable to set, and how to port the workflow to another forge.
+With `--adopt`, add the schema's folder (`"<dir>/**"`) to both `paths:` lists, so an edit to the schema runs the gate too. The template's own workflows under `.linkml/.github/` are inert there and stay as the template's copies. The host's root `dependabot.yml`, if any, can gain a `uv` entry for `/.linkml`; suggest it in one line, do not scaffold it. Check whether the host already runs ShellCheck and `actionlint` over its tree; if not, suggest coverage for `.linkml/scripts/linkml-preflight.sh` and the workflow, in one line. [references/automation.md](references/automation.md) says what each job does, the variable to set, and what the Forgejo version changes.
 
 ## Step 6 - Hand off to linkml-author
 

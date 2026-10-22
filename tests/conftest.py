@@ -40,6 +40,7 @@ SCAFFOLD = SIDECAR / "scripts" / "linkml-scaffold.sh"
 SCAFFOLD_PY = SIDECAR / "scripts" / "linkml-scaffold.py"
 PREFLIGHT = TEMPLATES / "scripts" / "linkml-preflight.sh"
 WORKFLOW = TEMPLATES / "github" / "linkml-sidecar.yaml"
+FORGEJO_WORKFLOW = TEMPLATES / "forgejo" / "linkml-sidecar.yaml"
 FAKE_COPIER = TESTS / "fake_copier.py"
 FIXTURES = TESTS / "fixtures"
 FACTS = {
