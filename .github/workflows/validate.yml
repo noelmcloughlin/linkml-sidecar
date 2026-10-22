@@ -133,7 +133,7 @@ jobs:
       - name: actionlint
         uses: docker://rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 # v1.7.12
         with:
-          args: -color .github/workflows/validate.yml skills/linkml-sidecar/templates/github/linkml-sidecar.yaml
+          args: -color .github/workflows/validate.yml .github/workflows/semantic-release.yml .github/workflows/publish.yml skills/linkml-sidecar/templates/github/linkml-sidecar.yaml
 
   smoke-test:
     name: Smoke-test the install path
