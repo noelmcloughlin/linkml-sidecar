@@ -2,7 +2,7 @@
 type: Document
 id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/upstream-proposal
 title: Upstream layout proposal
-description: A draft, not yet filed, for an issue on linkml/linkml-project-copier proposing a layout answer (root or sidecar) and a sidecar_dir, which would remove most rows of the template assumptions catalogue; filing it is a person's call.
+description: A draft, not yet filed, for an issue on linkml/linkml-project-copier proposing a layout answer (root or sidecar) and a sidecar_dir, which would remove most rows of the template assumptions catalogue, with a caveat that .linkml/ is also proposed for LinkML's configuration files; filing it is a person's call.
 genre: explanation
 resource: skills/linkml-sidecar/references/upstream-proposal.md
 tags:
@@ -17,7 +17,7 @@ sources:
   - resource: skills/linkml-sidecar/references/upstream-proposal.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-21T22:30:32Z"
+  at: "2026-10-22T01:26:03Z"
 status: draft
 ---
 
@@ -39,3 +39,5 @@ It follows the template maintainer's reply on issue #151 (2026-05-24) that a lay
   - set `site_url` to the host's Pages URL plus `/<sidecar_dir>/`.
 
 Copier itself already handles the subfolder; only the template's rendering assumes a root.
+
+One caveat concerns the default folder name. `.linkml/` is also the name proposed for LinkML's own configuration files, so a `sidecar` layout should render around files already in the folder, and refuse a name both hold, rather than take the folder as its own.

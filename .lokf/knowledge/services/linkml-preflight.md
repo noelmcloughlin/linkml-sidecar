@@ -2,7 +2,7 @@
 type: Service
 id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/services/linkml-preflight
 title: linkml-preflight.sh
-description: "The read-only preflight both skills run first: one screen of ok, warn, missing and info lines about the host's shell, git, forge, uv, copier, just, network, an existing sidecar, a .lokf/ bundle and Pages, ending in a summary line of what is missing and which steps that disables."
+description: "The read-only preflight both skills run first: one screen of ok, warn, missing and info lines about the host's shell, git, forge, uv, copier, just and network, where a LinkML schema project or schema file sits and how to run the tools on it, a .lokf/ bundle and Pages, ending in a summary line of what is missing and which steps that disables."
 resource: skills/linkml-sidecar/templates/scripts/linkml-preflight.sh
 tags:
   - preflight
@@ -12,16 +12,17 @@ isPartOf:
 sources:
   - resource: skills/linkml-sidecar/templates/scripts/linkml-preflight.sh
   - resource: skills/linkml-sidecar/references/prerequisites.md
+  - resource: skills/linkml-sidecar/references/layouts.md
   - resource: skills/linkml-sidecar/SKILL.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-21T22:30:32Z"
+  at: "2026-10-22T01:26:03Z"
 status: draft
 ---
 
 # Overview
 
-`templates/scripts/linkml-preflight.sh` says what a host can and cannot do for the two skills, on one read-only screen. linkml-sidecar runs it first, from the skill's directory, naming the host's root. The scaffold installs a copy at `.linkml/scripts/linkml-preflight.sh`, which linkml-author runs to find the project.
+`templates/scripts/linkml-preflight.sh` says what a host can and cannot do for the two skills, on one read-only screen. linkml-sidecar runs it first, from the skill's directory, naming the host's root. The scaffold installs a copy at `.linkml/scripts/linkml-preflight.sh`. linkml-author runs that copy, or this one, to find the schema and the way to run the tools on it.
 
 Each line is `ok`, `warn`, `missing` or `info`, then one summary line:
 
@@ -38,12 +39,19 @@ It shows:
 - the host and shell;
 - whether the tree is under git, and on which forge;
 - whether `uv`, `copier` and `just` run, and whether github.com and pypi.org answer;
-- whether a sidecar already exists, and in which shape;
+- what the host already holds: a sidecar, a schema project elsewhere, configuration files in `.linkml/`, or schema files outside any project;
+- how lint and the generators run there, on its `tools` line;
 - whether a `.lokf/` bundle is present, which switches on KTL mode;
 - whether the host already publishes Pages;
 - whether the root declares a uv workspace.
 
 `LINKML_PREFLIGHT_OFFLINE=1` skips the two checks that reach the network, for tests and air-gapped machines.
+
+## How it finds the schema
+
+It finds a schema by what files say, never by the folder's name. It looks for a project in `.linkml/`, at the repository root, in the directory it was started in, and in every directory one level down. Copier answers whose `_src_path` names linkml-project-copier, or a `config.public.mk`, make a project. When `config.public.mk` is absent, the answers' `project_slug` names the schema. A second project is reported on an `also` line. With no project anywhere, it finds schema files by content and prints each on an `ok schema` line.
+
+Only `.linkml/.copier-answers.yml` means a sidecar. A `.linkml/` holding other files is reported as holding configuration files, or as empty. Beside a `.lokf/` bundle, the `lokf` line says whether `.lokf/justfile` names the schema, and the schema is not the bundle's domain schema until it does. `skills/linkml-sidecar/references/layouts.md` states the rule.
 
 ## When a line needs someone else
 

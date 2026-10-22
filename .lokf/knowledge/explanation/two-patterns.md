@@ -1,13 +1,14 @@
 ---
 type: Explanation
 id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/explanation/two-patterns
-title: Two patterns, one skill
-description: "Why there are two ways to give a repository a LinkML schema: a repository that is itself a schema project runs copier at its root and needs nothing here, while a domain codebase whose maintainers do not want a schema project in their root gets the hidden .linkml/ sidecar."
+title: Three cases, one skill
+description: "Why there are three ways to give a repository a LinkML schema: a repository that is itself a schema project runs copier at its root and needs nothing here, a domain codebase whose maintainers do not want a schema project in their root gets the hidden .linkml/ sidecar, and a repository holding a schema but no project gets the sidecar around that schema."
 genre: explanation
 resource: README.md
 tags:
   - sidecar
   - copier at the root
+  - adopt
 about:
   - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/glossary/sidecar
 references:
@@ -18,17 +19,19 @@ sources:
   - resource: skills/linkml-sidecar/SKILL.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-21T22:30:32Z"
+  at: "2026-10-22T01:26:03Z"
 status: draft
 ---
 
 # Overview
 
-A repository that *is* a schema project, such as [lmodel/gist](https://github.com/lmodel/gist), runs copier at its root itself, in one command, and needs nothing here.
+A repository that *is* a schema project, such as [lmodel/gist](https://github.com/lmodel/gist), runs copier at its root itself, in one command, and needs no sidecar. linkml-author works there as it is.
 
 A domain codebase whose maintainers do not want a schema project in their root folder gets the sidecar: one hidden folder, one visible doorway (`linkml_schema/`), one workflow, and a README inside that says how to remove it. Nothing in the host's build depends on it.
 
-The linkml-sidecar skill does the sidecar only. linkml-author works in both shapes, and in a visible `linkml/` sidecar made by hand.
+A repository that holds a LinkML schema but no project, which is most of them, gets the sidecar around that schema (`--adopt`). It gains the pinned lock, the recipes, the tests, the workflow and the docs site, and the schema stays untouched where it lies.
+
+Both skills find the schema by what files say, never by the folder's name, and linkml-author works on the schema in every case.
 
 ## Why the sidecar needs a skill
 

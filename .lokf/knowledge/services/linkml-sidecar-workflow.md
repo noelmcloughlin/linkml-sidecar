@@ -16,9 +16,10 @@ references:
 sources:
   - resource: skills/linkml-sidecar/templates/github/linkml-sidecar.yaml
   - resource: skills/linkml-sidecar/references/automation.md
+  - resource: skills/linkml-sidecar/SKILL.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-21T22:30:32Z"
+  at: "2026-10-22T01:26:03Z"
 status: draft
 ---
 
@@ -33,6 +34,8 @@ status: draft
 - `publish-docs` runs after `docs`, only while the repository variable `LINKML_DOCS_ENABLED` is `true`. It publishes the artifact under the `linkml/` subpath of the host's `gh-pages` branch and replaces that subpath and nothing else.
 
 `--locked` means the lock the host committed is what runs, so a sidecar whose `uv.lock` is not in git fails at the install step.
+
+With `--adopt`, the schema sits outside `.linkml/`, so Step 5 adds its folder (`"<dir>/**"`) to both `paths:` lists, and an edit to the schema runs the gate too.
 
 ## Pins
 

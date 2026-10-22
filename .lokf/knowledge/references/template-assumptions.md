@@ -2,7 +2,7 @@
 type: Document
 id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/template-assumptions
 title: Template assumptions catalogue
-description: The catalogue, at template v0.5.0, of the eighteen things linkml-project-copier assumes of a repository root (just setup, just deploy, nested workflows, the governance files, mkdocs URLs, --trust, just update and more), what the scaffold does about each, and which an upstream layout answer would remove.
+description: The catalogue, at template v0.5.0, of the nineteen things linkml-project-copier assumes of a repository root (just setup, just deploy, nested workflows, the governance files, mkdocs URLs, --trust, just update, config.public.mk and more), what the scaffold does about each, and which an upstream layout answer would remove.
 genre: reference
 resource: skills/linkml-sidecar/references/template-assumptions.md
 tags:
@@ -18,7 +18,7 @@ sources:
   - resource: skills/linkml-sidecar/references/template-assumptions.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-21T22:30:32Z"
+  at: "2026-10-22T01:26:03Z"
 status: draft
 ---
 
@@ -33,5 +33,6 @@ Some of the rows:
 - The template's workflows render inside the project, where GitHub never reads them, so a hoisted workflow runs the gate from the root.
 - The upstream example fails `just lint`, so `add_example: false` and a skill-owned dummy that lints clean.
 - `--trust` is required, so the tag and its commit are verified before copier runs.
+- `config.public.mk` names the schema, every recipe derives its paths from it, and upstream calls the file a convenience it may retire. Adoption points `LINKML_SCHEMA_SOURCE_DIR` at the host's folder, and the preflight falls back to the answers' `project_slug` when the file is absent.
 
 Rows marked *no* are facts about LinkML, uv or git rather than about the template, and stay whatever upstream does. When the pin moves, bump the page's heading and re-walk the rows.

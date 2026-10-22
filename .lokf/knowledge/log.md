@@ -2,6 +2,24 @@
 
 ## 2026-10-22
 
+* **Changed**: the linkml-author skill finds a schema by what files say in any repository, runs tools through the host's justfile, Makefile or environment, and follows the new design rules.
+* **Changed**: the linkml-sidecar skill now covers three cases, adopts a schema the host already holds, and installs around configuration files in .linkml/.
+* **Changed**: the preflight finds a schema project or schema file by what files say, in any layout, and names how the tools run on it.
+* **Changed**: the scaffold stages its output, never removes .linkml/, refuses a clash, and adopts a schema in place with --adopt.
+* **Changed**: KTL mode says an adopted schema, or any schema beside a bundle, is the domain schema only when .lokf/justfile names it or it imports lokf.yaml.
+* **Changed**: two patterns became three cases: a schema the repository already holds gets the sidecar around it.
+* **Changed**: a schema beside a bundle is a domain schema only when .lokf/justfile names it or it imports lokf.yaml.
+* **Changed**: the sidecar term covers adoption and a .linkml/ folder that also holds LinkML configuration files.
+* **Changed**: an adopted schema gets no dummy, and --dummy asks for one beside an existing schema.
+* **Changed**: the gate runs through any project's justfile or Makefile, and has a form for a schema with no project.
+* **Changed**: an adopted schema gets no doorway.
+* **Changed**: the catalogue has a nineteenth row, on config.public.mk and its possible retirement.
+* **Changed**: the upstream proposal carries the caveat that .linkml/ is also proposed for LinkML's configuration files.
+* **Changed**: the KTL reference says an adopted schema is not made the domain schema.
+* **Changed**: the workflow concept says an adopted schema's folder joins both paths lists.
+* **Changed**: the source map names the README's Three cases section.
+* **Added**: where a LinkML schema lives, from `skills/linkml-sidecar/references/layouts.md`.
+* **Added**: schema design for reuse, from `skills/linkml-author/references/schema-design.md`.
 * **Prose**: reworded 3 concept bodies in plain English. No fact, link, number or frontmatter changed.
 
 ## 2026-10-21

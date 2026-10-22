@@ -2,7 +2,7 @@
 type: Service
 id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/services/linkml-scaffold
 title: linkml-scaffold.sh
-description: "The scaffold script that does Steps 1 to 3 of linkml-sidecar in one deterministic run: it verifies the template pin, pre-seeds the skill's own files, runs copier, neutralises root assumptions, wires a KTL bundle, adds the root pointers, and exits 0, 2, 3, 4 or 5."
+description: "The scaffold script that does Steps 1 to 3 of linkml-sidecar in one deterministic run: it verifies the template pin, stages the skill's files and copier's output, moves them into .linkml/ around what is already there, adopts a schema the host holds with --adopt, names the schema in a KTL bundle's justfile, adds the root pointers, and exits 0, 2, 3, 4 or 5."
 resource: skills/linkml-sidecar/scripts/linkml-scaffold.sh
 tags:
   - scaffold
@@ -21,7 +21,7 @@ sources:
   - resource: skills/linkml-sidecar/SKILL.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-21T22:30:32Z"
+  at: "2026-10-22T01:26:03Z"
 status: draft
 ---
 
@@ -31,31 +31,33 @@ status: draft
 
 ```text
 linkml-scaffold.sh [--dry-run] [--host DIR] [--mode plain|lokf|auto]
-                   [--gitignored] [--pointers-only] [--repair PATH]
+                   [--gitignored] [--adopt SCHEMA | --dummy]
+                   [--pointers-only] [--repair PATH]
 ```
 
-The facts are `PROJ_NAME`, `PROJ_SLUG`, `PROJ_DESC`, `GITHUB_ORG`, `REPO_URL`, `FULL_NAME`, `EMAIL`, `LICENSE_ID`, `SCHEMA_ID` and `DOCS_URL`, with `BASE_IRI` read from `.lokf/knowledge/index.md` when it is absent.
+The facts are `PROJ_NAME`, `PROJ_SLUG`, `PROJ_DESC`, `GITHUB_ORG`, `REPO_URL`, `FULL_NAME`, `EMAIL`, `LICENSE_ID`, `SCHEMA_ID` and `DOCS_URL`, with `BASE_IRI` read from `.lokf/knowledge/index.md` when it is absent. With `--adopt`, `PROJ_SLUG` and `SCHEMA_ID` come from the schema file itself.
 
 ## What it does, in order
 
-1. Refuses an existing `.linkml/`, a visible `linkml/` with answers, or answers at the root.
-2. Checks the facts against the template's own rules.
+1. Refuses a sidecar in `.linkml/`, a schema project at the root or one directory down, and a `.linkml/` holding project files without answers. It refuses a schema the host already holds unless `--adopt` or `--dummy` says what to do. It installs around configuration files alone in `.linkml/`.
+2. Checks the facts against the template's own rules. An adopted schema's `id` is exempt, since it was chosen before.
 3. In KTL mode, pins `.lokf/lokf.yaml` out of the installed toolkit.
 4. Verifies the pin: the tag must name the commit the driver records before the template runs with `--trust`.
-5. Pre-seeds the files the skill owns, substituting facts as literal text through Python's `str.replace`, never sed.
-6. Runs copier for everything else.
-7. Neutralises the root assumptions that remain.
-8. In KTL mode, edits `.lokf/justfile` to name the schema.
-9. Adds the root pointers, then prints the hand-off facts.
+5. Pre-seeds the files the skill owns into a staging directory beside `.linkml/`, substituting facts as literal text through Python's `str.replace`, never sed.
+6. Runs copier for everything else, into the same staging directory.
+7. Neutralises the root assumptions that remain. With `--adopt`, it points `config.public.mk`'s `LINKML_SCHEMA_SOURCE_DIR` at the schema's folder, relative to `.linkml/`.
+8. Moves the staged files into `.linkml/`, around whatever is already there. A name both hold is a clash: nothing moves, and the run ends with exit 3.
+9. In KTL mode, edits `.lokf/justfile` to name the schema.
+10. Adds the root pointers, then prints the hand-off facts.
 
-Every line it prints starts with `scaffold:`, `handoff:` or `next:`.
+Every line it prints starts with `scaffold:`, `handoff:` or `next:`. It never removes anything but its own staging directory, so a failed run leaves `.linkml/` as it was.
 
 ## Exit codes
 
 - `0`: done.
 - `2`: a usage error, a bad fact or a missing tool.
-- `3`: refused, because a sidecar exists.
-- `4`: copier failed; the scaffold removes the unfinished `.linkml/`.
+- `3`: refused, because a project, a schema or a file already there stands in the way.
+- `4`: copier failed.
 - `5`: an overlay or a pointer failed.
 
 The driver holds the one template pin, `LINKML_TEMPLATE_REF` and `LINKML_TEMPLATE_SHA`.
