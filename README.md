@@ -45,7 +45,7 @@ Step 0 of [the skill](skills/linkml-sidecar/SKILL.md) says where each fact comes
 
 | Path | What it is |
 | --- | --- |
-| `skills/linkml-sidecar/` | The installer: `SKILL.md`, the scaffold under `scripts/`, every file it writes, under `templates/`, and the references (the assumption catalogue, portability, prerequisites, KTL, automation, the upstream proposal). |
+| `skills/linkml-sidecar/` | The installer: `SKILL.md`, the scaffold under `scripts/`, every file it writes, under `templates/`, and the references (the assumption catalogue, the schema layouts, portability, prerequisites, KTL, automation). |
 | `skills/linkml-author/` | The author: `SKILL.md` and its references (the metamodel, generator pitfalls by version, source mapping, schema design for reuse, publishing and importing, the lmodel profile, KTL). |
 | `tests/` | The scaffold, the preflight and the workflow on throwaway hosts; `tests/conftest.py` says how to run them, with and without the network. |
 | `scripts/validate-repository.sh` | The repository contract CI runs on every pull request. |

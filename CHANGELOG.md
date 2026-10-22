@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Removed
+
+- **The upstream layout proposal leaves linkml-sidecar's references.** It is filed as [linkml-project-copier#187](https://github.com/linkml/linkml-project-copier/issues/187), which the assumptions catalogue links instead.
+
 ## [0.1.1] - 2026-10-22
 
 ### Fixed
