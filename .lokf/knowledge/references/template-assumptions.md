@@ -31,7 +31,7 @@ Some of the rows:
 - `just setup` runs `git init`, `git add .` and a commit, so it is never run, and the scaffold fails if `.linkml/.git` appears.
 - `just deploy` pushes the host's `gh-pages` branch root, so it is never run; the Step 5 docs job publishes under the `linkml/` subpath only.
 - The template's workflows render inside the project, where GitHub never reads them, so a hoisted workflow runs the gate from the root.
-- The upstream example fails `just lint`, so `add_example: false` and a skill-owned dummy that lints clean.
+- The upstream example fails `just lint`, so the answer is `add_example: false`, and a skill-owned dummy that lints clean takes its place.
 - `--trust` is required, so the tag and its commit are verified before copier runs.
 - `config.public.mk` names the schema, every recipe derives its paths from it, and upstream calls the file a convenience it may retire. Adoption points `LINKML_SCHEMA_SOURCE_DIR` at the host's folder, and the preflight falls back to the answers' `project_slug` when the file is absent.
 - `config.yaml` holds the generators' settings and `config.public.mk` names it. A new sidecar renames it `generators.yaml`, and `--repair generators.yaml` moves an existing project's file. After the move, `copier update` no longer carries the template's changes to the settings.

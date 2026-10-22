@@ -19,7 +19,7 @@ sources:
   - resource: skills/linkml-sidecar/SKILL.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-22T01:26:03Z"
+  at: "2026-10-22T15:14:26Z"
 status: draft
 verified:
   - by: process:ktl-librarian
@@ -32,9 +32,9 @@ A repository that *is* a schema project, such as [lmodel/gist](https://github.co
 
 A domain codebase whose maintainers do not want a schema project in their root folder gets the sidecar: one hidden folder, one visible doorway (`linkml_schema/`), one workflow, and a README inside that says how to remove it. Nothing in the host's build depends on it.
 
-A repository that holds a LinkML schema but no project, which is most of them, gets the sidecar around that schema (`--adopt`). It gains the pinned lock, the recipes, the tests, the workflow and the docs site, and the schema stays untouched where it lies.
+A repository that holds a LinkML schema but no project gets the sidecar around that schema (`--adopt`). It gains the pinned lock, the recipes, the tests, the workflow and the docs site, and the schema is neither moved nor changed.
 
-Both skills find the schema by what files say, never by the folder's name, and linkml-author works on the schema in every case.
+Both skills find the schema by its files (copier answers, a `config.public.mk`, or a YAML file that imports `linkml:types`), never by the folder's name, and linkml-author works on the schema in every case.
 
 ## Why the sidecar needs a skill
 
