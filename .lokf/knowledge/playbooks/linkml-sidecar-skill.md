@@ -26,7 +26,7 @@ sources:
   - resource: skills/linkml-sidecar/SKILL.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-22T15:14:26Z"
+  at: "2026-10-22T18:19:05Z"
 status: draft
 ---
 
@@ -50,14 +50,14 @@ A `.linkml/.copier-answers.yml` means a sidecar exists, so use linkml-author ins
 
 ## What it needs
 
-The `compatibility` field asks for bash (Git for Windows on Windows) and `uv`, which runs copier, just and the project's own Python. The scaffold needs one network run to github.com and pypi.org, and the project needs Python 3.10 or later. Any forge works, or none. The Step 5 workflow is GitHub Actions.
+The `compatibility` field asks for bash (Git for Windows on Windows) and `uv`, which runs copier, just and the project's own Python. The scaffold needs one network run to github.com and pypi.org, and the project needs Python 3.10 or later. Any forge works, or none. The Step 5 workflow is GitHub Actions or Forgejo Actions.
 
 ## How it runs
 
 1. Step 0 runs the preflight and gathers the host's facts from real sources: the name, description, owner, licence, `SCHEMA_ID` and `DOCS_URL`. It also decides between the dummy and adoption: one schema file found means `--adopt <file>`, and several mean the person chooses.
 2. One script, `scripts/linkml-scaffold.sh`, does Steps 1 to 3. It scaffolds into a staging directory, moves the files into `.linkml/`, adds the root pointers and the `linkml_schema` doorway, and prints the hand-off facts. An adopted schema gets none of the root pointers, because it is already visible where it lies.
 3. Step 4 runs `just install`, `just lint` and `just test` inside `.linkml/`, and in KTL mode `lokf validate` too.
-4. Step 5 optionally installs one workflow at `.github/workflows/linkml-sidecar.yaml`.
+4. Step 5 optionally installs one workflow: at `.github/workflows/linkml-sidecar.yaml` on GitHub, or, on Forgejo or Codeberg, in the folder the preflight's `workflows` line names, publishing to Codeberg Pages.
 5. Step 6 hands off to linkml-author, naming every guessed value, `SCHEMA_ID` above all.
 
 The skill never runs `just setup`, which runs `git init` and commits, or `just deploy`, which pushes the host's `gh-pages` branch root. It never edits a template-owned file by hand. `just update` changes those.

@@ -19,10 +19,10 @@ sources:
   - resource: skills/linkml-sidecar/references/ktl.md
   - resource: skills/linkml-author/references/ktl-domain-schema.md
   - resource: skills/linkml-author/SKILL.md
-  - resource: README.md
+  - resource: docs/architecture.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-22T15:14:26Z"
+  at: "2026-10-22T18:19:05Z"
 status: draft
 verified:
   - by: process:ktl-librarian
@@ -45,7 +45,7 @@ A schema the host already held (`--adopt`) is not made the domain schema: the sc
 
 ## The one workaround
 
-The two recipes run from the schema's directory rather than from `.lokf/`. `lokf validate` passes the schema to `linkml.validator.validate()`, which drops the schema's path, so a relative import resolves from the working directory. [linkml PR 3855](https://github.com/linkml/linkml/pull/3855) changes this in linkml 1.12.0. The `cd` form works on 1.11.x and 1.12.0 alike, so it stays while a `.lokf/uv.lock` may still hold 1.11.x.
+The two recipes run from the schema's directory rather than from `.lokf/`. `lokf validate` passes the schema to `linkml.validator.validate()`, which drops the schema's path, so a relative import resolves from the working directory. [linkml PR 3855](https://github.com/linkml/linkml/pull/3855), released in linkml 1.12.0, changes how imports are tracked. The `cd` form works on 1.11.x and 1.12.0 alike, so it stays while a `.lokf/uv.lock` may still hold 1.11.x.
 
 ## Two more upstream limits
 

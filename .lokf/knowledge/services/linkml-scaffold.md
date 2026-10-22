@@ -21,7 +21,7 @@ sources:
   - resource: skills/linkml-sidecar/SKILL.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-22T09:04:50Z"
+  at: "2026-10-22T18:19:05Z"
 status: draft
 verified:
   - by: process:ktl-librarian
@@ -31,6 +31,8 @@ verified:
 # Overview
 
 `scripts/linkml-scaffold.sh` is the driver and `scripts/linkml-scaffold.py` its Python half. Nothing in it is a judgement: the facts come in as environment variables that the skill's Step 0 resolved from real sources.
+
+The driver runs the Python half through `uv run` first, which reads the half's own `# /// script` header and so passes over a python3 older than 3.8, such as RHEL 8's 3.6. Without uv, it uses python3, and python as the last resort, each only when it is 3.8 or later. The half needs only the standard library, so its header names no package for a mirror to refuse. With none of these, the driver exits 2.
 
 ```text
 linkml-scaffold.sh [--dry-run] [--host DIR] [--mode plain|lokf|auto]

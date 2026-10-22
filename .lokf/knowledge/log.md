@@ -2,6 +2,22 @@
 
 ## 2026-10-22
 
+* **Changed**: Template pin: the contract now holds the pin's mentions under `docs/` and in `CONTRIBUTING.md` too, as check 8 and the scaffold driver's header say.
+* **Changed**: linkml-sidecar skill: Step 5 now offers a Forgejo Actions workflow beside the GitHub one.
+* **Changed**: Preflight: it now checks the template's source and the package index as git and uv reach them, says why copier failed, warns on a new `lock` line when `uv.lock` names another index, and looks for workflows in the folder the forge reads.
+* **Changed**: Scaffold: the driver now runs its Python half through `uv run` on the half's own script header, then a python3 or python of 3.8 or later, and exits 2 when it finds none.
+* **Changed**: Sidecar workflow: Step 5 now has a Forgejo Actions template beside the GitHub one, which runs the same gate and publishes to Codeberg Pages. A pin bump is copied into both templates, and the other forges follow `automation.md`.
+* **Changed**: Repository contract: check 9 now covers both workflow templates, and check 8 reads `docs/` and `CONTRIBUTING.md` for the template pin as well.
+* **Changed**: Contributing now gives the slow-test clone command and the CI job list. Its action-pin rule covers the Forgejo template beside the GitHub one, and a new step says how the Forgejo template is checked.
+* **Changed**: KTL mode: PR 3855 is described as its source states it, and the README source moves to `docs/architecture.md`.
+* **Changed**: Knowledge Trust Ladder: `docs/architecture.md` joins the sources, since the README no longer names the `.lokf/` folder.
+* **Changed**: linkml-project-copier: the README source moves to `docs/architecture.md`, which carries the MIT credit, and the concept adds that a company copy's tag must name the same commit.
+* **Changed**: Three cases: re-pointed from the README to `docs/architecture.md` and `layouts.md`, and the adopt clause and the list of root assumptions now follow those pages.
+* **Changed**: Sidecar: the resource moves from the README to `docs/architecture.md`, and the body follows that page for the doorway, the workflow and the build output.
+* **Changed**: Installing the skills now follows `docs/install.md`: gh skill first, npx with `--global`, the `/plugin` commands, a copy of the repository, user or project scope, the pin, the workflow switch and what each skill needs.
+* **Added**: Who owns which file, from the ownership, never-run and keeping-current sections of `docs/architecture.md`, which no concept covered.
+* **Added**: Portability, the reference page on which hosts the sidecar works on and what each loses: RHEL, WSL2, Windows, a company proxy or package mirror, other forges, and the template from a company copy.
+* **Changed**: Knowledge sources: `docs/` joins the map, its two pages take over what the README stated, and the Forgejo workflow template joins the workflow row.
 * **Changed**: the assumptions catalogue cites linkml-project-copier#187, where the layout proposal is filed, in place of the draft that left the skill.
 * **Removal**: Upstream layout proposal; the draft left `skills/linkml-sidecar/references/` once it was filed as linkml-project-copier#187.
 * **Prose**: reworded 6 concept bodies in plain English. No fact, link, number or frontmatter changed.
