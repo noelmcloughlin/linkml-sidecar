@@ -2,6 +2,10 @@
 
 ## 2026-10-22
 
+* **Added**: the publishing page, on where a schema is served, how an importer takes it, the importmap and lokf's adapt.
+* **Changed**: the schema design page gained the collision gradient, a core plus modules, and the refactoring moves that touch no record.
+* **Changed**: the linkml-author playbook names the refactor offer, the preflight's `authors` line and the publishing page.
+* **Changed**: the preflight prints an `authors` line with the people in the schema folder's history and the repository's.
 * **Changed**: the scaffold renames the template's config.yaml to generators.yaml, and `--repair generators.yaml` moves an existing project's file.
 * **Changed**: the preflight's generators line offers to move a project's config.yaml to .linkml/generators.yaml.
 * **Changed**: the linkml-sidecar skill keeps the generators' settings in .linkml/generators.yaml, and offers the move to an existing project.

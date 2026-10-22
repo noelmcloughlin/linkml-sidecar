@@ -2,7 +2,7 @@
 type: Service
 id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/services/linkml-preflight
 title: linkml-preflight.sh
-description: "The read-only preflight both skills run first: one screen of ok, warn, missing and info lines about the host's shell, git, forge, uv, copier, just and network, where a LinkML schema project or schema file sits and how to run the tools on it, a .lokf/ bundle and Pages, ending in a summary line of what is missing and which steps that disables."
+description: "The read-only preflight both skills run first: one screen of ok, warn, missing and info lines about the host's shell, git, forge, uv, copier, just and network, where a LinkML schema project or schema file sits, how to run the tools on it and how many people have committed to it, a .lokf/ bundle and Pages, ending in a summary line of what is missing and which steps that disables."
 resource: skills/linkml-sidecar/templates/scripts/linkml-preflight.sh
 tags:
   - preflight
@@ -16,7 +16,7 @@ sources:
   - resource: skills/linkml-sidecar/SKILL.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-22T09:04:50Z"
+  at: "2026-10-22T10:56:45Z"
 status: draft
 ---
 
@@ -42,6 +42,7 @@ It shows:
 - what the host already holds: a sidecar, a schema project elsewhere, configuration files in `.linkml/`, or schema files outside any project;
 - how lint and the generators run there, on its `tools` line;
 - where the generators' settings are, with an offer to move a `config.yaml` to `.linkml/generators.yaml`;
+- how many people have committed to the schema folder and to the repository, bots left out, on its `authors` line, which linkml-author reads before offering a refactor;
 - whether a `.lokf/` bundle is present, which switches on KTL mode;
 - whether the host already publishes Pages;
 - whether the root declares a uv workspace.

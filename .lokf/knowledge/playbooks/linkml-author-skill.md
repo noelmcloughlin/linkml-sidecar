@@ -18,13 +18,14 @@ references:
   - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/explanation/ktl-mode
   - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/schema-layouts
   - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/schema-design
+  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/publishing
 definedBy:
   - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/agent-skills-specification
 sources:
   - resource: skills/linkml-author/SKILL.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-22T09:04:50Z"
+  at: "2026-10-22T10:56:45Z"
 status: draft
 ---
 
@@ -40,6 +41,7 @@ Use it when someone asks to:
 - model a concept;
 - map a specification, standard or document to a schema;
 - replace the dummy schema with the real model;
+- refactor or split a schema;
 - check schema conventions;
 - run lint, gen-project, gen-doc or test.
 
@@ -61,8 +63,10 @@ A `.linkml/` that holds only configuration files is not a layout, and the skill 
 
 ## What it follows
 
-After every schema edit it runs the gate: `lint`, then `gen-project`, then `test`. A schema on its own has no recipes, so its gate runs `linkml-lint`, `gen-project` into a temporary folder and `linkml-validate` over the host's example data. Its rules table settles naming, slots versus attributes, references between classes, variants of one thing, enum inheritance, versions, descriptions, mappings and deprecation. An lmodel project follows `references/lmodel-profile.md`, opted into by the project's own conventions and never assumed. Beside a KTL bundle, the schema is the bundle's domain schema only when `.lokf/justfile` names it or it imports `.lokf/lokf.yaml`, and `lokf validate` then runs after the gate.
+After every schema edit it runs the gate: `lint`, then `gen-project`, then `test`. A schema on its own has no recipes, so its gate runs `linkml-lint`, `gen-project` into a temporary folder and `linkml-validate` over the host's example data. Its rules table settles naming, slots versus attributes, modules, references between classes, variants of one thing, enum inheritance, versions, publishing, descriptions, mappings, deprecation and refactoring. An lmodel project follows `references/lmodel-profile.md`, opted into by the project's own conventions and never assumed. Beside a KTL bundle, the schema is the bundle's domain schema only when `.lokf/justfile` names it or it imports `.lokf/lokf.yaml`, and `lokf validate` then runs after the gate.
 
 `generators.yaml`, the generators' settings moved out of `config.yaml`, is the project's to edit. When the preflight offers that move, the skill offers it to the person, and linkml-sidecar's `--repair generators.yaml` makes it.
 
-The procedure stays in `skills/linkml-author/SKILL.md`. Its `references/` hold the metamodel, generator pitfalls by version, source mapping, schema design for reuse, the lmodel profile and the KTL rules.
+The preflight's `authors` line says how many people have committed to the schema folder. The skill offers a refactor when that history is one or two people, never when it is a team's, and a known importer narrows the offer to the moves that touch no record. It never refactors unasked.
+
+The procedure stays in `skills/linkml-author/SKILL.md`. Its `references/` hold the metamodel, generator pitfalls by version, source mapping, schema design for reuse, publishing and importing, the lmodel profile and the KTL rules.
