@@ -95,4 +95,14 @@ export const WORKSPACE = "auto";
 // the buttons, with site-relative links (Browse the bundle, Architecture when
 // the docs have an architecture page, Bundle health and Knowledge graph when
 // null).
-export const HOME = { source: "auto", tagline: null, actions: null };
+export const HOME = {
+  source: "auto",
+  tagline: null,
+  actions: [
+    { text: "Browse the bundle", link: "/knowledge/", icon: "right-arrow" },
+    { text: "Install", link: "/docs/install/", variant: "secondary" },
+    { text: "Architecture", link: "/docs/architecture/", variant: "secondary" },
+    { text: "Bundle health", link: "/health/", variant: "secondary" },
+    { text: "Knowledge graph", link: "/graph/", variant: "secondary" },
+  ],
+};
