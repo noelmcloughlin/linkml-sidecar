@@ -124,6 +124,21 @@ while IFS= read -r file; do
 done < <(find skills README.md CONTRIBUTING.md CHANGELOG.md AI_COVENANT.md CODE_OF_CONDUCT.md .github/pull_request_template.md -name '*.md' -not -path '*/templates/*' | sort)
 [[ "$broken" -eq 0 ]] && ok "all relative Markdown links under skills/ and the root pages resolve (fenced examples ignored; templates/ render into a host)"
 
+# A link from one skill to the other's page is absolute, because each skill is
+# installed on its own, and it names main. lychee.toml skips these links: a
+# page this change adds is not on main until it merges. They are checked here,
+# against the files of the change itself.
+own=0
+while IFS=: read -r file line url; do
+  path="${url#https://github.com/noelmcloughlin/linkml-sidecar/blob/main/}"
+  path="${path%%#*}"
+  if [[ ! -e "$path" ]]; then
+    err "$file:$line: link to this repository's main names '$path', which does not exist here"
+    own=1
+  fi
+done < <(git ls-files -z '*.md' | xargs -0 grep -noE 'https://github\.com/noelmcloughlin/linkml-sidecar/blob/main/[^) >"]+' || true)
+[[ "$own" -eq 0 ]] && ok "every link to this repository's main names a file this change holds"
+
 # 6. Shell scripts pass ShellCheck, and Python scripts compile.
 say ""
 say "Linting scripts..."

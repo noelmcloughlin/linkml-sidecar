@@ -2,9 +2,9 @@
 
 The data model of this repository is a LinkML schema at
 `.linkml/src/<PROJ_SLUG>/schema/<PROJ_SLUG>.yaml`, also reachable as
-`linkml_schema/`. Read it before the code it describes: every class, field
+`linkml_schema/`. Read it before the code it describes. Every class, field
 and enum is defined once there, with its meaning mapped to public
-vocabularies, and the JSON Schema, OWL and the rest under `.linkml/project/`
+vocabularies. The JSON Schema, OWL and the rest under `.linkml/project/`
 and the Pydantic models under `.linkml/src/<PROJ_SLUG>/datamodel/` are
 generated from it, never edited. Change the schema
 through the `linkml-author` skill (`npx skills add

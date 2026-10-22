@@ -33,7 +33,19 @@ A prefix key is an NCName: no hyphens. When the schema's name has one, the key t
 
 ## Classes
 
-Names are `PascalCase`. The slots a class uses: `is_a` (single parent; slots inherit down), `mixins` (cross-cutting behaviour, `mixin: true` on the mixin), `abstract: true` (never instantiated), `tree_root: true` (the containment root for serialisation), `slots` (top-level slots the class uses), `attributes` (slots only this class owns, declared inline), `slot_usage` (per-class refinement), `id_prefixes` (CURIE namespaces its instances carry), `class_uri`, `*_mappings`, `see_also`, `aliases`, `annotations`, `comments`, `in_subset`, `union_of`, `rules`, `deprecated`.
+Names are `PascalCase`. The slots a class uses:
+
+- `is_a`: the single parent; slots inherit down;
+- `mixins`: cross-cutting behaviour, with `mixin: true` on the mixin;
+- `abstract: true`: never instantiated;
+- `tree_root: true`: the containment root for serialisation;
+- `slots`: the top-level slots the class uses;
+- `attributes`: slots only this class owns, declared inline;
+- `slot_usage`: per-class refinement;
+- `id_prefixes`: the CURIE namespaces its instances carry;
+- `class_uri`, `*_mappings`, `see_also`, `aliases`, `annotations`, `comments`, `in_subset`, `union_of`, `rules` and `deprecated`.
+
+A class starts with `attributes:`. A top-level slot is for a field more than one class shares ([schema-design.md](schema-design.md)).
 
 ```yaml
 classes:
@@ -64,13 +76,27 @@ classes:
         range: Control
         multivalued: true
         inlined_as_list: true
+
+  Notification:
+    description: The base of every kind of notification; type names the kind.
+    attributes:
+      type:
+        description: The kind of notification, one of this class's descendants.
+        designates_type: true
+        range: string
+
+  EmailNotification:
+    is_a: Notification
+    attributes:
+      subject:
+        description: The email's subject line.
 ```
 
-Inheritance is monotonic: `slot_usage` adds constraints and never removes one. `union_of` on a class is a choice type; see the generator note on `any_of` in [generators.md](generators.md).
+A `designates_type: true` field is a type designator: its allowed values are the names of the class and its descendants, and a holder's `notifications: {range: Notification, multivalued: true}` then takes every kind, with each subclass declaring the fields its kind admits. Inheritance is monotonic: `slot_usage` adds constraints and never removes one. `union_of` on a class is a choice type; see the generator note on `any_of` in [generators.md](generators.md).
 
 ## Slots
 
-Names are `snake_case`. Define a shared slot once at the top level and refine it per class with `slot_usage`. The fields: `range` (a type, class or enum; `default_range` otherwise), `identifier: true` (the key; one per class), `required`, `recommended`, `multivalued`, `inlined` and `inlined_as_list`, `slot_uri`, `inverse` (declared on both sides), `any_of`, `values_from`, `pattern`, `minimum_value`, `maximum_value`, `ifabsent`, `unit`, `deprecated`, `aliases`, and the logical flags `transitive`, `symmetric`, `antisymmetric`, `reflexive`.
+Names are `snake_case`. Define a shared slot once at the top level and refine it per class with `slot_usage`. The fields are `range` (a type, class or enum; `default_range` otherwise), `identifier: true` (the key; one per class), `required`, `recommended`, `multivalued`, `inlined` and `inlined_as_list`, `slot_uri` and `inverse` (declared on both sides). The others are `any_of`, `values_from`, `pattern`, `minimum_value`, `maximum_value`, `ifabsent`, `unit`, `deprecated`, `aliases`, and the logical flags `transitive`, `symmetric`, `antisymmetric`, `reflexive`.
 
 ```yaml
 slots:
@@ -134,7 +160,7 @@ slots:
 | a list of objects | `inlined: true`, `inlined_as_list: true` |
 | a dict keyed by identifier | `inlined: true`, `inlined_as_list: false` (the range needs an identifier) |
 
-A range class with no identifier is always inlined.
+A range class with no identifier is always inlined. Write `inlined_as_list` explicitly whenever `inlined: true` is set, so the data's shape never rests on a default.
 
 ## Enums
 
@@ -154,15 +180,9 @@ enums:
         meaning: PATO:0001422
       unknown:
         description: Not known.
-
-  ExtendedStatus:                 # composition
-    inherits: [VitalStatus]
-    permissible_values:
-      presumed_dead:
-        description: Missing beyond the legal period.
 ```
 
-A dynamic enum (`reachable_from` with a `source_ontology` and `source_nodes`) is populated by query; validators do not resolve it at run time, so materialise it first ([generators.md](generators.md)).
+Enum inheritance (`inherits`, or `is_a`) is unsettled upstream and the generators do not apply it: an enum that extends another repeats the values, or binds them to the same `meaning` terms ([schema-design.md](schema-design.md)). A dynamic enum (`reachable_from` with a `source_ontology` and `source_nodes`) is populated by query; validators do not resolve it at run time, so materialise it first ([generators.md](generators.md)).
 
 ## Types and subsets
 
@@ -251,6 +271,25 @@ slots:
 
 The boolean forms, on a class or a slot: `any_of` (at least one holds), `all_of` (every one), `none_of` (none), `exactly_one_of` (exactly one). Reusable sub-patterns go under `settings:` and are used through `structured_pattern` with `interpolated: true`. `defining_slots` on a class makes membership follow from the slots' ranges (an equivalence axiom in OWL).
 
+## Descriptions, comments and notes
+
+`description` is the element's definition (`skos:definition`). `gen-json-schema`, `gen-pydantic` and `gen-openapi` copy it into every schema, model field and UI hint they write, and they copy nothing else from the element. Keep it to one or two plain sentences that say what the element is, as a form field's hint or an API field's help text would.
+
+The rest has a place of its own. `comments` (multivalued, `skos:note`) carries what a user of the schema should know: a caveat, a limit, a usage rule. `notes` (`skos:editorialNote`) carries what its maintainers should know: a decision and why, an open question. `see_also` carries the link, `examples` the sample, and an annotation the clause reference. `gen-doc` renders all of them on the element's page. The JSON Schema and Pydantic generators carry none of them. The rule comes from the KTL Obsidian plugins, whose settings hints showed how a long description renders in a small UI.
+
+```yaml
+slots:
+  retention_period:
+    description: How long a record of this kind is kept, as an ISO 8601 duration.
+    range: string
+    comments:
+      - A period shorter than the legal minimum for the jurisdiction fails review, not validation.
+    notes:
+      - Kept as a string rather than a duration type until the generators agree on one.
+    examples:
+      - value: P7Y
+```
+
 ## Annotations
 
 Annotations are opaque key-value metadata on any element; generators ignore them, and a custom template or a script reads them.
@@ -265,7 +304,7 @@ classes:
           inputs: [rating, query]
 ```
 
-Prefer one list-valued key over many keys with a prefix, so "every X on this class" is one lookup.
+Prefer one list-valued key over many keys with a prefix, so "every X on this class" is one lookup. An annotation the schema itself describes is a metamodel extension: a class whose attributes are the annotation keys, named on each annotated element by URI through `instantiates: [acme:AcmeChangeNote]` ([schema-design.md](schema-design.md)); the validator does not enforce it ([generators.md](generators.md)).
 
 ## Arrays (LinkML 1.8+)
 
@@ -286,3 +325,5 @@ slots:
 ## Modules and imports
 
 A module is a schema file beside the main one, imported as `./module`; a module's name is `snake_case`. Never redeclare an imported class or slot: refine an imported slot with `slot_usage` on the class that uses it. `linkml:types` is the built-in type library.
+
+An import resolves in this order: an importmap entry, a URL, a CURIE expanded through the schema's prefixes, else a path relative to the importing file, with `.yaml` appended in every case. A module's own imports resolve relative to the module, on disk or behind a URL (1.12.1), so a module tree served at the same relative paths imports over HTTP. [publishing.md](publishing.md) has the addresses and the importmap; [schema-design.md](schema-design.md) has the shape of a core and its modules.

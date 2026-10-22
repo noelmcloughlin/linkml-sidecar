@@ -2,9 +2,9 @@
 # What this host can and cannot do for the LinkML sidecar skills: one
 # read-only screen, no project needed. linkml-sidecar runs it first (Step 0)
 # and repeats its summary line in the hand-off; linkml-author runs the copy
-# the sidecar installed under .linkml/scripts/ to find the project. A missing
-# tool disables a step out loud instead of being discovered after the
-# scaffold has run.
+# the sidecar installed under .linkml/scripts/, or this one, to find the
+# schema and the way to run the tools on it. A missing tool disables a step
+# out loud instead of being discovered after the scaffold has run.
 #
 # Each line is `ok`, `warn`, `missing` or `info`, then one summary line:
 #   Preflight: <n> missing, <m> warning(s). Missing disables: <steps>.
@@ -31,17 +31,24 @@ miss() { line missing "$1" "$2"; missing=$((missing + 1)); [ -n "${3:-}" ] && di
 have() { command -v "$1" >/dev/null 2>&1; }
 # One value out of a `KEY="value"` or `KEY=value` line of config.public.mk.
 mkvalue() { sed -n "s/^$2=//p" "$1" 2>/dev/null | head -n 1 | sed -e 's/^"//' -e 's/"$//'; }
+# One value out of a `key: value` line of a copier answers file.
+answer() { sed -n "s/^$2: *//p" "$1" 2>/dev/null | head -n 1 | tr -d '"'"'"''; }
 
 # ---- root ------------------------------------------------------------------
+start="$(pwd -P)"
 root="${1:-}"
 if [ -z "$root" ]; then
-  d="$(pwd -P)"; root="$d"
+  d="$start"; root="$d"
   while [ "$d" != "/" ]; do
     if [ -d "$d/.linkml" ] || [ -d "$d/.lokf" ] || [ -d "$d/.git" ]; then root="$d"; break; fi
     d="$(dirname "$d")"
   done
 fi
 root="$(cd "$root" 2>/dev/null && pwd -P)" || { echo "no such directory: ${1:-.}" >&2; exit 2; }
+# A path as a person reads it: relative to the root, or `.` for the root.
+# A path outside the root stays absolute: stripping the root as a bare string
+# prefix would turn a sibling such as <root>2/schema into 2/schema.
+relpath() { case "$1" in "$root") printf '.' ;; "$root"/*) printf '%s' "${1#"$root"/}" ;; *) printf '%s' "$1" ;; esac; }
 
 # ---- host ------------------------------------------------------------------
 os="$(uname -s 2>/dev/null || echo unknown)"
@@ -114,36 +121,158 @@ else
   miss uv "uv not installed (docs.astral.sh/uv) - copier, just, the project's Python and every generator run through it" "Steps 1, 4 and 5"
 fi
 
-# ---- sidecar ---------------------------------------------------------------
-sidecar=""
-if [ -f "$root/.linkml/.copier-answers.yml" ]; then
-  sidecar="$root/.linkml"
-  commit="$(sed -n 's/^_commit: *//p' "$root/.linkml/.copier-answers.yml" | head -n 1)"
-  src="$(sed -n 's/^_src_path: *//p' "$root/.linkml/.copier-answers.yml" | head -n 1)"
-  ok sidecar ".linkml/ from ${src:-?} at ${commit:-?}; linkml-author works here; just --justfile .linkml/justfile update moves the template"
-  [ -e "$root/.linkml/.git" ] && warn sidecar ".linkml/.git exists: a nested repository, which just setup creates - remove it (rm -rf .linkml/.git) so the host repository holds the sidecar"
-elif [ -d "$root/.linkml" ]; then
-  warn sidecar ".linkml/ exists but holds no .copier-answers.yml - a half-made sidecar; linkml-sidecar repairs or replaces it"
-elif [ -f "$root/linkml/.copier-answers.yml" ]; then
-  sidecar="$root/linkml"
-  info sidecar "a visible linkml/ sidecar exists (hand-made shape); linkml-sidecar leaves it alone, linkml-author works in it"
-elif [ -f "$root/.copier-answers.yml" ]; then
-  sidecar="$root"
-  info sidecar "this repository is itself a copier project; no sidecar applies, linkml-author works at the root"
+# ---- sidecar: what the host already holds ----------------------------------
+# A LinkML schema project is told by its files, never by its folder's name:
+# linkml-project-copier's answers naming that template, or the config.public.mk
+# that it and the older linkml-project-cookiecutter render (a signal upstream
+# may retire; the answers stay). The candidates are .linkml/ (the sidecar), the
+# repository root, the directory this script was started in, and every
+# directory one level down, hidden or not. A .linkml/ that holds only
+# configuration files (LinkML's own, or a tool's) is reported and nothing more:
+# the sidecar installs around it. With no project anywhere, the schema files
+# are found by content (below), because a schema can live in any repository.
+is_project() {
+  [ -f "$1/config.public.mk" ] && return 0
+  [ -f "$1/.copier-answers.yml" ] && answer "$1/.copier-answers.yml" _src_path | grep -q 'linkml-project-copier'
+}
+# .linkml/ with any answers file is a sidecar, whatever template a local clone was called.
+holds_project() {
+  if [ "$1" = "$root/.linkml" ] && [ -f "$1/.copier-answers.yml" ]; then return 0; fi
+  is_project "$1"
+}
+told_by() { if [ -f "$1/.copier-answers.yml" ]; then printf 'copier answers'; else printf 'config.public.mk'; fi; }
+# Folders that by convention hold copies, fixtures or rendered output, never
+# the host's own model; the scaffold prunes the same names.
+pruned() {
+  case "$1" in
+    .|..|.git|.github|.venv|node_modules|tmp|site|project|docs|tests|test|fixtures|templates|.lokf) return 0 ;;
+  esac
+  return 1
+}
+candidates="$root/.linkml
+$root
+$start"
+for d in "$root"/*/ "$root"/.*/; do
+  d="${d%/}"
+  pruned "${d##*/}" && continue
+  [ -d "$d" ] && candidates="$candidates
+$d"
+done
+sidecar=""; others=""; seen="
+"
+oldifs="$IFS"; IFS="
+"
+for d in $candidates; do
+  case "$d" in "$root"|"$root"/*) ;; *) continue ;; esac
+  case "$seen" in *"
+$d
+"*) continue ;; esac
+  seen="$seen$d
+"
+  if ! { [ -d "$d" ] && holds_project "$d"; }; then continue; fi
+  if [ -z "$sidecar" ]; then sidecar="$d"; else others="$others${others:+, }$(relpath "$d")/"; fi
+done
+IFS="$oldifs"
+
+# kind: sidecar (a copier sidecar in .linkml/), project (a schema project
+# elsewhere, which no sidecar joins), schemas (schema files outside any
+# project) or none.
+kind=none
+if [ -n "$sidecar" ]; then
+  commit="$(answer "$sidecar/.copier-answers.yml" _commit)"
+  src="$(answer "$sidecar/.copier-answers.yml" _src_path)"
+  if [ "$sidecar" = "$root/.linkml" ] && [ -f "$sidecar/.copier-answers.yml" ]; then
+    kind=sidecar
+    ok sidecar ".linkml/ from ${src:-?} at ${commit:-?}; linkml-author works here; just --justfile .linkml/justfile update moves the template"
+    [ -e "$root/.linkml/.git" ] && warn sidecar ".linkml/.git exists: a nested repository, which just setup creates - remove it (rm -rf .linkml/.git) so the host repository holds the sidecar"
+  elif [ "$sidecar" = "$root/.linkml" ]; then
+    kind=project
+    info sidecar ".linkml/ holds a LinkML schema project made without copier (config.public.mk); linkml-author works in it, linkml-sidecar leaves it alone"
+  elif [ "$sidecar" = "$root" ]; then
+    kind=project
+    info sidecar "this repository is itself a LinkML schema project ($(told_by "$root")${src:+: $src}${commit:+ at $commit}); no sidecar applies, linkml-author works at the root"
+  else
+    kind=project
+    info sidecar "$(relpath "$sidecar")/ is a LinkML schema project ($(told_by "$sidecar")${src:+: $src}${commit:+ at $commit}); linkml-sidecar leaves it alone, linkml-author works in it"
+  fi
+  [ -n "$others" ] && info sidecar "also a LinkML schema project: $others; linkml-author works in whichever a person names"
 else
-  miss sidecar "no .linkml/ under $root - run linkml-sidecar first" "linkml-author, and linkml-sidecar Steps 2 to 5 until Step 1 has run"
+  if [ -d "$root/.linkml" ]; then
+    shaped=""
+    for n in pyproject.toml justfile Makefile src; do [ -e "$root/.linkml/$n" ] && shaped="$shaped${shaped:+, }$n"; done
+    held="$(cd "$root/.linkml" && find . -mindepth 1 -maxdepth 1 2>/dev/null | sed 's|^\./||' | sort | head -n 5 | tr '\n' ' ')"
+    if [ -n "$shaped" ]; then
+      warn sidecar ".linkml/ holds $shaped but no .copier-answers.yml or config.public.mk - an unfinished sidecar, or a project made by hand; linkml-sidecar refuses it until a person decides which"
+    elif [ -n "$held" ]; then
+      info sidecar ".linkml/ holds configuration files (${held% }) and no project; linkml-sidecar installs around them, and the schema is looked for elsewhere"
+    else
+      info sidecar ".linkml/ is empty; linkml-sidecar installs into it"
+    fi
+  fi
+fi
+
+# ---- schema files, by content -----------------------------------------------
+# A YAML file that imports linkml:types or names the linkml prefix and has a
+# top-level key only a schema has, outside the pruned folders: what git tracks
+# or would track, else the whole tree.
+schema_files() {
+  prune='(^|/)(\.git|\.github|\.venv|node_modules|tmp|site|project|docs|tests|test|fixtures|templates|\.lokf|\.linkml)/'
+  if [ "$ingit" -eq 1 ]; then
+    # core.quotePath=false: git would otherwise quote a non-ASCII path, which then matches no file.
+    git -C "$root" -c core.quotePath=false ls-files -co --exclude-standard -- '*.yaml' '*.yml' 2>/dev/null
+  else
+    (cd "$root" && find . \( -name .git -o -name .github -o -name .venv -o -name node_modules -o -name tmp -o -name site -o -name project -o -name docs -o -name tests -o -name test -o -name fixtures -o -name templates -o -name .lokf -o -name .linkml \) -prune -o -type f \( -name '*.yaml' -o -name '*.yml' \) -print 2>/dev/null | sed 's|^\./||')
+  fi | grep -vE "$prune" | while IFS= read -r f; do
+    grep -qE 'linkml:types|w3id\.org/linkml/' "$root/$f" 2>/dev/null && grep -qE '^(classes|slots|enums|types|subsets|imports):' "$root/$f" 2>/dev/null && printf '%s\n' "$f"
+  done | sort
+}
+if [ "$kind" = none ]; then
+  schemas="$(schema_files)"
+  if [ -n "$schemas" ]; then
+    kind=schemas
+    n="$(printf '%s\n' "$schemas" | grep -c .)"
+    info sidecar "no sidecar or project; $n LinkML schema file(s) found by content (below): linkml-author works on them in place, and linkml-sidecar --adopt <file> gives one the toolchain"
+    printf '%s\n' "$schemas" | head -n 5 | while IFS= read -r f; do ok schema "$f"; done
+    [ "$n" -gt 5 ] && info schema "and $((n - 5)) more"
+  else
+    miss sidecar "no LinkML project or schema under $root - run linkml-sidecar first" "linkml-author until a schema exists, and linkml-sidecar Steps 2 to 5 until Step 1 has run"
+  fi
 fi
 
 # ---- project ---------------------------------------------------------------
 # The project directory as a person reads it: relative to the root, or empty when it is the root.
 sdisp="${sidecar#"$root"}"; sdisp="${sdisp#/}"; sdisp="${sdisp:+$sdisp/}"
-if [ -n "$sidecar" ] && [ -f "$sidecar/config.public.mk" ]; then
-  name="$(mkvalue "$sidecar/config.public.mk" LINKML_SCHEMA_NAME)"
-  srcdir="$(mkvalue "$sidecar/config.public.mk" LINKML_SCHEMA_SOURCE_DIR)"
+name=""; srcdir=""
+if [ -n "$sidecar" ]; then
+  # config.public.mk names the schema while the template renders it; the answers' project_slug is the fallback.
+  if [ -f "$sidecar/config.public.mk" ]; then
+    name="$(mkvalue "$sidecar/config.public.mk" LINKML_SCHEMA_NAME)"
+    srcdir="$(mkvalue "$sidecar/config.public.mk" LINKML_SCHEMA_SOURCE_DIR)"
+  else
+    name="$(answer "$sidecar/.copier-answers.yml" project_slug)"
+    srcdir="src/$name/schema"
+  fi
   schema="$srcdir/$name.yaml"
+  shown="$sdisp$schema"
+  # An adopted schema sits outside the sidecar, where LINKML_SCHEMA_SOURCE_DIR points.
+  case "$srcdir" in ..*) [ -d "$sidecar/$srcdir" ] && shown="$(relpath "$(cd "$sidecar/$srcdir" && pwd -P)")/$name.yaml" ;; esac
   venv="no .venv (just install)"; [ -d "$sidecar/.venv" ] && venv=".venv present"
-  if [ -f "$sidecar/$schema" ]; then ok project "schema $sdisp$schema; $venv"
-  else warn project "config.public.mk names $schema but it is not there - the schema file is the one thing linkml-author needs"; fi
+  if [ -n "$name" ] && [ -f "$sidecar/$schema" ]; then ok project "schema $shown; $venv"
+  elif [ -n "$name" ]; then warn project "the project names $schema but it is not there - the schema file is the one thing linkml-author needs"
+  else warn project "${sdisp}config.public.mk missing and the answers name no project_slug - just cannot find the schema name; linkml-sidecar repair, or copier update, lays config.public.mk down"; fi
+  # The generators' settings: the template renders config.yaml and names it
+  # in config.public.mk, which every recipe reads. The sidecar keeps them as
+  # .linkml/generators.yaml, and linkml-sidecar --repair generators.yaml
+  # moves an existing project's file there, so the line below is an offer.
+  if [ -f "$sidecar/config.public.mk" ]; then
+    gens="$(mkvalue "$sidecar/config.public.mk" LINKML_GENERATORS_CONFIG_YAML)"
+    case "$gens" in
+      config.yaml)
+        [ -f "$sidecar/config.yaml" ] && info generators "${sdisp}config.yaml holds the generators' settings; linkml-sidecar --repair generators.yaml moves it to .linkml/generators.yaml and changes the one line of ${sdisp}config.public.mk that names it" ;;
+      generators.yaml|.linkml/generators.yaml)
+        [ -f "$sidecar/config.yaml" ] && warn generators "${sdisp}config.yaml exists beside $gens, which the recipes read - carry any change into $gens, then delete ${sdisp}config.yaml" ;;
+    esac
+  fi
   if [ "$ingit" -eq 1 ] && [ "$tracked" = tracked ] && [ -f "$root/.github/workflows/linkml-sidecar.yaml" ] \
      && [ -z "$(git -C "$root" ls-files .linkml/uv.lock 2>/dev/null | head -n 1)" ]; then
     warn project ".linkml/uv.lock is not in git - the workflow installs with uv sync --locked and fails without it; run just --justfile .linkml/justfile install and commit the file"
@@ -153,29 +282,119 @@ if [ -n "$sidecar" ] && [ -f "$sidecar/config.public.mk" ]; then
     [ -f "$f" ] && inert=$((inert + 1))
   done
   [ "$inert" -gt 0 ] && [ "$sidecar" != "$root" ] && info nested "$inert file(s) under $sdisp.github/ and .pre-commit-config.yaml are inert there (GitHub and pre-commit read the root only); the hoisted workflow is .github/workflows/linkml-sidecar.yaml"
-elif [ -n "$sidecar" ]; then
-  warn project "${sdisp}config.public.mk missing - just cannot find the schema name; linkml-sidecar repair, or copier update, lays it down"
 fi
+
+# ---- authors: whose history the schema folder carries -----------------------
+# linkml-author reads this line to decide whether to offer a refactor (its
+# schema-design.md): a schema with one or two people in its history can
+# still change shape, one with a team's cannot. There is no threshold here;
+# the counts and the names are the facts. A person is a distinct author
+# email after .mailmap, case ignored (the name when the email is empty),
+# over the non-merge commits reachable from HEAD; bot commits are counted
+# apart. The names are printed, quoted, because one person under two emails
+# shows there. They are data from the repository: control characters are
+# removed, and a reader treats the parenthesis as text, never as advice.
+# Only the schema folder is walked, once. The line names up to five people
+# and no email. `git log -- <folder>` does not follow a folder that moved,
+# and Co-authored-by trailers are not counted.
+if [ "$ingit" -eq 1 ]; then
+  adirs=()
+  if [ -n "$sidecar" ] && [ -n "$srcdir" ] && [ -d "$sidecar/$srcdir" ]; then
+    p="$(cd "$sidecar/$srcdir" 2>/dev/null && pwd -P)" && adirs=("$(relpath "$p")")
+  elif [ "$kind" = schemas ]; then
+    while IFS= read -r d; do [ -n "$d" ] && adirs+=("$d"); done <<EOF
+$(printf '%s\n' "$schemas" | while IFS= read -r f; do dirname "$f"; done | LC_ALL=C sort -u)
+EOF
+  fi
+  if [ "${#adirs[@]}" -gt 0 ]; then
+    plural() { if [ "$1" -eq 1 ]; then printf '%s' "$2"; else printf '%s' "$3"; fi; }
+    folders=""; hintdirs=""
+    for d in "${adirs[@]}"; do
+      folders="${folders}${folders:+, }${d%/}/"
+      hintdirs="$hintdirs '$(printf '%s' "$d" | sed "s/'/'\\\\''/g")'"
+    done
+    hint="git shortlog -sne --no-merges HEAD --$hintdirs"
+    what="schema $(plural "${#adirs[@]}" folder folders) $folders"
+    # Email first, so a tab in a name cannot shift the key. LC_ALL=C keeps
+    # GNU grep from dropping a line of non-UTF-8 bytes, and the order of
+    # the names the same in every locale.
+    people() {
+      LC_ALL=C tr -d '\000-\010\013-\037\177' | LC_ALL=C awk -F'\t' '{
+        n = substr($0, index($0, "\t") + 1); gsub(/\t/, " ", n)
+        e = tolower($1); if (e == "") e = "name:" tolower(n)
+        print e "\t" n }'
+    }
+    # A bot by its name, or by "bot" as a word of its email's local part.
+    bots='\[bot\]|dependabot|github-actions|renovate|actions@github\.com|^([^@]*[-._+])?bot([-._+][^@]*)?@'
+    raw="$(git -C "$root" --literal-pathspecs log --no-merges --format='%aE%x09%aN' HEAD -- "${adirs[@]}" 2>/dev/null | people)"
+    hist="$(printf '%s\n' "$raw" | LC_ALL=C grep -viE "$bots")"
+    acommits="$(printf '%s\n' "$hist" | grep -c .)"
+    bcommits=$(( $(printf '%s\n' "$raw" | grep -c .) - acommits ))
+    bnote=""; [ "$bcommits" -gt 0 ] && bnote=", and $bcommits bot $(plural "$bcommits" commit commits)"
+    shallow=""; [ "$(git -C "$root" rev-parse --is-shallow-repository 2>/dev/null)" = true ] && shallow="; a shallow clone, so the history is cut short and the counts mean nothing"
+    if [ "$acommits" -gt 0 ]; then
+      apeople="$(printf '%s\n' "$hist" | cut -f1 | LC_ALL=C sort -u | grep -c .)"
+      anames="$(printf '%s\n' "$hist" | cut -f2- | grep . | LC_ALL=C sort | LC_ALL=C uniq -c | LC_ALL=C sort -k1,1nr -k2 | LC_ALL=C awk '{
+        sub(/^[ \t]*[0-9]+[ \t]/, ""); n[NR] = $0 }
+        END { m = (NR <= 5 ? NR : 4)
+          for (i = 1; i <= m; i++) printf "%s\"%s\"", (i > 1 ? ", " : ""), n[i]
+          if (NR > 5) printf ", and %d more", NR - 4 }')"
+      info authors "$what: $apeople $(plural "$apeople" person people), $acommits $(plural "$acommits" commit commits) ($anames)$bnote$shallow; $hint for the detail"
+    elif [ "$bcommits" -gt 0 ]; then
+      info authors "$what: no person, only $bcommits bot $(plural "$bcommits" commit commits)$shallow; $hint for the detail"
+    fi
+    # A folder with no commits yet has no history to weigh, so no line.
+  fi
+fi
+
+# ---- tools: how linkml-lint and the generators run here ---------------------
+# The host's own environment first, a pinned uvx last, never a tool found on
+# the path: the versions the host tested with are the ones that count.
+tools=""
+if [ -n "$sidecar" ]; then
+  if [ -f "$sidecar/justfile" ]; then
+    hint=""; have just || hint=" (uvx --from rust-just just stands in for just)"
+    tools="just --justfile ${sdisp}justfile <recipe>: lint, gen-project, test, gen-doc$hint"
+  elif [ -f "$sidecar/Makefile" ]; then
+    tools="make -C ${sdisp:-.} <target>: lint, gen-project, test, gendoc"
+  else
+    tools="uv run --project ${sdisp:-.} linkml-lint and gen-project (the project has no justfile or Makefile)"
+  fi
+elif [ "$kind" = schemas ]; then
+  if [ -f "$root/uv.lock" ] && grep -q linkml "$root/pyproject.toml" 2>/dev/null; then
+    tools="uv run linkml-lint <schema>, and gen-project the same way: the host's pyproject.toml names linkml"
+  elif [ -f "$root/poetry.lock" ] && grep -q linkml "$root/pyproject.toml" 2>/dev/null; then
+    tools="poetry run linkml-lint <schema>, and gen-project the same way: the host's pyproject.toml names linkml"
+  elif grep -qs linkml "$root"/requirements*.txt 2>/dev/null; then
+    tools="the host's own environment: its requirements name linkml"
+  else
+    tools="uvx --from linkml linkml-lint <schema>, and gen-project the same way; name the version uvx resolved in the hand-off"
+  fi
+fi
+[ -n "$tools" ] && info tools "$tools"
 
 # ---- doorway ---------------------------------------------------------------
 door="$root/linkml_schema"
 if [ -L "$door" ]; then ok doorway "linkml_schema -> $(readlink "$door")"
 elif [ -d "$door" ]; then ok doorway "linkml_schema is a folder or junction"
-elif [ -d "$root/.linkml" ]; then
-  slug="${name:-<slug>}"
-  info doorway "no linkml_schema doorway (ln -s .linkml/src/$slug/schema linkml_schema, just --justfile .linkml/justfile linkml-link, or mklink /J on Windows)"
+elif [ "$kind" = sidecar ]; then
+  case "$srcdir" in
+    ..*) info doorway "no linkml_schema doorway: the adopted schema is already visible at ${shown%/*}/" ;;
+    *) info doorway "no linkml_schema doorway (ln -s .linkml/src/${name:-<slug>}/schema linkml_schema, just --justfile .linkml/justfile linkml-link, or mklink /J on Windows)" ;;
+  esac
 fi
 
 # ---- KTL -------------------------------------------------------------------
 if [ -d "$root/.lokf" ]; then
   floor="$(sed -n 's/.*"lokf\[build\]>=\([0-9.]*\)".*/\1/p' "$root/.lokf/pyproject.toml" 2>/dev/null | head -n 1)"
   pinned="absent (the scaffold copies it out of the installed toolkit)"; [ -f "$root/.lokf/lokf.yaml" ] && pinned="pinned"
-  # ktl-sidecar's template carries `schema := ""` before anything is wired.
+  # ktl-sidecar's template carries `schema := ""` until a schema is named.
   named="$(sed -n 's/^schema := "\(.*\)"$/\1/p' "$root/.lokf/justfile" 2>/dev/null | head -n 1)"
   wired="not wired"; [ -n "$named" ] && wired="wired ($named)"
   base="$(sed -n 's/^base_iri: *//p' "$root/.lokf/knowledge/index.md" 2>/dev/null | head -n 1)"
   ok lokf "KTL bundle present: with-KTL mode; lokf floor >=${floor:-?}; .lokf/lokf.yaml $pinned; .lokf/justfile schema $wired; base_iri ${base:-unknown}"
   [ -z "$base" ] && warn lokf "no base_iri in .lokf/knowledge/index.md - the dummy concept's id needs it (BASE_IRI)"
+  [ -z "$named" ] && [ "$kind" != none ] && info lokf "the schema is not the bundle's domain schema until .lokf/justfile names it (schema :=); a schema beside an unwired bundle stays what it is"
 else
   info lokf "no .lokf/: plain mode; a KTL bundle can be added later and the schema wired to it (references/ktl.md)"
 fi
@@ -195,7 +414,8 @@ for wf in "$root"/.github/workflows/*.y*ml; do
     pages="${pages:-}${pages:+ and }a workflow that publishes Pages"; break
   fi
 done
-if [ -n "$pages" ]; then
+# A project of its own publishes its own pages; the collision is a sidecar's.
+if [ -n "$pages" ] && [ "$kind" != project ]; then
   warn pages "the host already publishes Pages ($pages) - never run just deploy from .linkml/; the Step 5 docs job publishes under the linkml/ subpath only"
 fi
 if [ -d "$root/.github/workflows" ]; then
@@ -204,10 +424,11 @@ if [ -d "$root/.github/workflows" ]; then
     else warn workflows "a linkml-sidecar.yaml exists that is not the sidecar's hoisted workflow - rename one of them"; fi
   else
     n="$(find "$root/.github/workflows" -maxdepth 1 -name '*.y*ml' | wc -l | tr -d ' ')"
-    info workflows "$n workflow(s), none for the sidecar (Step 5 lays down linkml-sidecar.yaml)"
+    if [ "$kind" = project ]; then info workflows "$n workflow(s); the project's own are its gate, and no hoisted sidecar workflow applies"
+    else info workflows "$n workflow(s), none for the sidecar (Step 5 lays down linkml-sidecar.yaml)"; fi
   fi
 fi
-if [ -f "$root/pyproject.toml" ] && grep -q '^\[tool.uv.workspace\]' "$root/pyproject.toml"; then
+if [ "$kind" != project ] && [ -f "$root/pyproject.toml" ] && grep -q '^\[tool.uv.workspace\]' "$root/pyproject.toml"; then
   warn workspace "the root pyproject.toml declares a uv workspace; .linkml/ is not a member and uv sync inside it is untested (references/template-assumptions.md)"
 fi
 
@@ -217,7 +438,7 @@ for v in CI GITHUB_ACTIONS GITLAB_CI TF_BUILD; do
   val="${!v:-}"; [ -n "$val" ] && unattended="${unattended}${unattended:+, }$v"
 done
 if [ -n "$unattended" ]; then info session "unattended ($unattended set): guessed facts cannot be confirmed here; the hand-off lists them"
-else info session "attended: a person can confirm each guessed fact"; fi
+else info session "attended: a person can confirm each guessed fact, and choose among several schemas"; fi
 if [ "${LINKML_PREFLIGHT_OFFLINE:-}" = 1 ]; then
   info network "not checked (LINKML_PREFLIGHT_OFFLINE=1); the scaffold needs github.com and pypi.org"
 elif have curl; then

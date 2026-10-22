@@ -1,16 +1,17 @@
 # The lmodel profile
 
-The [lmodel](https://github.com/lmodel) organisation publishes LinkML renderings of standards (ISO, NIST, OSCAL, FIX, gist and others) under one set of conventions. A project opts into them by following them already; this skill never assumes them for a host that does not.
+The [lmodel](https://github.com/lmodel) organisation publishes LinkML renderings of standards (ISO, NIST, OSCAL, FIX, gist and others) under one set of conventions. It is its maintainer's experiment area for LinkML patterns, so the conventions are one tried answer and not an authority. A project opts into them by following them already; this skill never assumes them for a host that does not.
 
 ## Identity
 
 - `id: https://w3id.org/lmodel/<schema-name>` (kebab-case) and `name: <schema-name>`; the prefix key is the snake_case form of the same name, and its IRI is the `id` plus `/`, so a CURIE expands to the w3id path the redirect table serves.
 - `license: Apache-2.0`; `see_also` names the published docs site.
 - `class_uri` and `slot_uri` use the schema's own prefix, which resolves through w3id to the docs; the upstream term goes in `exact_mappings`.
+- A schema of several files is served at `https://w3id.org/lmodel/<schema-name>/schema/<module>.yaml` per file, and `<schema-name>/<anything>.yaml` gives the root file. The redirect table is lmodel's trial of the addresses [publishing.md](publishing.md) describes.
 
 ## Shape
 
-- Two abstract bases, defined once per schema: `NamedEntity` (operational entities: `id`, `name`, `description`, `created_date`, `modified_date`, `version`) and `DocumentedInformation` (`is_a: NamedEntity`; policy, procedure and record artefacts, with `document_type`, `owner`, `approved_by`, `effective_date`, `review_date`, `status`, `classification`, `retention_period` and the like). Every concrete class inherits from one of them.
+- Two abstract bases, defined once per schema: `NamedEntity` (operational entities: `id`, `name`, `description`, `created_date`, `modified_date`, `version`) and `DocumentedInformation` (`is_a: NamedEntity`; policy, procedure and record artefacts, with `document_type`, `owner`, `approved_by`, `effective_date`, `review_date`, `status`, `classification`, `retention_period` and the like). Every concrete class inherits from one of them. The bases and their shared slots are the family's deliberate vocabulary, so the attributes-first rule yields to them: a field the bases carry is their slot; a field of one class is still its attribute.
 - One subset per functional area of the standard, applied with `in_subset` on every class, slot and enum of that area.
 - Annotation values are strings (`mandatory: "true"`, `standard_clause: "6.1"`); a nested annotation names its consumer in a comment.
 

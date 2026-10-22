@@ -24,4 +24,4 @@ Every `uses:` names a commit, with the version in a trailing comment for Dependa
 
 ## Other forges
 
-What ports unchanged: the `uv sync --locked --group dev`, `just lint`, `just test` and `mkdocs build` steps, all plain shell in `.linkml/`. What has to be rewritten is the publishing: GitLab Pages serves a `public/` artifact from the pipeline, so copy `.linkml/site` to `public/linkml/` and let the host's own Pages job pick it up; Forgejo and Gitea have no Pages of their own, so publish the artifact wherever the host publishes docs. Run the gate as a job of the host's existing CI with `.linkml` as its working directory.
+The `uv sync --locked --group dev`, `just lint`, `just test` and `mkdocs build` steps port unchanged: all are plain shell in `.linkml/`. The publishing has to be rewritten. GitLab Pages serves a `public/` artifact from the pipeline, so copy `.linkml/site` to `public/linkml/` and let the host's own Pages job pick it up. Forgejo and Gitea have no Pages of their own, so publish the artifact wherever the host publishes docs. Run the gate as a job of the host's existing CI with `.linkml` as its working directory.
