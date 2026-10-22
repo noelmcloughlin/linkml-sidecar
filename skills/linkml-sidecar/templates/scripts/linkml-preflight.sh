@@ -281,6 +281,39 @@ if [ -n "$sidecar" ]; then
   [ "$inert" -gt 0 ] && [ "$sidecar" != "$root" ] && info nested "$inert file(s) under $sdisp.github/ and .pre-commit-config.yaml are inert there (GitHub and pre-commit read the root only); the hoisted workflow is .github/workflows/linkml-sidecar.yaml"
 fi
 
+# ---- authors: whose history the schema folder carries -----------------------
+# linkml-author reads this line to decide whether to offer a refactor (its
+# schema-design.md): a schema with one or two people in its history can
+# still change shape, one with a team's cannot. There is no threshold here;
+# the counts and the names are the facts. A person is a distinct author
+# email after .mailmap, case ignored, over the non-merge commits; bots are
+# left out. The names are printed because one person under two emails, or
+# two names on one email, shows there.
+if [ "$ingit" -eq 1 ]; then
+  adirs=()
+  if [ -n "$sidecar" ] && [ -n "$srcdir" ] && [ -d "$sidecar/$srcdir" ]; then
+    adirs=("$(relpath "$(cd "$sidecar/$srcdir" && pwd -P)")")
+  elif [ "$kind" = schemas ]; then
+    while IFS= read -r d; do [ -n "$d" ] && adirs+=("$d"); done <<EOF
+$(printf '%s\n' "$schemas" | while IFS= read -r f; do dirname "$f"; done | sort -u)
+EOF
+  fi
+  if [ "${#adirs[@]}" -gt 0 ]; then
+    bots='\[bot\]|dependabot|github-actions|renovate|actions@github\.com|(^|[^a-z0-9])bot([^a-z0-9]|$)'
+    humans() { awk -F'\t' '{print $1 "\t" tolower($2)}' | grep -viE "$bots"; }
+    hist="$(git -C "$root" log --no-merges --format='%aN%x09%aE' -- "${adirs[@]}" 2>/dev/null | humans)"
+    acommits="$(printf '%s\n' "$hist" | grep -c .)"
+    apeople="$(printf '%s\n' "$hist" | cut -f2 | sort -u | grep -c .)"
+    anames="$(printf '%s\n' "$hist" | cut -f1 | grep . | sort | uniq -c | sort -k1,1nr -k2 | awk 'NR<=4{printf "%s%s", (NR>1?", ":""), substr($0, index($0,$2))} NR==5{printf ", and more"}')"
+    rpeople="$(git -C "$root" log --no-merges --format='%aN%x09%aE' 2>/dev/null | humans | cut -f2 | sort -u | grep -c .)"
+    shallow=""; [ "$(git -C "$root" rev-parse --is-shallow-repository 2>/dev/null)" = true ] && shallow="; a shallow clone, so the history is cut short"
+    plural() { if [ "$1" -eq 1 ]; then printf '%s' "$2"; else printf '%s' "$3"; fi; }
+    folders=""; for d in "${adirs[@]}"; do folders="${folders}${folders:+, }${d%/}/"; done
+    # A folder with no commits yet has no history to weigh.
+    [ "$acommits" -gt 0 ] && info authors "schema $(plural "${#adirs[@]}" folder folders) $folders: $apeople $(plural "$apeople" person people), $acommits $(plural "$acommits" commit commits) ($anames); repository: $rpeople $(plural "$rpeople" person people)$shallow; git shortlog -sne --no-merges -- ${adirs[*]} for the detail"
+  fi
+fi
+
 # ---- tools: how linkml-lint and the generators run here ---------------------
 # The host's own environment first, a pinned uvx last, never a tool found on
 # the path: the versions the host tested with are the ones that count.

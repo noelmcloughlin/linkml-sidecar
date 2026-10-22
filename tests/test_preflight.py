@@ -2,7 +2,8 @@
 
 It runs on a bare directory, tells a sidecar from a project elsewhere, a
 configuration-only .linkml/ and a schema file found by content, names the
-tools that run on each, reads a KTL bundle's floor and base IRI, warns about
+tools that run on each, counts the people in the schema folder's history,
+reads a KTL bundle's floor and base IRI, warns about
 a Pages collision, a workflow name clash, a uv workspace and a nested
 repository, says which steps a missing uv disables, and refuses to run under
 sh.
@@ -178,6 +179,44 @@ def test_offers_to_move_the_generators_settings_and_warns_when_both_files_exist(
     write(side / ".linkml" / "config.yaml", "excludes: []\n")
     result = preflight(side)
     assert result and matches(result.out, r"^warn    generators \.linkml/config\.yaml exists beside generators\.yaml, which the recipes read"), result.out
+
+
+def test_counts_the_people_in_the_schema_folders_history(tmp_path):
+    host = make_host(tmp_path / "host")  # the session fixture makes every author "Test <test@example.invalid>"
+    g = Git(host)
+
+    def commit_as(name, email, message):
+        g("add", "-A")
+        done = run(["git", "-C", host, *Git.OPTIONS, "commit", "-q", "-m", message], env={"GIT_AUTHOR_NAME": name, "GIT_AUTHOR_EMAIL": email})
+        assert done, done.out
+
+    write(host / "schema" / "demo.yaml", SCHEMA)
+    commit_as("Test", "test@example.invalid", "schema")
+    write(host / "schema" / "demo.yaml", SCHEMA + "  Other:\n")
+    commit_as("two", "Two@example.invalid", "more")
+    write(host / "schema" / "demo.yaml", SCHEMA + "  Other:\n  Third:\n")
+    commit_as("dependabot[bot]", "49699333+dependabot[bot]@users.noreply.github.com", "bump")
+    write(host / "README.md", "# Demo\n\nA demo host, changed.\n")
+    commit_as("four", "four@example.invalid", "readme")
+    result = preflight(host)
+    assert result and matches(result.out, r"^info    authors    schema folder schema/: 2 people, 2 commits \(Test, two\); repository: 3 people; git shortlog -sne --no-merges -- schema for the detail$"), result.out
+    write(host / ".mailmap", "<test@example.invalid> <two@example.invalid>\n")
+    result = preflight(host)
+    assert result and matches(result.out, r"^info    authors    schema folder schema/: 1 person, 2 commits \(Test, two\); repository: 2 people;"), result.out
+    bare = make_host(tmp_path / "bare", git=False)
+    write(bare / "schema" / "demo.yaml", SCHEMA)
+    result = preflight(bare)
+    assert result and matches(result.out, r"^ok      schema     schema/demo\.yaml") and not matches(result.out, r"^info    authors"), result.out
+    side = make_host(tmp_path / "side")
+    write(side / ".linkml" / ".copier-answers.yml", OURS + "project_slug: demo\n")
+    write(side / ".linkml" / "config.public.mk", 'LINKML_SCHEMA_NAME="demo"\nLINKML_SCHEMA_SOURCE_DIR="src/demo/schema"\n')
+    write(side / ".linkml" / "src" / "demo" / "schema" / "demo.yaml", SCHEMA)
+    result = preflight(side)
+    assert result and not matches(result.out, r"^info    authors"), result.out
+    Git(side)("add", "-A")
+    Git(side)("commit", "-q", "-m", "sidecar")
+    result = preflight(side)
+    assert result and matches(result.out, r"^info    authors    schema folder \.linkml/src/demo/schema/: 1 person, 1 commit \(Test\); repository: 1 person;"), result.out
 
 
 def test_reads_a_ktl_bundle_and_warns_without_a_base_iri(tmp_path):

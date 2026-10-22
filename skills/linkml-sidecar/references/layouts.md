@@ -27,6 +27,7 @@ With no project anywhere, the preflight finds the schema files by content, among
 | `info sidecar .linkml/ holds configuration files` | looks on | installs around them; a name both hold is refused, never overwritten |
 | `warn sidecar .linkml/ holds <project files> but no answers` | works there if it is a project | refuses until a person says which it is |
 | `ok schema <file>` (one or more) | works on the file in place | `--adopt <file>` gives it the toolchain; several files: a person chooses |
+| `info authors schema folder <dir>/: <n> people, <m> commits (<names>); repository: <r> people` | weighs whether to offer a refactor, by its [schema-design.md](https://github.com/noelmcloughlin/linkml-sidecar/blob/main/skills/linkml-author/references/schema-design.md); the line is a fact, not a verdict | nothing |
 | `missing sidecar no LinkML project or schema` | waits for one | installs the sidecar with the dummy |
 
 ## How the tools run
