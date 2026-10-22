@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-22
+
 ### Added
 
 - **linkml-sidecar installs a `.linkml/` LinkML schema sidecar from linkml-project-copier v0.5.0, pinned and verified, with every root-install assumption of the template neutralised.** One scaffold script pre-seeds the files the skill owns, runs copier for the rest, patches what assumes a repository root, adds the root pointers and the `linkml_schema` doorway, and prints the hand-off. A preflight says what the host can do first; the catalogue of assumptions is a reference page that shrinks as upstream adopts a sidecar layout.
