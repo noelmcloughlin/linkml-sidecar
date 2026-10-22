@@ -12,14 +12,18 @@
 # the template with `--trust`.
 #
 # Usage: linkml-scaffold.sh [--dry-run] [--host DIR] [--mode plain|lokf|auto]
-#                           [--gitignored] [--pointers-only] [--repair PATH]
+#                           [--gitignored] [--adopt SCHEMA | --dummy]
+#                           [--pointers-only] [--repair PATH]
 #   Facts (environment): PROJ_NAME PROJ_SLUG PROJ_DESC GITHUB_ORG REPO_URL
 #   FULL_NAME EMAIL LICENSE_ID SCHEMA_ID DOCS_URL [COPYRIGHT_YEAR] [TODAY]
 #   [BASE_IRI, read from .lokf/knowledge/index.md when absent]
+#   With --adopt, PROJ_SLUG and SCHEMA_ID come from the schema file itself.
 #   Overrides: LINKML_TEMPLATE_SRC (a URL or a local clone), LINKML_COPIER
 #   (the copier command to run instead of uvx), LINKML_TEMPLATE_SKIP_PIN_CHECK=1.
-# Exit: 0 done; 2 usage or a missing tool; 3 refused (a sidecar exists);
-#       4 copier failed; 5 an overlay or pointer failed.
+# Exit: 0 done; 2 usage or a missing tool; 3 refused (a project, a schema or
+#       a file already there stands in the way); 4 copier failed; 5 an
+#       overlay or pointer failed. Nothing but its own staging directory is
+#       ever removed.
 [ -n "${BASH_VERSION:-}" ] || { echo "run this with bash: bash ${0##*/} [options]" >&2; exit 2; }
 set -euo pipefail
 

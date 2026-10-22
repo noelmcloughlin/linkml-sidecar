@@ -16,6 +16,12 @@ import pytest
 from conftest import FACTS, SCAFFOLD, TEMPLATES, Git, add_lokf, bash, have, make_host, matches, pin, read, run, scaffold, template_src, tokens_left, write
 
 MARKER = "linkml-sidecar: the linkml_schema doorway"
+OURS = "_commit: v0.5.0\n_src_path: gh:linkml/linkml-project-copier\n"
+SCHEMA = "id: https://w3id.org/acme/demo\nname: demo\nprefixes:\n  linkml: https://w3id.org/linkml/\nimports:\n  - linkml:types\nclasses:\n  Thing:\n    attributes:\n      name:\n"
+
+
+def staging_left(host):
+    return sorted(p.name for p in host.glob(".linkml-staging-*"))
 
 
 def test_a_plain_host_gets_the_whole_layout(tmp_path):
@@ -99,21 +105,64 @@ def test_dry_run_writes_nothing(tmp_path):
 
 
 @pytest.mark.parametrize(
-    ("shape", "needle"),
-    [("dot", ".linkml/ already exists"), ("visible", "visible linkml/ sidecar"), ("root", "itself a copier project")],
+    ("path", "content", "needle"),
+    [
+        (".linkml/.copier-answers.yml", "_commit: v0.5.0\n", ".linkml/ already holds a sidecar"),
+        ("linkml/.copier-answers.yml", OURS, "linkml/ is a LinkML schema project already (copier answers)"),
+        (".copier-answers.yml", OURS, "this repository is itself a LinkML schema project already (copier answers)"),
+        ("config.public.mk", 'LINKML_SCHEMA_NAME="demo"\n', "this repository is itself a LinkML schema project already (config.public.mk)"),
+        ("model/config.public.mk", 'LINKML_SCHEMA_NAME="demo"\n', "model/ is a LinkML schema project already (config.public.mk)"),
+        (".linkml/justfile", "lint:\n", ".linkml/ holds justfile but no .copier-answers.yml"),
+    ],
 )
-def test_an_existing_project_is_refused_and_nothing_is_written(tmp_path, shape, needle):
+def test_an_existing_project_is_refused_and_nothing_is_written(tmp_path, path, content, needle):
     host = make_host(tmp_path)
-    if shape == "dot":
-        write(host / ".linkml" / ".copier-answers.yml", "_commit: v0.5.0\n")
-    elif shape == "visible":
-        write(host / "linkml" / ".copier-answers.yml", "_commit: v0.5.0\n")
-    else:
-        write(host / ".copier-answers.yml", "_commit: v0.5.0\n")
+    write(host / path, content)
     before = sorted(str(p) for p in host.rglob("*"))
     result = scaffold(host)
     assert result.rc == 3 and needle in result.out, result.out
     assert sorted(str(p) for p in host.rglob("*")) == before
+
+
+def test_answers_of_another_template_at_the_root_are_no_project(tmp_path):
+    host = make_host(tmp_path)
+    write(host / ".copier-answers.yml", "_commit: v1.0.0\n_src_path: gh:acme/python-service-template\n")
+    result = scaffold(host)
+    assert result and (host / ".linkml" / ".copier-answers.yml").is_file(), result.out
+
+
+def test_configuration_files_in_dot_linkml_are_installed_around(tmp_path):
+    host = make_host(tmp_path)
+    write(host / ".linkml" / "upstream.toml", "[linkml]\nkept = true\n")
+    failed = scaffold(host, env={"FAKE_COPIER_FAIL": "1"})
+    assert failed.rc == 4 and "removed the staging directory; .linkml/ was not touched" in failed.out, failed.out
+    assert sorted(p.name for p in (host / ".linkml").iterdir()) == ["upstream.toml"] and staging_left(host) == []
+    result = scaffold(host)
+    assert result, result.out
+    assert "holds 1 file(s) and no project (upstream.toml)" in result.out and "moved the sidecar into .linkml/ around the files already there" in result.out
+    assert read(host / ".linkml" / "upstream.toml") == "[linkml]\nkept = true\n"
+    assert (host / ".linkml" / ".copier-answers.yml").is_file() and (host / ".linkml" / "src" / "demo" / "schema" / "demo.yaml").is_file()
+    assert staging_left(host) == [] and tokens_left(host / ".linkml") == []
+
+
+def test_a_file_both_hold_is_a_clash_and_nothing_is_written(tmp_path):
+    host = make_host(tmp_path)
+    write(host / ".linkml" / "README.md", "the host's own notes\n")
+    result = scaffold(host)
+    assert result.rc == 3 and "already holds 1 of the files the sidecar writes (README.md)" in result.out, result.out
+    assert sorted(p.name for p in (host / ".linkml").iterdir()) == ["README.md"] and read(host / ".linkml" / "README.md") == "the host's own notes\n"
+    assert staging_left(host) == [] and "rm -rf" not in result.out
+
+
+def test_gitignored_mode_is_refused_when_dot_linkml_holds_tracked_files(tmp_path):
+    host = make_host(tmp_path)
+    write(host / ".linkml" / "upstream.toml", "[linkml]\n")
+    git = Git(host)
+    git("add", "-A")
+    git("commit", "-q", "-m", "config")
+    result = scaffold(host, "--gitignored")
+    assert result.rc == 2 and "holds files git tracks (.linkml/upstream.toml)" in result.out, result.out
+    assert not (host / ".linkml" / ".copier-answers.yml").exists() and staging_left(host) == []
 
 
 def test_a_missing_fact_stops_before_anything_is_written(tmp_path):
@@ -127,19 +176,93 @@ def test_a_failed_copier_run_exits_4_and_a_nested_repository_exits_5(tmp_path):
     host = make_host(tmp_path / "a")
     result = scaffold(host, env={"FAKE_COPIER_FAIL": "1"})
     assert result.rc == 4 and "copier failed" in result.out, result.out
-    # The pre-seeded files go with the failure, so the next run is not refused.
-    assert not (host / ".linkml").exists() and "removed the unfinished .linkml/" in result.out
+    # Everything was staged, so the failure leaves no .linkml/ and no staging directory, and the next run is not refused.
+    assert not (host / ".linkml").exists() and staging_left(host) == [] and "removed the staging directory" in result.out
     assert scaffold(host), "a second run after the failure"
     host = make_host(tmp_path / "b")
     result = scaffold(host, env={"FAKE_COPIER_GIT": "1"})
     assert result.rc == 5 and ".linkml/.git appeared" in result.out, result.out
+    assert not (host / ".linkml").exists() and staging_left(host) == []
 
 
-def test_an_unfinished_sidecar_is_refused_with_the_way_out(tmp_path):
+# ---- a schema the host already holds ----------------------------------------
+
+
+def test_a_schema_the_host_holds_is_refused_until_adopted_or_the_dummy_is_asked_for(tmp_path):
     host = make_host(tmp_path)
-    write(host / ".linkml" / "README.md", "left by a failed run\n")
+    write(host / "schema" / "demo.yaml", SCHEMA)
     result = scaffold(host)
-    assert result.rc == 3 and "holds no .copier-answers.yml" in result.out and "rm -rf .linkml" in result.out, result.out
+    assert result.rc == 3 and "already holds a LinkML schema: schema/demo.yaml" in result.out and "--adopt <path>" in result.out, result.out
+    assert not (host / ".linkml").exists() and staging_left(host) == []
+    result = scaffold(host, "--dummy")
+    assert result and "Person" in read(host / ".linkml" / "src" / "demo" / "schema" / "demo.yaml"), result.out
+
+
+def test_an_adopted_schema_stays_where_it_is_and_the_sidecar_points_at_it(tmp_path):
+    host = make_host(tmp_path)
+    write(host / "schema" / "demo.yaml", SCHEMA)
+    write(host / "schema" / "demo_terms.yaml", "id: https://w3id.org/acme/demo/terms\nname: demo_terms\nimports:\n  - linkml:types\n")
+    before = {p: read(p) for p in (host / "README.md", host / "schema" / "demo.yaml")}
+    facts = {k: v for k, v in FACTS.items() if k not in ("PROJ_SLUG", "SCHEMA_ID")}
+    result = scaffold(host, "--adopt", "schema/demo.yaml", facts=facts)
+    assert result, result.out
+    side = host / ".linkml"
+    assert 'LINKML_SCHEMA_SOURCE_DIR="../schema"' in read(side / "config.public.mk") and 'LINKML_SCHEMA_NAME="demo"' in read(side / "config.public.mk")
+    assert not (side / "src" / "demo" / "schema" / "demo.yaml").exists()
+    assert "schema/demo.yaml" in read(side / "src" / "demo" / "schema" / "README.md")
+    assert not (side / "tests" / "data" / "valid" / "Person-001.yaml").exists() and "import demo.datamodel.demo" in read(side / "tests" / "test_data.py")
+    readme = read(side / "README.md")
+    assert "## Where the schema is" in readme and "`schema/demo.yaml`" in readme and "src/demo/schema/README.md" in readme and "the one file to edit" not in readme
+    assert MARKER not in read(side / "project.justfile") and not (host / "linkml_schema").exists() and not (host / "llms.txt").exists()
+    assert {p: read(p) for p in before} == before
+    assert matches(result.out, r"^handoff: SCHEMA_ID=https://w3id\.org/acme/demo$") and matches(result.out, r"^handoff: adopted schema/demo\.yaml: config\.public\.mk names its folder \(LINKML_SCHEMA_SOURCE_DIR=\.\./schema\)")
+    assert matches(result.out, r"^handoff: no example data was laid down") and matches(result.out, r"^handoff: no README aside, llms\.txt section or linkml_schema doorway")
+    assert matches(result.out, r'^handoff: Step 5\'s workflow runs on \.linkml/\*\* only; add "schema/\*\*"')
+    assert tokens_left(side) == [] and staging_left(host) == []
+    again = scaffold(host, "--pointers-only")
+    assert again and not (host / "linkml_schema").exists() and not (host / "llms.txt").exists(), again.out
+    repaired = bash(SCAFFOLD, "--host", str(host), "--repair", ".linkml/src/demo/schema/README.md", env={"LINKML_TEMPLATE_SKIP_PIN_CHECK": "1"})
+    assert repaired and "schema/demo.yaml" in read(side / "src" / "demo" / "schema" / "README.md"), repaired.out
+
+
+def test_a_schema_at_the_root_is_adopted_from_one_level_up(tmp_path):
+    host = make_host(tmp_path)
+    write(host / "demo.yaml", SCHEMA)
+    result = scaffold(host, "--adopt", "demo.yaml", facts={k: v for k, v in FACTS.items() if k != "PROJ_SLUG"})
+    assert result, result.out
+    assert 'LINKML_SCHEMA_SOURCE_DIR=".."' in read(host / ".linkml" / "config.public.mk")
+    assert "`./demo.yaml`" in read(host / ".linkml" / "src" / "demo" / "schema" / "README.md")
+
+
+@pytest.mark.parametrize(
+    ("path", "content", "args", "facts", "needle"),
+    [
+        ("schema/demo.yml", SCHEMA, (), {}, "must be renamed first"),
+        ("schema/my-model.yaml", SCHEMA, (), {}, "is not a slug"),
+        ("schema/demo.yaml", SCHEMA, (), {"PROJ_SLUG": "other"}, "PROJ_SLUG='other', but the adopted schema file is demo.yaml"),
+        ("schema/demo.yaml", "name: demo\nclasses: {}\n", (), {}, "does not read as a LinkML schema"),
+        ("schema/demo.yaml", SCHEMA, ("--mode", "lokf"), {}, "--adopt and --mode lokf do not go together"),
+        (".linkml/demo.yaml", SCHEMA, (), {}, "is inside .linkml/"),
+    ],
+)
+def test_adoption_checks_the_file_before_anything_is_written(tmp_path, path, content, args, facts, needle):
+    host = make_host(tmp_path)
+    write(host / path, content)
+    before = sorted(str(p) for p in host.rglob("*"))
+    result = scaffold(host, "--adopt", path, *args, facts={**{k: v for k, v in FACTS.items() if k != "PROJ_SLUG"}, **facts})
+    assert result.rc == 2 and needle in result.out, result.out
+    assert sorted(str(p) for p in host.rglob("*")) == before
+
+
+def test_an_adopted_schema_beside_a_bundle_is_left_unwired(tmp_path):
+    host = make_host(tmp_path)
+    add_lokf(host)
+    write(host / "schema" / "demo.yaml", SCHEMA)
+    original = read(host / ".lokf" / "justfile")
+    result = scaffold(host, "--adopt", "schema/demo.yaml", facts={k: v for k, v in FACTS.items() if k != "PROJ_SLUG"})
+    assert result, result.out
+    assert "plain mode" in result.out and matches(result.out, r"^handoff: \.lokf/ is present and not wired")
+    assert read(host / ".lokf" / "justfile") == original and not (host / ".linkml" / ".linkmllint.yaml").exists()
 
 
 
@@ -370,7 +493,7 @@ def test_the_scaffold_runs_on_python_3_8_syntax_and_library():
 # ---- the slow tests: the real copier, then the gate -------------------------
 
 
-def slow_host(tmp_path, with_lokf):
+def slow_host(tmp_path, with_lokf, adopt=None):
     # LINKML_SIDECAR_SLOW=1 asks for these tests, so a missing clone or tool
     # fails them: a skip would let a broken clone step in CI pass green.
     src = template_src()
@@ -385,7 +508,8 @@ def slow_host(tmp_path, with_lokf):
     facts = dict(FACTS)
     if with_lokf:
         facts["BASE_IRI"] = "https://fixture.example/knowledge/"
-    result = scaffold(host, facts=facts, env={"LINKML_TEMPLATE_SRC": src}, fake=False)
+    args = ("--adopt", adopt) if adopt else ()
+    result = scaffold(host, *args, facts=facts, env={"LINKML_TEMPLATE_SRC": src}, fake=False)
     assert result, result.out
     return host
 
@@ -404,6 +528,28 @@ def test_the_real_template_passes_the_gate_on_a_plain_host(tmp_path):
         assert result, f"just {recipe} failed:\n{result.out[-3000:]}"
     assert (host / ".linkml" / "uv.lock").is_file()
     # copier refuses a dirty destination, so the sidecar is committed first, as Step 4 says.
+    git = Git(host)
+    git("add", "-A")
+    git("commit", "-q", "-m", "scaffolded")
+    update = run(["uvx", "--from", "copier>=9.4.0,<10", "--with", "jinja2-time", "copier", "update", "--trust", "--skip-answered", "--quiet"], cwd=host / ".linkml")
+    assert update, update.out[-2000:]
+    assert git("status", "--porcelain") == "", "copier update at the same pin changed something"
+
+
+@pytest.mark.slow
+def test_the_real_template_passes_the_gate_on_an_adopted_schema(tmp_path):
+    """The dummy schema, placed in the host before the sidecar exists, adopted where it lies: every recipe reads it through config.public.mk."""
+    rendered = read(TEMPLATES / "linkml" / "schema" / "plain" / "schema.yaml")
+    for token, value in {**FACTS, "TEMPLATE_REF": pin()[0]}.items():
+        rendered = rendered.replace(f"<{token}>", value)
+    write(tmp_path / "schema" / "demo.yaml", rendered)
+    host = slow_host(tmp_path, with_lokf=False, adopt="schema/demo.yaml")
+    assert 'LINKML_SCHEMA_SOURCE_DIR="../schema"' in read(host / ".linkml" / "config.public.mk")
+    for recipe in ("install", "lint", "test", "site"):
+        result = gate(host, recipe)
+        assert result, f"just {recipe} failed:\n{result.out[-3000:]}"
+    assert (host / ".linkml" / "src" / "demo" / "datamodel" / "demo.py").is_file(), "gen-project read the adopted schema"
+    assert read(host / "schema" / "demo.yaml") == rendered, "the adopted schema was changed"
     git = Git(host)
     git("add", "-A")
     git("commit", "-q", "-m", "scaffolded")

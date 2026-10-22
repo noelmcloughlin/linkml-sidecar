@@ -4,22 +4,36 @@
 The driver sets the template pin and picks an interpreter; this file does
 the work, in this order:
 
-1. refuse when a sidecar already exists (`.linkml/`, a visible `linkml/`
-   with answers, or answers at the root), unless asked to repair one file
-   or to re-add the root pointers;
+1. refuse when a LinkML schema project already exists (a sidecar in
+   `.linkml/`, or linkml-project-copier's answers or a `config.public.mk`
+   at the root or one directory down), unless asked to repair one file or
+   to re-add the root pointers. A `.linkml/` that holds only configuration
+   files is installed around, never emptied. A schema the host already
+   holds outside any project is refused too, until `--adopt` names it or
+   `--dummy` asks for the example schema beside it;
 2. check the facts the environment carries against the template's own
    rules, and read the ones a KTL bundle already records;
 3. verify that the pinned tag still names the pinned commit, so `--trust`
    is given to a template that was read, not to whatever the tag points
    at today;
-4. pre-seed every file the skill owns, with the placeholders substituted
-   by `str.replace` (never sed: a value holding sed's delimiter would
-   change the command rather than the text);
-5. run copier for everything else; the template's `_skip_if_exists` keeps
-   it off the pre-seeded files, and `copier update` keeps it that way;
-6. neutralise what the template assumes of a repository root (the
+4. pre-seed every file the skill owns into a staging directory beside
+   `.linkml/`, with the placeholders substituted by `str.replace` (never
+   sed: a value holding sed's delimiter would change the command rather
+   than the text);
+5. run copier for everything else, into the same staging directory; the
+   template's `_skip_if_exists` keeps it off the pre-seeded files, and
+   `copier update` keeps it that way;
+6. move the staged files into `.linkml/`: a name both hold is a clash and
+   nothing moves. A failure before this point removes the staging
+   directory and nothing else, so `.linkml/` is never deleted here;
+7. neutralise what the template assumes of a repository root (the
    catalogue is references/template-assumptions.md), wire a KTL bundle
    when one is present, add the root pointers, and print the hand-off.
+
+With `--adopt <schema>`, the dummy is not laid down: `config.public.mk`
+points `LINKML_SCHEMA_SOURCE_DIR` at the folder that already holds the
+host's schema, which is never moved, linked or edited, and the folder the
+template expects gets a README that says where the schema is.
 
 Every line it prints starts with `scaffold:`, `handoff:` or `next:`, so a
 skill can read it back. `--dry-run` prints the same lines and writes
@@ -45,6 +59,25 @@ TEMPLATES = SKILL_DIR / "templates"
 SIDECAR = ".linkml"
 DOORWAY = "linkml_schema"
 MARKER = "# ---- linkml-sidecar: the linkml_schema doorway"
+STAGING_PREFIX = ".linkml-staging-"
+# What tells a LinkML schema project apart from any other folder, by its
+# files and never by its name: linkml-project-copier's answers naming that
+# template, or the config.public.mk that it and the older
+# linkml-project-cookiecutter render. The second is a signal upstream may
+# retire; the first stays as long as copier does.
+PROJECT_TEMPLATE = "linkml-project-copier"
+PROJECT_CONFIG = "config.public.mk"
+# What a schema project holds besides those two, so that a .linkml/ made by
+# hand, or left by an older scaffold's failed run, is told from one that
+# holds only configuration files.
+PROJECT_SHAPE = ("pyproject.toml", "justfile", "Makefile", "src")
+# How a LinkML schema file is recognised by its content (one of the signs,
+# and a top-level key only a schema has), and the folders that by convention
+# hold copies, fixtures or rendered output rather than the host's own model.
+# The preflight applies the same rule and the same list.
+SCHEMA_SIGNS = ("linkml:types", "https://w3id.org/linkml/")
+SCHEMA_KEYS = re.compile(r"^(classes|slots|enums|types|subsets|imports):", re.M)
+PRUNED = (".git", ".github", ".venv", "node_modules", "tmp", "site", "project", "docs", "tests", "test", "fixtures", "templates", ".lokf", SIDECAR)
 TOKENS = (
     "PROJ_NAME",
     "PROJ_SLUG",
@@ -55,6 +88,7 @@ TOKENS = (
     "EMAIL",
     "LICENSE_ID",
     "SCHEMA_ID",
+    "SCHEMA_DIR",
     "DOCS_URL",
     "COPYRIGHT_YEAR",
     "TODAY",
@@ -81,6 +115,9 @@ OWNED = (
     ("linkml/docs/about.md", "docs/about.md"),
     ("scripts/linkml-preflight.sh", "scripts/linkml-preflight.sh"),
 )
+# The staging directory of the current run, so that a path in it is printed
+# as its place under .linkml/.
+_stage = None
 
 
 class Refused(Exception):
@@ -93,13 +130,21 @@ def say(kind, text):
     print(f"{kind}: {text}", flush=True)
 
 
+def shown(path):
+    """A path as the hand-off names it: a file in the staging directory reads as its place under .linkml/."""
+    text = str(path)
+    if _stage is not None and text.startswith(str(_stage)):
+        return SIDECAR + text[len(str(_stage)) :]
+    return text
+
+
 def read(path):
     return Path(path).read_text(encoding="utf-8")
 
 
 def write(path, text, dry, mode=None):
     path = Path(path)
-    say("scaffold", f"{'would write' if dry else 'write'} {path}")
+    say("scaffold", f"{'would write' if dry else 'write'} {shown(path)}")
     if dry:
         return
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -176,7 +221,7 @@ def facts_from_sidecar(host, template_ref):
     """The facts a finished sidecar records, for --pointers-only and --repair; the environment still wins."""
     sidecar = host / SIDECAR
     answers = sidecar / ".copier-answers.yml"
-    mk = sidecar / "config.public.mk"
+    mk = sidecar / PROJECT_CONFIG
     facts = {token: "" for token in TOKENS}
     facts.update(
         PROJ_NAME=answers_value(answers, "project_name"),
@@ -193,7 +238,15 @@ def facts_from_sidecar(host, template_ref):
     mkdocs = sidecar / "mkdocs.yml"
     facts["DOCS_URL"] = answers_value(mkdocs, "site_url")
     facts["REPO_URL"] = answers_value(mkdocs, "repo_url")
-    schema = sidecar / "src" / facts["PROJ_SLUG"] / "schema" / f"{facts['PROJ_SLUG']}.yaml" if facts["PROJ_SLUG"] else None
+    slug = facts["PROJ_SLUG"]
+    # An adopted schema sits outside the sidecar, where config.public.mk points; the dummy sits where the template put it.
+    srcdir = mk_value(mk, "LINKML_SCHEMA_SOURCE_DIR") or (f"src/{slug}/schema" if slug else "")
+    if srcdir.startswith(".."):
+        try:
+            facts["SCHEMA_DIR"] = (sidecar / srcdir).resolve().relative_to(host.resolve()).as_posix()
+        except ValueError:
+            facts["SCHEMA_DIR"] = srcdir
+    schema = sidecar / srcdir / f"{slug}.yaml" if slug and srcdir else None
     if schema and schema.is_file():
         facts["SCHEMA_ID"] = answers_value(schema, "id")
     facts["BASE_IRI"] = frontmatter_value(host / ".lokf" / "knowledge" / "index.md", "base_iri")
@@ -204,7 +257,7 @@ def facts_from_sidecar(host, template_ref):
     return facts
 
 
-def validate(facts, mode):
+def validate(facts, mode, adopted=False):
     problems = []
     required = ["PROJ_NAME", "PROJ_SLUG", "PROJ_DESC", "GITHUB_ORG", "REPO_URL", "FULL_NAME", "EMAIL", "LICENSE_ID", "SCHEMA_ID", "DOCS_URL"]
     if mode == "lokf":
@@ -220,17 +273,18 @@ def validate(facts, mode):
         problems.append(f"LICENSE_ID {facts['LICENSE_ID']!r} is not one of {', '.join(LICENSES)}")
     if facts["EMAIL"] and "@" not in facts["EMAIL"]:
         problems.append("EMAIL has no @")
+    # An adopted schema's id is the host's choice, made before this skill came; only an id chosen here is held to the namespace rules.
     for token in ("SCHEMA_ID", "BASE_IRI"):
         value = facts.get(token, "")
         if not value:
             continue
         if not re.match(r"^https?://", value):
             problems.append(f"{token} must be an http(s) IRI")
-        if any(h in value for h in CODE_HOSTS):
+        if any(h in value for h in CODE_HOSTS) and not (adopted and token == "SCHEMA_ID"):
             problems.append(f"{token} {value!r} names a code host; use a namespace the project controls (w3id.org, purl.org, its own domain)")
     if facts.get("BASE_IRI") and not facts["BASE_IRI"].endswith("/"):
         problems.append("BASE_IRI must end with /")
-    if facts.get("SCHEMA_ID", "").endswith("/"):
+    if facts.get("SCHEMA_ID", "").endswith("/") and not adopted:
         problems.append("SCHEMA_ID must not end with /; the schema's prefix adds it")
     if facts["COPYRIGHT_YEAR"] and not re.match(r"^\d{4}$", facts["COPYRIGHT_YEAR"]):
         problems.append("COPYRIGHT_YEAR must be four digits")
@@ -281,18 +335,129 @@ def check_pin(src, ref, sha, skip):
     say("scaffold", f"pin verified: {ref} is {sha[:12]} on {url}")
 
 
-# ---- the sidecar -----------------------------------------------------------
+# ---- what the host already holds -------------------------------------------
+
+
+def linkml_project(directory):
+    """Whether a directory holds a LinkML schema project, by the two signals PROJECT_TEMPLATE and PROJECT_CONFIG name."""
+    if (directory / PROJECT_CONFIG).is_file():
+        return True
+    answers = directory / ".copier-answers.yml"
+    return answers.is_file() and PROJECT_TEMPLATE in answers_value(answers, "_src_path")
 
 
 def refuse_existing(host):
-    if (host / SIDECAR).exists():
-        if not (host / SIDECAR / ".copier-answers.yml").is_file():
-            raise Refused(3, f"{SIDECAR}/ exists under {host} but holds no .copier-answers.yml: a run that failed left it; remove it (rm -rf {SIDECAR}) and run again")
-        raise Refused(3, f"{SIDECAR}/ already exists under {host}; linkml-author works there, and --repair re-lays one file")
-    if (host / "linkml" / ".copier-answers.yml").is_file():
-        raise Refused(3, "a visible linkml/ sidecar exists (the hand-made shape); it is left alone, and linkml-author works in it")
-    if (host / ".copier-answers.yml").is_file():
-        raise Refused(3, "this repository is itself a copier project; no sidecar applies")
+    """A sidecar, a schema project at the root or one level down, or a .linkml/ nobody can account for: refused. Configuration files alone in .linkml/ are installed around."""
+    sidecar = host / SIDECAR
+    if (sidecar / ".copier-answers.yml").is_file():
+        raise Refused(3, f"{SIDECAR}/ already holds a sidecar; linkml-author works there, and --repair re-lays one file")
+    if sidecar.is_dir():
+        held = sorted(p.name for p in sidecar.iterdir())
+        shaped = [name for name in held if name in PROJECT_SHAPE or name == PROJECT_CONFIG]
+        if shaped:
+            raise Refused(
+                3,
+                f"{SIDECAR}/ holds {', '.join(shaped)} but no .copier-answers.yml: a project made by hand, which linkml-author works in, "
+                "or what an older scaffold's failed run left, which only a person removes",
+            )
+        if held:
+            more = ", ..." if len(held) > 5 else ""
+            say("scaffold", f"{SIDECAR}/ holds {len(held)} file(s) and no project ({', '.join(held[:5])}{more}); the sidecar installs around them, and a name both hold is refused")
+    elif sidecar.exists():
+        raise Refused(3, f"{SIDECAR} exists and is not a directory")
+    for directory in [host] + [p for p in sorted(host.iterdir()) if p.is_dir() and p.name not in PRUNED]:
+        if linkml_project(directory):
+            where = "this repository is itself" if directory == host else f"{directory.name}/ is"
+            told_by = "copier answers" if (directory / ".copier-answers.yml").is_file() else PROJECT_CONFIG
+            raise Refused(3, f"{where} a LinkML schema project already ({told_by}); no sidecar applies, linkml-author works there")
+
+
+def is_schema(path):
+    """Whether a file reads as a LinkML schema: one of SCHEMA_SIGNS and one of SCHEMA_KEYS in its first 64 KiB."""
+    try:
+        with open(path, "rb") as handle:
+            head = handle.read(65536).decode("utf-8", "replace")
+    except OSError:
+        return False
+    return any(sign in head for sign in SCHEMA_SIGNS) and SCHEMA_KEYS.search(head) is not None
+
+
+def schema_files(host):
+    """Schema files the host holds outside any project, by content: what git tracks or would track, else the whole tree, less the pruned folders."""
+    listed = None
+    try:
+        done = subprocess.run(["git", "-C", str(host), "ls-files", "-z", "-co", "--exclude-standard", "--", "*.yaml", "*.yml"], capture_output=True, text=True)
+        if done.returncode == 0:
+            listed = done.stdout.split("\0")
+    except OSError:
+        pass
+    if listed is None:
+        listed = []
+        for base, dirs, files in os.walk(host):
+            dirs[:] = [d for d in dirs if d not in PRUNED]
+            for name in files:
+                if name.endswith((".yaml", ".yml")):
+                    listed.append(os.path.relpath(os.path.join(base, name), host))
+    found = []
+    for rel in listed:
+        rel = rel.replace("\\", "/")
+        if not rel or any(part in PRUNED for part in rel.split("/")[:-1]):
+            continue
+        if is_schema(host / rel):
+            found.append(rel)
+    return sorted(found)
+
+
+def tracked_under(host, rel):
+    """The files git tracks under a path; none when there is no git or no repository."""
+    try:
+        done = subprocess.run(["git", "-C", str(host), "ls-files", "-z", "--", rel], capture_output=True, text=True)
+    except OSError:
+        return []
+    return [p for p in done.stdout.split("\0") if p] if done.returncode == 0 else []
+
+
+def adoption(host, given):
+    """The schema file --adopt names, checked: (its folder relative to the host, its slug, its id)."""
+    path = Path(given)
+    file = (path if path.is_absolute() else host / path).resolve()
+    try:
+        rel = file.relative_to(host.resolve())
+    except ValueError:
+        raise Refused(2, f"--adopt {given} is outside {host}")
+    if not file.is_file():
+        raise Refused(2, f"--adopt {given}: no such file under {host}")
+    if rel.parts[0] == SIDECAR:
+        raise Refused(2, f"--adopt {given} is inside {SIDECAR}/, where only the sidecar's own schema lives")
+    if file.suffix != ".yaml":
+        raise Refused(2, f"--adopt {given}: the template names the schema <slug>.yaml, so a {file.suffix or 'bare'} file must be renamed first")
+    if not is_schema(file):
+        raise Refused(2, f"--adopt {given} does not read as a LinkML schema (no linkml:types import and no linkml prefix)")
+    slug = file.stem
+    if not SLUG_RE.match(slug):
+        raise Refused(
+            2,
+            f"--adopt {given}: the file's stem {slug!r} is not a slug ({SLUG_RE.pattern}), and the template names the schema file after the slug; "
+            "rename the file, or lay the dummy (--dummy) and import this schema from it",
+        )
+    return rel.parent.as_posix(), slug, answers_value(file, "id")
+
+
+def adopt_facts(facts, adopt):
+    """The facts an adopted schema settles: the slug is its file's stem, its id stands, and SCHEMA_DIR is its folder."""
+    folder, slug, schema_id = adopt
+    given = os.environ.get("PROJ_SLUG", "").strip()
+    if given and given != slug:
+        raise Refused(2, f"PROJ_SLUG={given!r}, but the adopted schema file is {slug}.yaml; the template names the schema after the slug, so they must agree")
+    facts["PROJ_SLUG"] = slug
+    facts["SCHEMA_DIR"] = folder
+    if schema_id:
+        if facts["SCHEMA_ID"] and facts["SCHEMA_ID"] != schema_id:
+            say("handoff", f"SCHEMA_ID={facts['SCHEMA_ID']} differs from the schema's own id {schema_id}, which stands; the sidecar never edits the schema")
+        facts["SCHEMA_ID"] = schema_id
+
+
+# ---- the sidecar -----------------------------------------------------------
 
 
 def host_license(host):
@@ -311,29 +476,52 @@ def dummy_files(mode):
     return out
 
 
-def preseed(host, facts, mode, dry):
-    sidecar = host / SIDECAR
+def adopted_readme(text, facts):
+    """The sidecar README for an adopted schema: the tree names the folder the schema really lives in, and a section says so before the removal notes."""
+    def tree_line(m):
+        entry = f"|-- src/{m.group(1)}/schema/README.md"
+        return entry.ljust(45) + f"# says where the schema is: {facts['SCHEMA_DIR']}/ in the host"
+
+    text = re.sub(r"^\|-- src/(\S+)/schema/\S+\.yaml\s+# the schema: the one file to edit$", tree_line, text, count=1, flags=re.M)
+    section = render(read(TEMPLATES / "linkml" / "README-adopted.md"), facts).rstrip("\n") + "\n\n"
+    if "## Remove it" in text:
+        return text.replace("## Remove it", section + "## Remove it", 1)
+    return text.rstrip("\n") + "\n\n" + section
+
+
+def preseed(host, stage, facts, mode, dry, adopt):
+    """The files the skill owns, into the staging directory; with an adopted schema, no dummy and no dummy data."""
     slug = facts["PROJ_SLUG"]
     source = host_license(host)
     if source:
-        say("scaffold", f"{'would copy' if dry else 'copy'} {source.name} to {sidecar / 'LICENSE'}")
+        say("scaffold", f"{'would copy' if dry else 'copy'} {source.name} to {SIDECAR}/LICENSE")
         if not dry:
-            sidecar.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(source, sidecar / "LICENSE")
+            stage.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, stage / "LICENSE")
     else:
-        write(sidecar / "LICENSE", render(read(TEMPLATES / "linkml" / "LICENSE.missing"), facts), dry)
+        write(stage / "LICENSE", render(read(TEMPLATES / "linkml" / "LICENSE.missing"), facts), dry)
         say("handoff", "no LICENSE at the host root: .linkml/LICENSE is a stub that says so, and LICENSE_ID is LicenseRef-Custom until a license exists")
     for template, dest in OWNED:
-        src = TEMPLATES / template
-        text = render(read(src), facts)
+        text = render(read(TEMPLATES / template), facts)
+        if adopt and dest == "README.md":
+            text = adopted_readme(text, facts)
         mode_bits = 0o755 if dest.endswith(".sh") else None
-        write(sidecar / dest, text, dry, mode_bits)
+        write(stage / dest, text, dry, mode_bits)
+    if adopt:
+        # The template expects src/<slug>/schema/ and renders its own README there;
+        # this one, in _skip_if_exists, says where the schema really is. The data
+        # test comes without the dummy's data: the host's classes are not Person.
+        write(stage / "src" / slug / "schema" / "README.md", render(read(TEMPLATES / "linkml" / "schema-folder-README.md"), facts), dry)
+        for path in dummy_files("plain"):
+            if path.name == "test_data.py":
+                write(stage / path.relative_to(TEMPLATES / "linkml" / "schema" / "plain"), render(read(path), facts), dry)
+        return
     for path in dummy_files(mode):
         rel = path.relative_to(TEMPLATES / "linkml" / "schema" / mode)
         if rel.name == "schema.yaml":
-            dest = sidecar / "src" / slug / "schema" / f"{slug}.yaml"
+            dest = stage / "src" / slug / "schema" / f"{slug}.yaml"
         else:
-            dest = sidecar / rel
+            dest = stage / rel
         write(dest, render(read(path), facts), dry)
 
 
@@ -356,9 +544,9 @@ def copier_command():
     return ["uvx", "--from", "copier>=9.4.0,<10", "--with", "jinja2-time", "copier"]
 
 
-def run_copier(host, facts, src, ref, dry):
+def run_copier(host, stage, facts, src, ref, dry):
     answers = answers_text(facts)
-    cmd = copier_command() + ["copy", "--trust", "--defaults", "--vcs-ref", ref, "--data-file", "ANSWERS", "--quiet", src, SIDECAR]
+    cmd = copier_command() + ["copy", "--trust", "--defaults", "--vcs-ref", ref, "--data-file", "ANSWERS", "--quiet", src, stage.name]
     say("scaffold", f"{'would run' if dry else 'run'} in {host}: {' '.join(shlex.quote(c) for c in cmd)}")
     if dry:
         for line in answers.rstrip("\n").splitlines():
@@ -379,36 +567,97 @@ def run_copier(host, facts, src, ref, dry):
             say("scaffold", f"copier: {line.rstrip()}")
 
 
-def after_copy(host, facts, mode, ref, dry):
-    sidecar = host / SIDECAR
+def after_copy(host, stage, facts, mode, ref, dry, adopt):
     if dry:
-        say("scaffold", "would check .linkml/.copier-answers.yml, remove nothing, patch mkdocs.yml, append the doorway recipe" + (", set --render-imports and write .linkmllint.yaml" if mode == "lokf" else ""))
+        plan = "would check .linkml/.copier-answers.yml, remove nothing, patch mkdocs.yml"
+        plan += ", point config.public.mk at the adopted schema's folder" if adopt else ", append the doorway recipe"
+        plan += ", set --render-imports and write .linkmllint.yaml" if mode == "lokf" else ""
+        say("scaffold", plan)
         say_inert_handoffs(None)
         return
-    if (sidecar / ".git").exists():
+    if (stage / ".git").exists():
         raise Refused(5, ".linkml/.git appeared: a nested repository; remove it (rm -rf .linkml/.git) and never run just setup there")
-    answers = sidecar / ".copier-answers.yml"
+    answers = stage / ".copier-answers.yml"
     if not answers.is_file():
         raise Refused(5, "copier left no .linkml/.copier-answers.yml")
     commit = answers_value(answers, "_commit")
     if commit != ref:
         say("handoff", f"copier recorded _commit: {commit}, not {ref}; a local template clone without the tag does that; the pin still names {ref}")
     say("scaffold", f"copier recorded _src_path: {answers_value(answers, '_src_path')} _commit: {commit}")
-    mkdocs = sidecar / "mkdocs.yml"
+    mkdocs = stage / "mkdocs.yml"
     if mkdocs.is_file():
         text = read(mkdocs)
         text = re.sub(r"^site_url:.*$", lambda _m: f"site_url: {facts['DOCS_URL']}", text, count=1, flags=re.M)
         text = re.sub(r"^repo_url:.*$", lambda _m: f"repo_url: {facts['REPO_URL']}", text, count=1, flags=re.M)
         write(mkdocs, text, dry)
-    append_doorway_recipe(host, facts, dry)
+    mk = stage / PROJECT_CONFIG
+    if adopt:
+        # The one line that makes the host's schema the project's: every recipe
+        # derives its paths from LINKML_SCHEMA_SOURCE_DIR and LINKML_SCHEMA_NAME.
+        source_dir = os.path.relpath(host / facts["SCHEMA_DIR"], host / SIDECAR).replace(os.sep, "/")
+        if not mk.is_file():
+            raise Refused(5, f"copier left no {PROJECT_CONFIG}, which adoption points at the schema; the template moved under the pin")
+        text = re.sub(r"^LINKML_SCHEMA_SOURCE_DIR=.*$", lambda _m: f'LINKML_SCHEMA_SOURCE_DIR="{source_dir}"', read(mk), count=1, flags=re.M)
+        write(mk, text, dry)
+        say("handoff", f"adopted {facts['SCHEMA_DIR']}/{facts['PROJ_SLUG']}.yaml: {PROJECT_CONFIG} names its folder (LINKML_SCHEMA_SOURCE_DIR={source_dir}); the file was not moved, linked or changed")
+    else:
+        append_doorway_recipe(stage, facts, dry)
     if mode == "lokf":
-        mk = sidecar / "config.public.mk"
         if mk.is_file():
             text = read(mk)
             text = re.sub(r"^LINKML_GENERATORS_DOC_ARGS=.*$", lambda _m: 'LINKML_GENERATORS_DOC_ARGS="--render-imports"', text, count=1, flags=re.M)
             write(mk, text, dry)
-        write(sidecar / ".linkmllint.yaml", lint_config(host), dry)
-    say_inert_handoffs(sidecar)
+        write(stage / ".linkmllint.yaml", lint_config(host), dry)
+    say_inert_handoffs(stage)
+
+
+def clashes(host, stage):
+    """The staged paths .linkml/ already holds, relative to both; a name is enough, contents are never compared."""
+    sidecar = host / SIDECAR
+    if not sidecar.is_dir():
+        return []
+    found = []
+    for path in sorted(stage.rglob("*")):
+        rel = path.relative_to(stage)
+        target = sidecar / rel
+        if path.is_dir():
+            if target.exists() and not target.is_dir():
+                found.append(rel.as_posix())
+        elif target.exists() or target.is_symlink():
+            found.append(rel.as_posix())
+    return found
+
+
+def refuse_clashes(host, stage):
+    found = clashes(host, stage)
+    if found:
+        more = ", ..." if len(found) > 8 else ""
+        raise Refused(
+            3,
+            f"{SIDECAR}/ already holds {len(found)} of the files the sidecar writes ({', '.join(found[:8])}{more}); nothing was written to it. "
+            "Move or rename them first; the scaffold never overwrites",
+        )
+
+
+def land(host, stage, dry):
+    """Move the staged sidecar into .linkml/, around whatever is already there; a name both hold stops the move before it starts."""
+    sidecar = host / SIDECAR
+    if dry:
+        say("scaffold", f"would move the staged files into {SIDECAR}/" + (" around the files already there" if sidecar.is_dir() else ""))
+        return
+    if not sidecar.exists():
+        os.rename(stage, sidecar)
+        return
+    refuse_clashes(host, stage)
+    for path in sorted(stage.rglob("*")):
+        target = sidecar / path.relative_to(stage)
+        if path.is_dir():
+            target.mkdir(parents=True, exist_ok=True)
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(path, target)
+    shutil.rmtree(stage)
+    say("scaffold", f"moved the sidecar into {SIDECAR}/ around the files already there")
 
 
 def say_inert_handoffs(sidecar):
@@ -424,9 +673,9 @@ def say_inert_handoffs(sidecar):
     say("handoff", "CODE_OF_CONDUCT.md and CONTRIBUTING.md under .linkml/ are the template's copies; the host's own govern")
 
 
-def append_doorway_recipe(host, facts, dry):
+def append_doorway_recipe(sidecar, facts, dry):
     """The linkml-link recipe at the end of project.justfile, the file copier merges, once."""
-    project_justfile = host / SIDECAR / "project.justfile"
+    project_justfile = sidecar / "project.justfile"
     block = render(read(TEMPLATES / "project.justfile.append"), facts)
     existing = read(project_justfile) if project_justfile.is_file() else ""
     if MARKER in existing:
@@ -638,25 +887,38 @@ def doorway(host, facts, dry):
         say("handoff", f"could not create the {DOORWAY} link ({exc}); on Windows: mklink /J {DOORWAY} {SIDECAR}\\src\\{facts['PROJ_SLUG']}\\schema")
 
 
-def gitignore_lines(host, dry):
+def gitignore_lines(host, dry, with_doorway=True):
     path = host / ".gitignore"
     text = read(path) if path.is_file() else ""
     have = {line.strip().lstrip("/").rstrip("/") for line in text.split("\n")}
-    add = [line for line in (f"{SIDECAR}/", DOORWAY) if line.rstrip("/") not in have]
+    wanted = (f"{SIDECAR}/", DOORWAY) if with_doorway else (f"{SIDECAR}/",)
+    add = [line for line in wanted if line.rstrip("/") not in have]
     if not add:
-        say("scaffold", ".gitignore already names the sidecar and the doorway")
+        say("scaffold", ".gitignore already names the sidecar and the doorway" if with_doorway else ".gitignore already names the sidecar")
         return
     block = "\n# The LinkML schema sidecar is kept out of git on this host (linkml-sidecar Step 0).\n" + "\n".join(add) + "\n"
     write(path, (text.rstrip("\n") + "\n" if text else "") + block.lstrip("\n"), dry)
 
 
-def pointers(host, facts, mode, gitignored, dry):
-    readme_aside(host, facts, dry)
-    llms_pointer(host, facts, mode, dry)
-    doorway(host, facts, dry)
+def pointers(host, facts, mode, gitignored, dry, adopted=False):
+    """The root pointers; an adopted schema is already visible where it is, so it gets none of the three."""
+    if adopted:
+        say("handoff", f"no README aside, llms.txt section or {DOORWAY} doorway: the schema is already visible at {facts['SCHEMA_DIR']}/; mention {SIDECAR}/'s recipes where the host documents the schema")
+    else:
+        readme_aside(host, facts, dry)
+        llms_pointer(host, facts, mode, dry)
+        doorway(host, facts, dry)
     if gitignored:
-        gitignore_lines(host, dry)
+        gitignore_lines(host, dry, with_doorway=not adopted)
     say("handoff", f"exclude {SIDECAR}/ and {DOORWAY}/ from any repo-wide Markdown, spelling or link check the host runs; the same files would be processed twice")
+
+
+def adoption_handoff(host, facts):
+    """What an adopted schema's sidecar still needs from a person."""
+    say("handoff", f"no example data was laid down: add one valid example per class under {SIDECAR}/tests/data/valid/ (and counter-examples under invalid/)")
+    say("handoff", f"Step 5's workflow runs on {SIDECAR}/** only; add \"{facts['SCHEMA_DIR']}/**\" to both paths lists of .github/workflows/linkml-sidecar.yaml so a schema edit runs the gate")
+    if (host / ".lokf").is_dir():
+        say("handoff", ".lokf/ is present and not wired: the adopted schema stays as it is; to make it the bundle's domain schema, linkml-author adds the lokf.yaml import and the justfile's schema variable")
 
 
 # ---- repair ----------------------------------------------------------------
@@ -670,22 +932,29 @@ def repair(host, facts, mode, target, dry):
     if rel.startswith(SIDECAR + "/"):
         rel = rel[len(SIDECAR) + 1 :]
     slug = facts["PROJ_SLUG"]
+    adopted = bool(facts.get("SCHEMA_DIR"))
     if rel == ".linkmllint.yaml":
         if mode != "lokf":
             raise Refused(2, ".linkmllint.yaml is written in KTL mode only (the host has no .lokf/, or --mode plain was given)")
         write(host / SIDECAR / rel, lint_config(host), dry)
         return
     if rel == "project.justfile":
-        append_doorway_recipe(host, facts, dry)
+        append_doorway_recipe(host / SIDECAR, facts, dry)
         return
     for template, dest in OWNED:
         if dest == rel:
-            write(host / SIDECAR / dest, render(read(TEMPLATES / template), facts), dry, 0o755 if dest.endswith(".sh") else None)
+            text = render(read(TEMPLATES / template), facts)
+            if adopted and dest == "README.md":
+                text = adopted_readme(text, facts)
+            write(host / SIDECAR / dest, text, dry, 0o755 if dest.endswith(".sh") else None)
             return
-    for path in dummy_files(mode):
-        rel_t = path.relative_to(TEMPLATES / "linkml" / "schema" / mode)
+    if adopted and rel == f"src/{slug}/schema/README.md":
+        write(host / SIDECAR / rel, render(read(TEMPLATES / "linkml" / "schema-folder-README.md"), facts), dry)
+        return
+    for path in dummy_files("plain" if adopted else mode):
+        rel_t = path.relative_to(TEMPLATES / "linkml" / "schema" / ("plain" if adopted else mode))
         dest = f"src/{slug}/schema/{slug}.yaml" if rel_t.name == "schema.yaml" else str(rel_t)
-        if dest == rel:
+        if dest == rel and not (adopted and dest != "tests/test_data.py"):
             write(host / SIDECAR / dest, render(read(path), facts), dry)
             return
     if rel == "LICENSE":
@@ -708,6 +977,7 @@ def preseed_license_only(host, facts, dry):
 
 
 def main(argv=None):
+    global _stage
     parser = argparse.ArgumentParser(description="lay down a .linkml/ LinkML sidecar")
     parser.add_argument("--host", default=".", help="the repository root (default: the current directory)")
     parser.add_argument("--mode", choices=["plain", "lokf", "auto"], default="auto", help="lokf when .lokf/ exists (default: auto)")
@@ -715,6 +985,9 @@ def main(argv=None):
     parser.add_argument("--gitignored", action="store_true", help="the host keeps .linkml/ out of git: add it and the doorway to .gitignore")
     parser.add_argument("--pointers-only", action="store_true", help="re-add the root pointers to a finished sidecar")
     parser.add_argument("--repair", metavar="PATH", help="re-lay one skill-owned file of a finished sidecar")
+    schema = parser.add_mutually_exclusive_group()
+    schema.add_argument("--adopt", metavar="SCHEMA", help="give the schema file the host already holds the toolchain, instead of laying the dummy")
+    schema.add_argument("--dummy", action="store_true", help="lay the dummy schema although the host holds a schema")
     args = parser.parse_args(argv)
 
     host = Path(args.host).resolve()
@@ -729,6 +1002,7 @@ def main(argv=None):
         return 2
     mode = args.mode if args.mode != "auto" else ("lokf" if (host / ".lokf").is_dir() else "plain")
     dry = args.dry_run
+    stage = None
     try:
         if args.pointers_only or args.repair:
             if not (host / SIDECAR / ".copier-answers.yml").is_file():
@@ -738,25 +1012,54 @@ def main(argv=None):
             if args.repair:
                 repair(host, facts, mode, args.repair, dry)
             else:
-                pointers(host, facts, mode, args.gitignored, dry)
+                pointers(host, facts, mode, args.gitignored, dry, adopted=bool(facts.get("SCHEMA_DIR")))
             return 0
         refuse_existing(host)
+        adopt = adoption(host, args.adopt) if args.adopt else None
+        if adopt and args.mode == "lokf":
+            raise Refused(2, "--adopt and --mode lokf do not go together: adoption never edits the host's schema, and making it the bundle's domain schema is linkml-author's job afterwards")
+        if adopt and mode == "lokf":
+            say("scaffold", ".lokf/ is present, but an adopted schema is left as it is: plain mode; linkml-author wires it to the bundle when it should type concepts")
+            mode = "plain"
+        if not adopt and not args.dummy:
+            schemas = schema_files(host)
+            if schemas:
+                more = ", ..." if len(schemas) > 5 else ""
+                raise Refused(3, f"the host already holds a LinkML schema: {', '.join(schemas[:5])}{more}; --adopt <path> gives it the toolchain, --dummy lays the example schema beside it")
+        if args.gitignored:
+            tracked = tracked_under(host, SIDECAR)
+            if tracked:
+                raise Refused(2, f"{SIDECAR}/ holds files git tracks ({', '.join(tracked[:5])}); ignoring the directory would hide them, so the sidecar is committed beside them or not installed")
         facts = facts_from_env(host, mode, ref)
-        validate(facts, mode)
+        if adopt:
+            adopt_facts(facts, adopt)
+        validate(facts, mode, adopted=bool(adopt))
         validate_host(host, facts)
         say("scaffold", f"mode {mode}; host {host}; template {src} at {ref}")
-        for token in ("PROJ_NAME", "PROJ_SLUG", "LICENSE_ID", "SCHEMA_ID", "DOCS_URL", "BASE_IRI"):
+        for token in ("PROJ_NAME", "PROJ_SLUG", "LICENSE_ID", "SCHEMA_ID", "SCHEMA_DIR", "DOCS_URL", "BASE_IRI"):
             if facts.get(token):
                 say("handoff", f"{token}={facts[token]}")
         if mode == "lokf":
             pin_lokf_schema(host, dry)
         check_pin(src, ref, sha, os.environ.get("LINKML_TEMPLATE_SKIP_PIN_CHECK") == "1")
-        preseed(host, facts, mode, dry)
-        run_copier(host, facts, src, ref, dry)
-        after_copy(host, facts, mode, ref, dry)
+        if dry:
+            stage = host / SIDECAR
+        else:
+            stage = Path(tempfile.mkdtemp(prefix=STAGING_PREFIX, dir=str(host)))
+            os.chmod(stage, 0o755)
+            _stage = stage
+        preseed(host, stage, facts, mode, dry, adopt)
+        if not dry:
+            refuse_clashes(host, stage)
+        run_copier(host, stage, facts, src, ref, dry)
+        after_copy(host, stage, facts, mode, ref, dry, adopt)
+        land(host, stage, dry)
+        stage = None
         if mode == "lokf":
             wire_lokf(host, facts, dry)
-        pointers(host, facts, mode, args.gitignored, dry)
+        pointers(host, facts, mode, args.gitignored, dry, adopted=bool(adopt))
+        if adopt:
+            adoption_handoff(host, facts)
         say("handoff", f"sidecar {'would be ' if dry else ''}laid down in {SIDECAR}/ ({'gitignored' if args.gitignored else 'to be committed'}); validation not yet run")
         say("next", f"just --justfile {SIDECAR}/justfile install && just --justfile {SIDECAR}/justfile lint && just --justfile {SIDECAR}/justfile test")
         if mode == "lokf":
@@ -764,13 +1067,13 @@ def main(argv=None):
         return 0
     except Refused as exc:
         say("scaffold", f"{'refused' if exc.code == 3 else 'failed'} ({exc.code}): {exc}")
-        sidecar = host / SIDECAR
-        # A copier failure leaves the pre-seeded files and no answers file. Remove them,
-        # so the next run is not refused for a sidecar that was never finished.
-        if not dry and exc.code == 4 and sidecar.is_dir() and not (sidecar / ".copier-answers.yml").is_file():
-            shutil.rmtree(sidecar, ignore_errors=True)
-            say("scaffold", f"removed the unfinished {SIDECAR}/ so the next run starts clean")
         return exc.code
+    finally:
+        # Whatever stopped the run, only the staging directory goes; .linkml/ is
+        # never removed here, whoever made it.
+        if stage is not None and stage.name.startswith(STAGING_PREFIX) and stage.is_dir():
+            shutil.rmtree(stage, ignore_errors=True)
+            say("scaffold", f"removed the staging directory; {SIDECAR}/ was not touched")
 
 
 def validate_light(facts):
