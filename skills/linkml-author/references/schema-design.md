@@ -8,14 +8,17 @@ A schema written to fit data that already exists keeps the data's slot names and
 
 Slot and attribute names are the keys of every serialised record, and permissible values are its values. Class and enum names never appear in a record, except as the value of a type designator. So renaming a class or an enum touches no data, and renaming a slot or a value breaks every record that uses it.
 
-Every name in a schema's import closure shares one namespace. Two schemas that each define `Person` clash in a third that imports both, so the names a schema adds are a cost to everyone who imports it. The clash is silent. The LinkML FAQ asks for names unique across imports, and the specification says a duplicate fails the derivation. `SchemaView` merges the closure without a word: of two imports in one list, the one listed last wins, and `linkml-lint` says nothing (seen on 1.12.1). A clash is found by reading, or by a check that walks the closure, never by an error.
+Every name in a schema's import closure shares one namespace. Two schemas that each define `Person` clash in a third that imports both, so the names a schema adds are a cost to everyone who imports it. The LinkML FAQ asks for names unique across imports, and the specification says a duplicate fails the derivation.
+
+On 1.12.1 the tools disagree. `SchemaView` merges the closure without a word: of two imports in one list, the one listed last wins. `linkml-lint` and the generators built on `SchemaView` (Pydantic, JSON Schema, SHACL, OWL) say nothing. `gen-python` and `gen-jsonld-context` load through the older loader and stop with `Conflicting URIs`, so the gate's `gen-project` fails where lint passed. Read that error as a name defined twice across imports. A clash is found by the gate, by reading, or by a check that walks the closure, never by lint.
 
 ## Fields
 
 - **Attributes first.** Start every class with `attributes:`. Lift a field to a top-level slot only when a second class needs the same field with the same meaning, or when the field carries a `slot_uri` identity. A global slot adds a name to the shared namespace that also appears in data, and it moves part of a class's definition away from the class.
-- **The more fundamental the name, the likelier the clash.** Every vocabulary declares `id`, `name`, `description`, `type`, `url`, `version`, a part-of pair and a date or two; `hasReasonDenial` or `numParameters` clashes with nothing. ai-atlas-nexus's core module shares nine slot names with LOKF's `lokf.yaml` (`id`, `name`, `description`, `url`, `version`, `isPartOf`, `hasPart`, `startDate`, `endDate`). It shares four class names too (`Concept`, `Dataset`, `Organization`, `Policy`). lokf's `adapt` of Biolink dropped `id` and `type` and renamed every other shared name. So a fundamental field is an attribute, or an attribute of one mixin, and a top-level slot only as part of a base vocabulary the schema means to share. Such a slot carries a `slot_uri`, so the IRI survives when an importer renames it (`adapt` pins the IRI and keeps the old name in `aliases`). The upstream alternative to importing is defining your own class and reusing the `class_uri` (the FAQ, and linkml discussion 1739).
+- **The more fundamental the name, the likelier the clash.** Every vocabulary declares `id`, `name`, `description`, `type`, `url`, `version`, a part-of pair and a date or two; `hasReasonDenial` or `numParameters` clashes with nothing. ai-atlas-nexus shares nine slot names with LOKF's `lokf.yaml`: seven in its core module (`id`, `name`, `description`, `url`, `version`, `isPartOf`, `hasPart`) and two in its evaluation module (`startDate`, `endDate`). Its core module shares four class names too (`Concept`, `Dataset`, `Organization`, `Policy`). lokf's `adapt` of Biolink dropped `id` and `type` and renamed every other shared name. So a fundamental field is an attribute, or an attribute of one mixin, and a top-level slot only as part of a base vocabulary the schema means to share. Such a slot carries a `slot_uri`, so the IRI survives when an importer renames it (`adapt` pins the IRI and keeps the old name in `aliases`).
+- **Or define your own class.** The upstream alternative to importing is defining your own class and reusing the `class_uri` (the FAQ, and linkml discussion 1739).
 - **A clash can arrive later.** A vocabulary you import may add a name you already use in its next release (discussion 1739 again). A check that walks the closure for duplicate names belongs in CI, not in a one-time review; lokf's `adapt --check` is one, and a short `SchemaView` script is another.
-- **An attribute avoids the name clash, not the IRI clash.** Two classes in two modules that each declare an attribute `type` under one `default_prefix` induce one IRI, and `gen-owl` warns `Ambiguous attribute` for each (1.12.1; linkml issues 388 and 2403, both open, ask what the metamodel means by it). When the two mean one thing, declare one slot with a `slot_uri` and use it in both. When they differ, give each attribute its own `slot_uri`.
+- **An attribute avoids the name clash, not the IRI clash.** Two classes in two modules that each declare an attribute `type` under one `default_prefix` induce one IRI, and `gen-owl` warns `Ambiguous attribute` for each (1.12.1). Issue 2403 in linkml, open, asks what the metamodel means by it; issue 388 asked the same and was closed as not planned. When the two mean one thing, declare one slot with a `slot_uri` and use it in both. When they differ, give each attribute its own `slot_uri`.
 - **A mixin for fields that unrelated classes share.** When `created_at` and `modified_at` recur in classes with no common parent, declare them once as attributes of `AcmeTrackedMixin` (`mixin: true`) and list it under each class's `mixins:`. The schema gains one class name instead of two slot names, and no new key appears in data. A `rules:` entry on the mixin, such as "`modified_at` is not earlier than `created_at`", is inherited with the fields.
 - **No `alias` to get around a clash.** Declaring two global slots and giving one an `alias` so both can appear under one key works, but the two attributes it stands for are simpler.
 
@@ -40,14 +43,14 @@ A field of range `string` whose description says "an identifier of a customer" c
 
 ## Modules: a core and the rest
 
-An importer rarely wants a whole vocabulary. `imports:` has no selective form (linkml issue 238, open since 2021, and the FAQ's "not yet"), a `subset` partitions the docs and nothing else, and a generator's `--subset` cuts its output, not an import. So the only slice another schema can take is a module, and a schema that expects importers is written as several:
+An importer rarely wants a whole vocabulary. `imports:` has no selective form (linkml issue 238, open since 2021, and the FAQ's "not yet"), a `subset` partitions the docs and nothing else, and the proposed `--subset` option (linkml pull request 4115, open) cuts its output, not an import. So the only slice another schema can take is a module, and a schema that expects importers is written as several:
 
 - **A core module** holds the bases, the shared slots, the enums and the prefixes. It imports only `linkml:types`, and it lints on its own.
 - **A module per topic** imports the core and the modules it references, nothing more, and lints on its own.
 - **An umbrella** imports every module and declares only the `tree_root` container. It is the file the project names, the one a sidecar adopts, and the one the generators run on.
 - **No cycle.** Two modules that import each other cannot be taken apart, and a core that uses a class it does not import cannot be loaded alone.
 
-ai-atlas-nexus took this shape: a `common` core and seven topic modules under an umbrella that holds one container. It then let the modules import each other both ways, and the core use classes from the modules. A consumer that imported it got a `FileNotFoundError` (its issues 182, 228 and 232). The oscal and gist schemas in lmodel, an experiment area for these patterns, keep the umbrella and the modules acyclic.
+ai-atlas-nexus took this shape: a `common` core and seven topic modules under an umbrella that holds one container. It then let the modules import each other both ways, and the core use classes from the modules. A consumer that imported it got a `FileNotFoundError` (its issues 182, 228 and 232). In lmodel, an experiment area for these patterns, gist's umbrella and modules have no cycle; oscal's umbrella lists itself among its imports, a self-import that adds nothing and is worth removing.
 
 The cost of modules is management. It shows here:
 
@@ -74,7 +77,9 @@ A fact the metamodel has no metaslot for, such as the release an element was add
 
 ## Refactoring a schema that exists
 
-A schema that exists is not a schema in use. Most LinkML schemas are one maintainer's experiment, and a release count says nothing about users: ai-atlas-nexus has twenty releases and none carries a schema file, and most lmodel schemas, which exist to try patterns, have no release. The signal is the people in the schema folder's history. The preflight's `authors` line prints how many have committed to the folder, the names that commit most, and the same count for the repository. One or two people, and the schema can still change shape. A team's history means every change has to be additive, because the habits and the data of people you cannot ask depend on it.
+A schema that exists is not a schema in use. Many LinkML schemas are one maintainer's experiment, and a release count says little about users. ai-atlas-nexus's twenty GitHub releases carry no asset, because its schema travels inside its PyPI package. Of the lmodel schemas used as examples here, which exist to try patterns, gist has tags and oscal and slsa have none.
+
+The signal is the people in the schema folder's history. The preflight's `authors` line prints how many have committed to the folder, the names that commit most, and the same count for the repository. Read the names before the count, because one person under two emails counts twice. Ignore the counts on a shallow clone, which the line says it is, and when the line says the history was not weighed. One or two people, and the schema can still change shape. A team's history means every change has to be additive, because the habits and the data of people you cannot ask depend on it.
 
 A known importer is the second signal: a package that loads the schema, a schema that imports it, a release asset someone fetches. With one, keep to the moves that touch no record, and name the importer in the hand-off.
 
@@ -86,12 +91,12 @@ Moves that touch no record and change no IRI:
 - **Split one file into a core and modules, or merge modules back.** Names and IRIs stay; only an importer's path changes.
 - **Pin `class_uri` and `slot_uri`** on every element that may be renamed later, so the IRI outlives the name.
 
-Moves that touch records, each a major release with the two-release deprecation (LinkML's how-to on deprecating elements keeps the retired element in a `deprecated.yaml` so its IRI still resolves; ai-atlas-nexus's pull request 250 renamed slots that way):
+Moves that touch records are each a major release with the two-release deprecation. LinkML's how-to on deprecating elements keeps the retired element in a `deprecated.yaml`, so its IRI still resolves; ai-atlas-nexus's pull request 250 renamed slots and left deprecation notes on the old names. The moves are:
 
 - renaming a slot or a permissible value;
 - renaming a class that a type designator writes into records. Prefixing class names is safe only where no designator carries them.
 
-As an example and not a verdict: ai-atlas-nexus's single-class slots (`LLMQuestionPolicy`'s three, `Term`'s two, `RiskIncident`'s eight, `BenchmarkMetadataCard`'s forty or so) are attribute candidates. Its nine fundamental names are the ones to pin with a `slot_uri` and expect importers to rename.
+As an example and not a verdict: ai-atlas-nexus's single-class slots (`LLMQuestionPolicy`'s three, `Term`'s two, `RiskIncident`'s eight, `BenchmarkMetadataCard`'s forty or so) are attribute candidates. The nine names it shares with LOKF are the ones to pin with a `slot_uri` and expect importers to rename.
 
 ## Before the gate
 

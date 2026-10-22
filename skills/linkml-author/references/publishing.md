@@ -4,7 +4,7 @@ This page is for the author whose schema will be imported, vendored or loaded by
 
 ## What LinkML leaves open
 
-LinkML's own documentation says two things about distribution: a release that keeps relative imports must keep every module at the same relative path, and `--mergeimports` folds the import closure into one file "prior to distribution", which removes the network from a build. linkml-registry lists schemas found on GitHub and serves none. A proposal to ride on npm or PyPI (linkml issue 727) had no reply. So a schema reaches an importer in one of three ways: a copy in the importer's repository, the data files of a Python package, or a persistent identifier that serves the file, which is how `linkml:types` itself arrives (`https://w3id.org/linkml/types.yaml`).
+LinkML's own documentation says two things about distribution: a release that keeps relative imports must keep every module at the same relative path, and `--mergeimports` folds the import closure into one file "prior to distribution", which removes the network from a build. linkml-registry lists schemas found on GitHub and serves none. A proposal for schema package management, by DOIs on Zenodo or on npm and PyPI (linkml discussion 727), had no reply. So a schema reaches an importer in one of three ways: a copy in the importer's repository, the data files of a Python package, or a persistent identifier that serves the file. `linkml:types` has such an address (`https://w3id.org/linkml/types.yaml`), though the runtime reads it from its own package.
 
 Package data serves code that is released with the schema. ai-atlas-nexus puts its schema files in its PyPI package and loads them by package path, and ai-linkmo, a consumer, reads the same installed files through an importmap. The sssom-py maintainers argued the other way (sssom-py issue 659): a LinkML schema should not have to come from a Python package, and a vendored copy is acceptable only when its version is tracked. Both hold. A project whose code is released with the schema packages it; an importer that writes its own schema needs an address or a copy.
 
@@ -15,7 +15,7 @@ A schema that expects importers is served at two kinds of address under its `id`
 - `<id>/schema/<module>.yaml` for every source file, the umbrella included, at the same relative paths the files have in the repository;
 - `<id>/<name>.yaml` for one merged file with no imports, which `gen-linkml --mergeimports -f yaml <umbrella>` writes. `gen-project` does not write it, so the project adds a recipe of its own.
 
-Why both. An `imports:` entry written as a URL or a CURIE is fetched with `.yaml` appended, and on 1.12.1 the module's own `./core` imports are then fetched from the module's address, not looked for beside the importing file. So a modular root imports over HTTP as long as every module is served at the same relative path, which is what the first address does. Older releases resolved those imports elsewhere, in more than one way; the trail runs through linkml-runtime pull requests 368 and 2576 and linkml pull requests 3645 and 3855, so a build that imports by URL pins its toolkit. The merged file is the address for everything else. It serves one request instead of one per module, an offline build, an importer that pins by checksum, and a tool that loads the file directly. Such a tool needs the full file name, because `SchemaView(url)` appends nothing.
+Why both. An `imports:` entry written as a URL or a CURIE is fetched with `.yaml` appended, and on 1.12.1 the module's own `./core` imports are then fetched from the module's address, not looked for beside the importing file. So a modular root imports over HTTP as long as every module is served at the same relative path, which is what the first address does. Older releases resolved those imports elsewhere, in more than one way; the trail runs through linkml-runtime pull request 368 and linkml pull requests 2576, 3645 and 3855, so a build that imports by URL pins its toolkit. The merged file is the address for everything else. It serves one request instead of one per module, an offline build, an importer that pins by checksum, and a tool that loads the file directly. Such a tool needs the full file name, because `SchemaView(url)` appends nothing.
 
 A tag in the path pins a release: `<id>/v1.2.5/schema/common.yaml`. An `imports:` entry names a schema and not a release ([schema-design.md](schema-design.md)), so a tagged address is how an importer that needs one release says so.
 
@@ -27,10 +27,10 @@ A tagged release that attaches the schema is the address a vendoring importer co
 
 ## How an importer takes it
 
-In order of preference:
+An import by URL fetches someone else's server on every build, so a copy comes first. In order of preference:
 
-1. **A vendored copy, pinned.** Copy the module tree, or the merged file, into the importer's repository at a tag. Record the tag and the checksum, and upgrade on purpose. linkml discussion 3298 describes the same pattern from the Ontology Development Kit: the local mirror is the source of truth, and one recipe moves it. KTL pins `lokf.yaml` beside the domain schema this way, and `lokf adapt --check` says when the copy is stale.
-2. **A persistent identifier.** `imports: [nexus:common]` with `nexus: https://w3id.org/ai-atlas-nexus/` declared; Biolink is imported as `biolink:biolink-model` the same way (biolink-model issue 1278). The identifier is the schema's `id` namespace, which is the rule the sidecar applies to `SCHEMA_ID` as well.
+1. **A vendored copy, pinned.** Copy the module tree, or the merged file, into the importer's repository at a tag. Record the tag and the checksum, and upgrade on purpose. linkml discussion 3298 describes the same pattern from the Ontology Development Kit: the local mirror is the source of truth, and one recipe moves it. KTL pins `lokf.yaml` beside the domain schema this way, and refreshes it when the `lokf` floor moves. For an adapted vocabulary, `lokf adapt --check` says when the copy is stale.
+2. **A persistent identifier.** `imports: [biolink:biolink-model]` with `biolink: https://w3id.org/biolink/` declared, as biolink-model issue 1278 describes; w3id serves the file. The identifier is the schema's `id` namespace, which is the rule the sidecar applies to `SCHEMA_ID` as well.
 3. **Never a raw code-host URL.** A branch moves, a file is renamed, and the IRI it builds is not the project's to keep.
 
 ## importmap
@@ -39,8 +39,8 @@ When the strings in `imports:` and the places the files are differ, an importmap
 
 - a key may be the CURIE (`"nx:common"`), the expanded IRI, or a namespace (`"nx:"` mapped to a folder);
 - a value omits `.yaml`; a value that ends in it fails on `common.yaml.yaml`;
-- a relative value resolves against the importing schema's directory, not the map file's and not the working directory;
-- each generator takes `--importmap` (`-im`); `gen-project` does not (linkml-project-copier issue 175), so a project passes it per generator from `project.justfile`, and `linkml-validate` does not yet either (linkml pull request 3707 is open). The format is undocumented upstream (linkml issue 3844).
+- a relative value resolves against the directory of the schema the tool was given, even for an import that a module elsewhere makes; not against the map file's directory, and not against the working directory;
+- each generator takes `--importmap` (`-im`). `gen-project` takes it as `importmap` in a generator's `generator_args` block of `generators.yaml`, as a path read from the working directory, which `just` sets to the project's; linkml-project-copier issue 175 asks the template to set it up. `linkml-validate` takes none yet (linkml pull request 3707 is open). The format is undocumented upstream (linkml issue 3844).
 
 ```json
 { "nx:": "vendor/ai-atlas-nexus/" }
@@ -50,7 +50,7 @@ With `prefixes: {nx: https://w3id.org/ai-atlas-nexus/}` and `imports: [nx:common
 
 ## Bringing in a vocabulary that was not designed to sit beside yours
 
-When the vocabulary you need shares names with the schema it must sit beside, a raw import gives the silent merge that [schema-design.md](schema-design.md) describes. lokf's `adapt` makes a copy that can sit beside `lokf.yaml`. It is experimental, in lokf's main branch and not yet released, and was tried on Biolink 4.4.4, twelve thousand lines in one file. It makes six moves:
+When the vocabulary you need shares names with the schema it must sit beside, a raw import gives the silent merge that [schema-design.md](schema-design.md) describes. lokf's `adapt` makes a copy that can sit beside `lokf.yaml`. It is experimental, in lokf's main branch and not yet released, and was tried on Biolink 4.4.4, over fifteen thousand lines in one file. It makes six moves:
 
 1. fold the vocabulary's imports into one file;
 2. drop its identifier slot and its `type` designator, because the host's `id` and `type` take over;
