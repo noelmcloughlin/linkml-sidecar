@@ -24,13 +24,13 @@ Turn a project's LinkML schema into the model its code, data and documents descr
 
 ## Step 0 - Find the schema
 
-A LinkML schema can live in any repository, and need not come from a template, so the schema is found by its files, never by its folder. Run the preflight: the copy a sidecar installed, `.linkml/scripts/linkml-preflight.sh`, or linkml-sidecar's `templates/scripts/linkml-preflight.sh` when that skill is installed beside this one. Its `sidecar`, `project`, `schema` and `tools` lines name the layout, the schema file and the way to run the tools; its `authors` line says whose history the schema folder carries. Without either copy, apply the same rule by hand ([layouts.md](https://github.com/noelmcloughlin/linkml-sidecar/blob/main/skills/linkml-sidecar/references/layouts.md) is the full statement):
+A LinkML schema can live in any repository, and need not come from a template, so the schema is found by its files, never by its folder. Run the preflight: the copy a sidecar installed, `.linkml/scripts/linkml-preflight.sh`, or linkml-sidecar's `templates/scripts/linkml-preflight.sh` when that skill is installed beside this one. Its `sidecar`, `project`, `schema` and `tools` lines name the layout, the schema file and the way to run the tools; its `authors` line says whose history the schema folder carries. Without either copy, apply the preflight's rule by hand, as the table below gives it ([layouts.md](https://github.com/noelmcloughlin/linkml-sidecar/blob/main/skills/linkml-sidecar/references/layouts.md) is the full statement):
 
 | Layout | How to tell | Where the schema is |
 | --- | --- | --- |
 | the sidecar | `.linkml/.copier-answers.yml` | `config.public.mk` in `.linkml/` names it; an adopted schema sits where `LINKML_SCHEMA_SOURCE_DIR` points, outside `.linkml/` |
 | a schema project elsewhere: the root, `linkml/`, any directory one level down, or the one you were started in | a `.copier-answers.yml` whose `_src_path` names `linkml-project-copier`, or a `config.public.mk` (the older cookiecutter renders it too; upstream may retire it, and then the answers' `project_slug` names the schema) | `<dir>/<slug>.yaml` from `config.public.mk`, else `src/<slug>/schema/<slug>.yaml` |
-| a schema file on its own | a `*.yaml` that imports `linkml:types` or names the `linkml:` prefix and has a top-level `classes:`, `slots:`, `enums:`, `types:` or `imports:` key, outside `docs/`, `tests/`, `project/` and the other folders that hold copies and output | where it is |
+| a schema file on its own | a `*.yaml` that imports `linkml:types` or names the `linkml:` prefix and has a top-level `classes:`, `slots:`, `enums:`, `types:` or `imports:` key, outside the folders the preflight skips (`docs/`, `tests/`, `project/`, `tmp/` and the rest of its `prune` pattern) | where it is |
 | `.linkml/` holding only configuration files | no answers file and no project files in it | not a layout: leave it alone and look on |
 
 One schema: work on it. Several, in a project that names none or in a repository with no project: ask the person which one when the session is attended, and list them and stop when it is not. Read the project's `README.md` before editing: in a sidecar it says which files are the template's, which are the host's, and which recipes never to run.
@@ -54,7 +54,7 @@ just --justfile <project>/justfile gen-project   # every generator in generators
 just --justfile <project>/justfile test          # generate into tmp/, pytest, then the example runner (it does not lint)
 ```
 
-`just test` runs no lint, so `lint` comes first. A generator that fails on a schema `lint` accepted is a schema error too; the message names the element. `just gen-doc` then `just testdoc` shows the docs site locally, and `just site` regenerates everything at once. When a project installs its tools for the first time, `just install` comes before the gate. A project with a `Makefile` runs the same targets through `make`.
+`just test` runs no lint, so `lint` comes first. A generator that fails on a schema `lint` accepted is a schema error too; the message names the element. `just gen-doc` then `just testdoc` shows the docs site locally, and `just site` regenerates everything at once. When a project installs its tools for the first time, `just install` comes before the gate.
 
 A schema on its own has no recipes: the gate is `linkml-lint <schema>`, then `gen-project -d <a temporary folder> <schema>`, then `linkml-validate -s <schema> -C <Class> <file>` over whatever example data the host keeps, each through the environment Step 0 named. Say in the hand-off that the host has no test harness, and that linkml-sidecar `--adopt <schema>` would give it one.
 

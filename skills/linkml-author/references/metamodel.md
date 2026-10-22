@@ -275,7 +275,7 @@ The boolean forms, on a class or a slot: `any_of` (at least one holds), `all_of`
 
 `description` is the element's definition (`skos:definition`). `gen-json-schema`, `gen-pydantic` and `gen-openapi` copy it into every schema, model field and UI hint they write, and they copy nothing else from the element. Keep it to one or two plain sentences that say what the element is, as a form field's hint or an API field's help text would.
 
-The rest has a place of its own. `comments` (multivalued, `skos:note`) carries what a user of the schema should know: a caveat, a limit, a usage rule. `notes` (`skos:editorialNote`) carries what its maintainers should know: a decision and why, an open question. `see_also` carries the link, `examples` the sample, and an annotation the clause reference. `gen-doc` renders all of them on the element's page. The JSON Schema and Pydantic generators carry none of them. The rule comes from the KTL Obsidian plugins, whose settings hints showed how a long description renders in a small UI.
+Everything else goes in other keys. `comments` (multivalued, `skos:note`) carries what a user of the schema should know: a caveat, a limit, a usage rule. `notes` (`skos:editorialNote`) carries what its maintainers should know: a decision and why, an open question. `see_also` carries the link, `examples` the sample, and an annotation the clause reference. `gen-doc` renders all of them on the element's page. The one-or-two-sentence limit on `description` comes from the KTL Obsidian plugins, whose settings hints showed how a long description renders in a small UI.
 
 ```yaml
 slots:
@@ -326,4 +326,4 @@ slots:
 
 A module is a schema file beside the main one, imported as `./module`; a module's name is `snake_case`. Never redeclare an imported class or slot: refine an imported slot with `slot_usage` on the class that uses it. `linkml:types` is the built-in type library.
 
-An import resolves in this order: an importmap entry, a URL, a CURIE expanded through the schema's prefixes, else a path relative to the importing file, with `.yaml` appended in every case. A module's own imports resolve relative to the module, on disk or behind a URL (1.12.1), so a module tree served at the same relative paths imports over HTTP. [publishing.md](publishing.md) has the addresses and the importmap; [schema-design.md](schema-design.md) has the shape of a core and its modules.
+An import resolves in this order: an importmap entry, a URL, a CURIE expanded through the schema's prefixes, else a path relative to the importing file, with `.yaml` appended in every case. A module's own imports resolve relative to the module, on disk or behind a URL (1.12.1), so a module tree served at the same relative paths as on disk imports over HTTP. [publishing.md](publishing.md) has the addresses and the importmap; [schema-design.md](schema-design.md) has the shape of a core and its modules.

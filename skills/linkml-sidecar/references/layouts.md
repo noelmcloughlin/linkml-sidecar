@@ -1,6 +1,6 @@
 # Where a LinkML schema lives, and how the skills find it
 
-A LinkML schema can live in any repository. It need not come from linkml-project-copier or its predecessor, linkml-project-cookiecutter, and the folder a project sits in has no fixed name. So both skills find the schema by the signals in the table below, never by its folder, and the preflight (`templates/scripts/linkml-preflight.sh`, or the copy a sidecar installs under `.linkml/scripts/`) does the looking. This page is the rule it applies; the scaffold applies the same one in Python.
+A LinkML schema can live in any repository. It need not come from linkml-project-copier or its predecessor, linkml-project-cookiecutter, and the folder a project sits in has no fixed name. So linkml-sidecar and linkml-author find the schema by the signals in the table below, never by its folder, and the preflight (`templates/scripts/linkml-preflight.sh`, or the copy a sidecar installs under `.linkml/scripts/`) does the looking. This page is the rule it applies; the scaffold applies the same one in Python.
 
 ## The signals, and how long each lasts
 
@@ -10,7 +10,7 @@ A LinkML schema can live in any repository. It need not come from linkml-project
 | `config.public.mk` | a project from copier or from the older cookiecutter, which both render it; it names the schema (`LINKML_SCHEMA_NAME`, `LINKML_SCHEMA_SOURCE_DIR`) | a convenience file upstream may retire; when it is gone, the answers' `project_slug` names the schema (`src/<slug>/schema/<slug>.yaml`) |
 | a `*.yaml` or `*.yml` file that imports `linkml:types` or names the `linkml:` prefix and has a top-level `classes:`, `slots:`, `enums:`, `types:`, `subsets:` or `imports:` key | a schema on its own | the language's own |
 
-A `.linkml/` directory is a strong sign that LinkML is in use, but not of what it holds: upstream LinkML may name it for configuration files, and the sidecar names it for a whole project. The two uses coexist by files. `.linkml/.copier-answers.yml` means the sidecar; anything else in there is left alone. Both uses keep the generators' settings at `.linkml/generators.yaml`: a sidecar renames the template's `config.yaml` to that, and `--repair generators.yaml` moves a root project's file there.
+A `.linkml/` directory is a strong sign that LinkML is in use, but not of what it holds: upstream LinkML may name it for configuration files, and the sidecar names it for a whole project. One file tells the two uses apart: `.linkml/.copier-answers.yml` means the sidecar, and anything else in there is left alone. Both uses keep the generators' settings at `.linkml/generators.yaml`: a sidecar renames the template's `config.yaml` to that, and `--repair generators.yaml` moves a root project's file there.
 
 ## Where the preflight looks
 

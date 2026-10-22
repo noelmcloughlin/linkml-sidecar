@@ -24,7 +24,7 @@ Create a fresh **`.linkml/` sidecar** inside the repository this skill is invoke
 
 ## Step 0 - Gather the host project's facts
 
-**First, the preflight.** Run `bash templates/scripts/linkml-preflight.sh <host-root>` from this skill's directory (the copy under `.linkml/scripts/` does not exist yet), naming the host's root. Without it the script reports on the tree it sits in, which is wrong when the skill is installed outside the host. Read its screen before anything else. It shows:
+**First, the preflight.** Run `bash templates/scripts/linkml-preflight.sh <host-root>` from this skill's directory (the copy under `.linkml/scripts/` does not exist yet), naming the host's root. Without it the script reports on the tree it sits in, which is wrong when the skill is installed outside the host. Read its output before anything else. It shows:
 
 - the host and shell;
 - whether the tree is under git, and on which forge;
@@ -36,7 +36,7 @@ Create a fresh **`.linkml/` sidecar** inside the repository this skill is invoke
 
 Its last line names what is missing and which steps that disables; repeat that line in the Step 6 hand-off. When the person you are working with cannot act on a `missing` or `warn` line themselves, write them a request note from [references/prerequisites.md](references/prerequisites.md), which gives each line's meaning, who fixes it, and what to send.
 
-**Dummy or adoption: decide now.** A `schema` line means the host already holds one. One file: run Step 1 with `--adopt <file>`. Several: ask the person which, or, unattended, list them and stop. The scaffold refuses the dummy beside an existing schema unless `--dummy` says so. The file must be `<slug>.yaml` (the template names the schema after the slug); one that is not, or that a new schema should import instead, takes the dummy and linkml-author's import.
+**Dummy or adoption: decide now.** A `schema` line means the host already holds one. One file: run Step 1 with `--adopt <file>`. Several: ask the person which, or, unattended, list them and stop. The file must be `<slug>.yaml` (the template names the schema after the slug); one that is not, or that a new schema should import instead, takes the dummy and linkml-author's import.
 
 Resolve every fact from real project sources before running anything; the scaffold refuses a missing or malformed one, and never leaves a `<...>` token behind.
 
@@ -98,7 +98,7 @@ Run it from the host's root (`--host DIR` otherwise). Every line it prints start
 9. **Edits `.lokf/justfile`** in KTL mode: `schema :=` and the two validate recipes, by exact match on ktl-sidecar's template lines; a justfile that differs gets the edit printed instead.
 10. **Adds the Step 2 pointers**, then prints the hand-off facts and the Step 4 commands.
 
-`--repair PATH` rewrites one owned file of a finished sidecar (the preflight, the README, the docs pages, `LICENSE`, a dummy file, `.linkmllint.yaml` in KTL mode, `project.justfile`'s doorway recipe, or an adopted sidecar's `src/<slug>/schema/README.md`). It reads the facts back from the sidecar's answers and config. `just update` restores a template-owned file. `--repair generators.yaml` moves a finished project's `config.yaml` to `.linkml/generators.yaml`, the sidecar's or a root project's (`--host` names one elsewhere). When the preflight's `generators` line offers it, ask the person first; a new sidecar needs no asking. What `just update` then leaves alone is the catalogue's row 20.
+`--repair PATH` rewrites one owned file of a finished sidecar (the preflight, the README, the docs pages, `LICENSE`, a dummy file, `.linkmllint.yaml` in KTL mode, `project.justfile`'s doorway recipe, or an adopted sidecar's `src/<slug>/schema/README.md`). It reads the facts back from the sidecar's answers and config. `just update` restores a template-owned file. `--repair generators.yaml` moves a finished project's `config.yaml` to `.linkml/generators.yaml`, the sidecar's or a root project's (`--host` names one elsewhere). When the preflight's `generators` line offers it, ask the person first; a new sidecar needs no asking. What `just update` then does not overwrite is row 20 of [references/template-assumptions.md](references/template-assumptions.md).
 
 ## Step 2 - Point people and agents at the schema (root-level, add-only)
 
@@ -106,7 +106,7 @@ The scaffold makes three additions at the **repo root**, outside `.linkml/`; `--
 
 - **README aside**: if `README.md` exists and does not already name `.linkml/`, `templates/readme-for-schema.md` goes in after the intro, before the first `##`. It is one blockquote that says the model is a sidecar, where the schema is, which skill edits it, and that an agent reads the schema before the code. Do not invent a README on a host that has none.
 - **`llms.txt`**: created from `templates/llms.txt` if absent; otherwise the `## Schema` section (`templates/llms-section.md`, or the KTL variant) is appended, only if the file does not already name `.linkml/`.
-- **`linkml_schema` doorway**: `ln -s .linkml/src/<slug>/schema linkml_schema`, the schema folder under an ordinary, visible name beside the hidden `.linkml/`. Finder and most folder pickers hide dot-directories, so the doorway is the one name a person needs to know. The target is relative, which keeps the link valid after a clone or move; `just --justfile .linkml/justfile linkml-link` recreates it on a machine where a sync service dropped it. POSIX only: on Windows a junction does the job (`mklink /J linkml_schema .linkml\src\<slug>\schema`); on a filesystem without links, skip it. Mirror the Step 0 decision: commit it beside a tracked `.linkml/`, or it joins the root `.gitignore` with `--gitignored`.
+- **`linkml_schema` doorway**: `ln -s .linkml/src/<slug>/schema linkml_schema`, the schema folder under an ordinary, visible name beside the hidden `.linkml/`. Finder and other folder pickers hide dot-directories, so the doorway is the one name a person needs to know. The target is relative, which keeps the link valid after a clone or move; `just --justfile .linkml/justfile linkml-link` recreates it on a machine where a sync service dropped it. POSIX only: on Windows a junction does the job (`mklink /J linkml_schema .linkml\src\<slug>\schema`); on a filesystem without links, skip it. Mirror the Step 0 decision: commit it beside a tracked `.linkml/`, or it joins the root `.gitignore` with `--gitignored`.
 
 If the host lints, spell-checks or link-checks `**/*.md` repo-wide, exclude `.linkml/` and `linkml_schema/` from that config: the generated docs are not the host's prose, and the same schema folder would otherwise be processed twice.
 
@@ -133,7 +133,7 @@ just --justfile .linkml/justfile test      # generate into tmp/, pytest, run the
 
 ## Step 5 - Install the automation (optional)
 
-**Skip this step if `.linkml/` is gitignored.** It has no placeholders.
+**Skip this step if `.linkml/` is gitignored.** The workflow template has no placeholders.
 
 | Template | Destination |
 | --- | --- |
@@ -143,7 +143,7 @@ With `--adopt`, add the schema's folder (`"<dir>/**"`) to both `paths:` lists, s
 
 ## Step 6 - Hand off to linkml-author
 
-The sidecar ends here. linkml-author's first run replaces the dummy with the host's model, from the code, data and documents the repository holds, keeping the gate green after each change; for an adopted schema it adds the example data and carries the model on. In KTL mode, ktl-librarian reads the schema the `.lokf/justfile` names and may type concepts with its classes, and ktl-curator's report counts vocabulary fit against it. In the hand-off, tell the user:
+linkml-author's first run replaces the dummy with the host's model, from the code, data and documents the repository holds, keeping the gate green after each change; for an adopted schema it adds the example data and carries the model on. In KTL mode, ktl-librarian reads the schema the `.lokf/justfile` names and may type concepts with its classes, and ktl-curator's report counts vocabulary fit against it. In the hand-off, tell the user:
 
 - which Step 0 values were **guessed** rather than found (`SCHEMA_ID` above all, then `LICENSE_ID` and `DOCS_URL`; every generated IRI starts with the first, so it needs sign-off);
 - whether Step 4's gate ran and passed, and in KTL mode whether `lokf validate` did;

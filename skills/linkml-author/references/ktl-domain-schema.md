@@ -22,12 +22,12 @@ classes:
     slots: [source_kind, reviewed_at]
 ```
 
-A class `is_a: Concept` joins the bundle's concept union, and so does any descendant of it. Subclass a built-in whose meaning fits; give a class of its own to what no built-in describes; never leave extra keys on a built-in unchanged. A published vocabulary the domain schema needs comes in beside `lokf.yaml` through lokf's `adapt` ([publishing.md](publishing.md)), never by a raw import: its `id`, `type` and `name` would merge silently with LOKF's.
+A class `is_a: Concept` joins the bundle's concept union, and so does any descendant of it. Subclass a built-in whose meaning fits; give a class of its own to what no built-in describes. A published vocabulary the domain schema needs comes in beside `lokf.yaml` through lokf's `adapt` ([publishing.md](publishing.md)), never by a raw import: its `id`, `type` and `name` would merge silently with LOKF's.
 
 ## What the generators cannot do here
 
 - The generated dataclasses (`src/<slug>/datamodel/<slug>.py`) do not compile beside LOKF, because LOKF's `from` slot is a Python keyword and `gen-python` does not escape it. The example runner at the end of `just test` instantiates every file under `tests/data/valid/` through the same dataclasses. So valid examples live under `tests/data/problem/valid/`, which the runner skips, and `tests/test_data.py` validates the files of both folders with `linkml.validator`, loading the schema through `SchemaView` so the relative import resolves. Counter-examples stay under `tests/data/invalid/`. The Pydantic models compile. linkml 1.12.0 escapes the field name. Move the valid examples to `tests/data/valid/` once a release also loads data that uses `from` (PR 4083).
-- `linkml-lint` lints LOKF's camelCase slot names through the import closure; the project's `.linkmllint.yaml` excuses exactly those names. Regenerate it when `.lokf/lokf.yaml` moves (in a sidecar, linkml-sidecar `--repair .linkmllint.yaml`).
+- `linkml-lint` lints LOKF's camelCase slot names through the import closure; the project's `.linkmllint.yaml` excuses exactly those names. Regenerate it when `.lokf/lokf.yaml` changes (in a sidecar, linkml-sidecar `--repair .linkmllint.yaml`).
 - `gen-doc` renders LOKF's pages too (`--render-imports`), so the docs site shows the whole vocabulary a concept may use.
 
 ## After each change
