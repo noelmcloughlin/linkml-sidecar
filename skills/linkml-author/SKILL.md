@@ -24,7 +24,7 @@ Turn a project's LinkML schema into the model its code, data and documents descr
 
 ## Step 0 - Find the schema
 
-A LinkML schema can live in any repository, and most were never made from a template, so the schema is found by what files say, never by where they sit. Run the preflight: the copy a sidecar installed, `.linkml/scripts/linkml-preflight.sh`, or linkml-sidecar's `templates/scripts/linkml-preflight.sh` when that skill is installed beside this one. Its `sidecar`, `project`, `schema` and `tools` lines name the layout, the schema file and the way to run the tools; its `authors` line says whose history the schema folder carries. Without either copy, apply the same rule by hand ([layouts.md](https://github.com/noelmcloughlin/linkml-sidecar/blob/main/skills/linkml-sidecar/references/layouts.md) is the full statement):
+A LinkML schema can live in any repository, and need not come from a template, so the schema is found by its files, never by its folder. Run the preflight: the copy a sidecar installed, `.linkml/scripts/linkml-preflight.sh`, or linkml-sidecar's `templates/scripts/linkml-preflight.sh` when that skill is installed beside this one. Its `sidecar`, `project`, `schema` and `tools` lines name the layout, the schema file and the way to run the tools; its `authors` line says whose history the schema folder carries. Without either copy, apply the same rule by hand ([layouts.md](https://github.com/noelmcloughlin/linkml-sidecar/blob/main/skills/linkml-sidecar/references/layouts.md) is the full statement):
 
 | Layout | How to tell | Where the schema is |
 | --- | --- | --- |

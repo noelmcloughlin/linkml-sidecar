@@ -1,6 +1,6 @@
 # Where a LinkML schema lives, and how the skills find it
 
-A LinkML schema can live in any repository. Most were never made with linkml-project-copier or its predecessor, linkml-project-cookiecutter, and the folder a project sits in has no fixed name. So both skills find the schema by what files say, never by where they sit, and the preflight (`templates/scripts/linkml-preflight.sh`, or the copy a sidecar installs under `.linkml/scripts/`) does the looking. This page is the rule it applies; the scaffold applies the same one in Python.
+A LinkML schema can live in any repository. It need not come from linkml-project-copier or its predecessor, linkml-project-cookiecutter, and the folder a project sits in has no fixed name. So both skills find the schema by the signals in the table below, never by its folder, and the preflight (`templates/scripts/linkml-preflight.sh`, or the copy a sidecar installs under `.linkml/scripts/`) does the looking. This page is the rule it applies; the scaffold applies the same one in Python.
 
 ## The signals, and how long each lasts
 
