@@ -13,12 +13,12 @@ tags:
 about:
   - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/linkml-project-copier
 references:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/upstream-proposal
+  - https://github.com/linkml/linkml-project-copier/issues/187
 sources:
   - resource: skills/linkml-sidecar/references/template-assumptions.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-22T09:04:50Z"
+  at: "2026-10-22T17:44:49Z"
 status: draft
 ---
 
