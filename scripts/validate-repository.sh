@@ -181,8 +181,9 @@ if (( words <= 1000 )); then ok "CONTRIBUTING.md is $words words (budget 1000)";
 
 # 8. The one template pin. The scaffold driver holds LINKML_TEMPLATE_REF and
 #    LINKML_TEMPLATE_SHA; every mention of a linkml-project-copier version
-#    under skills/, README.md and CHANGELOG.md's [Unreleased] names the same
-#    tag, and the catalogue's heading is for that version.
+#    under skills/ and docs/, in README.md and CONTRIBUTING.md, and in
+#    CHANGELOG.md's [Unreleased] names the same tag, and the catalogue's
+#    heading is for that version.
 say ""
 say "Checking the template pin..."
 pin="$(grep -oE 'LINKML_TEMPLATE_REF:=v[0-9]+\.[0-9]+\.[0-9]+' "$scaffold" | head -1 | sed 's/.*:=//')"
@@ -191,8 +192,8 @@ if [[ -z "$pin" || -z "$pin_sha" ]]; then
   err "$scaffold holds no LINKML_TEMPLATE_REF/LINKML_TEMPLATE_SHA pin"
 else
   ok "the scaffold pins linkml-project-copier $pin (${pin_sha:0:12})"
-  stray="$(grep -rnoE 'linkml-project-copier[^v]{0,40}v[0-9]+\.[0-9]+\.[0-9]+|v[0-9]+\.[0-9]+\.[0-9]+[^v]{0,40}linkml-project-copier' skills README.md | grep -v -- "$pin" || true)"
-  if [[ -n "$stray" ]]; then err "a page names another template version than the pin $pin: $stray"; else ok "every mention of the template's version under skills/ and README.md is $pin"; fi
+  stray="$(grep -rnoE 'linkml-project-copier[^v]{0,40}v[0-9]+\.[0-9]+\.[0-9]+|v[0-9]+\.[0-9]+\.[0-9]+[^v]{0,40}linkml-project-copier' skills docs README.md CONTRIBUTING.md | grep -v -- "$pin" || true)"
+  if [[ -n "$stray" ]]; then err "a page names another template version than the pin $pin: $stray"; else ok "every mention of the template's version under skills/, docs/, README.md and CONTRIBUTING.md is $pin"; fi
   if grep -qE "at template \*\*$pin\*\*|tag \*\*$pin\*\*" "$sidecar/SKILL.md" "$sidecar/references/template-assumptions.md"; then
     ok "SKILL.md and the catalogue name the pin $pin"
   else

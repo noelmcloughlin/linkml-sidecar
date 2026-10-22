@@ -8,9 +8,9 @@
 # sources.
 #
 # This file holds the one pin of the template. The contract script holds
-# every other mention under skills/ and README.md to these two values, and
-# the Python half verifies the tag still names this commit before it trusts
-# the template with `--trust`.
+# every other mention under skills/ and docs/, and in README.md and
+# CONTRIBUTING.md, to these two values, and the Python half verifies the
+# tag still names this commit before it trusts the template with `--trust`.
 #
 # The Python half runs through `uv run` first, which reads the half's own
 # header and so passes over a python3 older than 3.8, such as RHEL 8's 3.6.
