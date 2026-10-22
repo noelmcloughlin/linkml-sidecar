@@ -4,7 +4,7 @@ This repository holds two [Agent Skills](https://agentskills.io) that give a cod
 
 > **It is a sidecar.** One hidden folder, one visible doorway (`linkml_schema/`), one workflow, and a README inside that says how to remove it. Nothing in the host's build depends on it. The schema is the source: the JSON Schema, Pydantic and dataclass models, OWL and SHACL, TypeScript and the docs site are generated from it, one `just` recipe each.
 
-> **Two ways in.** This README is one; the other is a docent, a museum's name for a guide. Install [`ktl-docent`](https://github.com/noelmcloughlin/knowledge-trust-ladder) into whatever agent you already use, by a route from [the install page](https://w3id.org/ktl/docs/install/), and ask it anything about this project, such as what linkml-sidecar changes in a host's root folder. It answers from `.lokf/knowledge/`, the checked part of what the project knows, and says how far each answer has been trusted (still a draft, checked by automation only, or confirmed by a named person). It opens the source for exact values, and records what it could not answer so the gap gets filled. The same docent serves a person at a prompt, an agent reading this file, or a chatbot that can load a skill.
+> **Only want to ask?** Install `ktl-docent` into any agent you use, by a route from [the install page](https://w3id.org/ktl/docs/install/), and ask it about this project. It answers from the bundle and says how far each answer has been checked.
 >
 > **Agents:** if `.lokf/knowledge/index.md` exists, read it first. `llms.txt` says how to weigh it.
 
