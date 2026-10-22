@@ -12,6 +12,7 @@ sh.
 from __future__ import annotations
 
 import os
+import re
 
 import pytest
 
@@ -330,3 +331,83 @@ def test_warns_below_the_repository_root(tmp_path):
     assert result and matches(result.out, r"^warn    git +this directory is sub/ inside its repository"), result.out
     result = preflight(host)
     assert result and not matches(result.out, r"^warn    git "), result.out
+
+
+# The index, lock and network lines read uv's settings from the environment
+# and a user uv.toml, so these tests run with neither, and with an empty
+# configuration folder, whatever the machine running them sets.
+NO_INDEX = ("UV_DEFAULT_INDEX", "UV_INDEX_URL", "LINKML_TEMPLATE_SRC")
+
+
+def preflight_at(host, tmp_path, env=None, unset=NO_INDEX):
+    return run(["bash", PREFLIGHT, host], env={"XDG_CONFIG_HOME": tmp_path / "config", **(env or {})}, unset=unset)
+
+
+def sidecar_with_lock(tmp_path, registry):
+    host = make_host(tmp_path / "host")
+    write(host / ".linkml" / ".copier-answers.yml", OURS + "project_slug: demo\n")
+    write(host / ".linkml" / "config.public.mk", 'LINKML_SCHEMA_NAME="demo"\nLINKML_SCHEMA_SOURCE_DIR="src/demo/schema"\n')
+    write(host / ".linkml" / "src" / "demo" / "schema" / "demo.yaml", "id: x\n")
+    write(host / ".linkml" / "uv.lock", f'[[package]]\nname = "linkml"\nsource = {{ registry = "{registry}" }}\n')
+    return host
+
+
+def test_warns_when_the_lock_was_made_against_another_index(tmp_path):
+    host = sidecar_with_lock(tmp_path, "https://pypi.org/simple")
+    result = preflight_at(host, tmp_path, env={"UV_DEFAULT_INDEX": "https://reader:s3cret@nexus.example:8443/repository/pypi/simple"})
+    assert result and matches(result.out, r"^warn    lock       \.linkml/uv\.lock was made against pypi\.org, and uv here reads nexus\.example - just install rewrites it"), result.out
+    assert "s3cret" not in result.out and "reader" not in result.out, result.out
+    result = preflight_at(host, tmp_path)
+    assert result and not matches(result.out, r"^warn    lock"), result.out
+
+
+def test_reads_the_default_index_from_a_user_uv_toml(tmp_path):
+    host = sidecar_with_lock(tmp_path, "https://mirror.example/simple")
+    toml = '[[index]]\nname = "extra"\nurl = "https://extra.example/simple"\n\n[[index]]\nname = "corp"\nurl = "https://mirror.example/simple"\ndefault = true\n'
+    write(tmp_path / "config" / "uv" / "uv.toml", toml)
+    result = preflight_at(host, tmp_path)
+    assert result and not matches(result.out, r"^warn    lock") and "packages from mirror.example" in result.out, result.out
+    write(tmp_path / "config" / "uv" / "uv.toml", 'index-url = "https://old.example/simple"\n')
+    result = preflight_at(host, tmp_path)
+    assert result and matches(result.out, r"^warn    lock .* made against mirror\.example, and uv here reads old\.example "), result.out
+
+
+def test_the_network_line_names_the_template_and_the_index_it_would_ask(tmp_path):
+    host = make_host(tmp_path / "host")
+    result = preflight_at(host, tmp_path)
+    assert result and "the template from github.com and packages from pypi.org" in result.out, result.out
+    result = preflight_at(host, tmp_path, env={"LINKML_TEMPLATE_SRC": "https://git.example/mirror/linkml-project-copier.git"}, unset=NO_INDEX[:2])
+    assert result and "the template from git.example" in result.out, result.out
+    rule = write(tmp_path / "gitconfig", '[url "https://copy.example/linkml-project-copier.git"]\n\tinsteadOf = https://github.com/linkml/linkml-project-copier.git\n')
+    result = preflight_at(host, tmp_path, env={"GIT_CONFIG_GLOBAL": rule})
+    assert result and "the template from copy.example" in result.out, result.out
+
+
+def stubs(tmp_path, uvx_says="", curl_rc=0):
+    """uv, uvx and curl stand-ins first on PATH: uvx fails with uvx_says, curl exits curl_rc."""
+    bindir = tmp_path / "bin"
+    write(bindir / "uv", '#!/bin/sh\ncase "$1" in --version) echo "uv 0.12.11" ;; python) echo /usr/bin/python3 ;; esac\n')
+    write(bindir / "uvx", f'#!/bin/sh\necho "{uvx_says}" >&2\nexit 1\n')
+    write(bindir / "curl", f"#!/bin/sh\nexit {curl_rc}\n")
+    for stub in bindir.iterdir():
+        stub.chmod(0o755)
+    return {"PATH": f"{bindir}:/usr/bin:/bin"}
+
+
+@pytest.mark.parametrize(
+    "uv_says, why",
+    [
+        ("hint: Consider enabling use of system TLS certificates with the `--system-certs` command-line flag", "uv does not trust this network's certificates - set UV_SYSTEM_CERTS=true"),
+        ("error: No interpreter found for Python >=3.9 in virtual environments, managed installations, or search path", "uv finds no Python that copier runs on"),
+        ("Caused by: dns error: failed to lookup address information", "uv cannot reach the package index pypi.org"),
+    ],
+)
+def test_says_why_uvx_cannot_run_copier(tmp_path, uv_says, why):
+    result = preflight_at(make_host(tmp_path / "host"), tmp_path, env=stubs(tmp_path, uv_says), unset=NO_INDEX + ("LINKML_PREFLIGHT_OFFLINE",))
+    assert result and matches(result.out, rf"^missing copier     {re.escape(why)}"), result.out
+
+
+def test_names_what_it_cannot_reach(tmp_path):
+    result = preflight_at(make_host(tmp_path / "host"), tmp_path, env=stubs(tmp_path, curl_rc=7), unset=NO_INDEX + ("LINKML_PREFLIGHT_OFFLINE",))
+    assert result and matches(result.out, r"^warn    network    github\.com unreachable - copier cannot fetch the template; a company copy goes in LINKML_TEMPLATE_SRC"), result.out
+    assert matches(result.out, r"^warn    network    pypi\.org unreachable - uv cannot install copier, just or linkml; a company mirror goes in UV_DEFAULT_INDEX"), result.out

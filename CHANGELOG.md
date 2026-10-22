@@ -4,13 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
-### Fixed
+### Added
 
-- **The scaffold runs its Python half through `uv run` first**, then through a `python3` or `python` of 3.8 or later, as KTL's scripts do. An older `python3`, such as RHEL 8's 3.6, no longer stops it at its first line.
+- **The preflight asks the template's source and the package index that git and uv actually use**, a company copy or mirror included, and prints only their host names. It warns when `uv.lock` was made against another index than uv reads, and says why uvx cannot run copier, such as a certificate uv does not trust.
 
 ### Removed
 
 - **The upstream layout proposal leaves linkml-sidecar's references.** It is filed as [linkml-project-copier#187](https://github.com/linkml/linkml-project-copier/issues/187), which the assumptions catalogue links instead.
+
+### Fixed
+
+- **The scaffold runs its Python half through `uv run` first**, then through a `python3` or `python` of 3.8 or later, as KTL's scripts do. An older `python3`, such as RHEL 8's 3.6, no longer stops it at its first line.
 
 ## [0.1.1] - 2026-10-22
 
