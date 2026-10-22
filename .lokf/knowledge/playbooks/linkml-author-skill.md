@@ -56,7 +56,7 @@ The `compatibility` field asks for bash. Every LinkML tool runs through the host
 
 ## Where it works
 
-A LinkML schema can live in any repository, so the skill finds it by what files say, never by the folder's name. It runs the preflight, or applies the same rule by hand:
+A LinkML schema can live in any repository, so the skill finds it by its files, never by its folder's name. It runs the preflight, or applies the same rule by hand:
 
 - the sidecar, told by `.linkml/.copier-answers.yml`. Its `config.public.mk` names the schema, and an adopted schema sits outside `.linkml/`, where `LINKML_SCHEMA_SOURCE_DIR` points;
 - a schema project at the root, in `linkml/`, one directory down or in the directory the skill was started in, told by copier answers whose `_src_path` names linkml-project-copier, or by a `config.public.mk`;

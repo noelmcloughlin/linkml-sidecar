@@ -54,7 +54,7 @@ It shows:
 
 ## How it finds the schema
 
-It finds a schema by what files say, never by the folder's name. It looks for a project in `.linkml/`, at the repository root, in the directory it was started in, and in every directory one level down. Copier answers whose `_src_path` names linkml-project-copier, or a `config.public.mk`, make a project. When `config.public.mk` is absent, the answers' `project_slug` names the schema. A second project is reported on an `also` line. With no project anywhere, it finds schema files by content and prints each on an `ok schema` line.
+It finds a schema by its files, never by its folder's name. It looks for a project in `.linkml/`, at the repository root, in the directory it was started in, and in every directory one level down. Copier answers whose `_src_path` names linkml-project-copier, or a `config.public.mk`, make a project. When `config.public.mk` is absent, the answers' `project_slug` names the schema. A second project is reported on an `also` line. With no project anywhere, it finds schema files by content and prints each on an `ok schema` line.
 
 Only `.linkml/.copier-answers.yml` means a sidecar. A `.linkml/` holding other files is reported as holding configuration files, or as empty. Beside a `.lokf/` bundle, the `lokf` line says whether `.lokf/justfile` names the schema, and the schema is not the bundle's domain schema until it does. `skills/linkml-sidecar/references/layouts.md` states the rule.
 

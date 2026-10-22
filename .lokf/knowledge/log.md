@@ -2,6 +2,7 @@
 
 ## 2026-10-22
 
+* **Prose**: reworded 6 concept bodies in plain English. No fact, link, number or frontmatter changed.
 * **Changed**: The linkml-sidecar skill playbook drops the claim that most schema repositories have no project, as SKILL.md has.
 * **Changed**: Releasing now describes the semantic-release and publish.yml workflows that replaced tagging by hand, as CONTRIBUTING.md states.
 * **Changed**: Two patterns no longer claims that most schema repositories have no project, and names the files that mark a schema, as README.md now does.

@@ -29,7 +29,7 @@ verified:
 
 ## What it recommends
 
-- Remember which names reach the data: slot names and permissible values appear in every record, and class and enum names do not. Every name in the import closure shares one namespace. On LinkML 1.12.1 `SchemaView` and lint merge a duplicate without a word, and the one listed last wins, while `gen-python` and `gen-jsonld-context` stop with `Conflicting URIs`, so the gate's `gen-project` catches what lint misses.
+- Remember which names reach the data: slot names and permissible values appear in every record, and class and enum names do not. Every name in the import closure shares one namespace. On LinkML 1.12.1 `SchemaView` and lint merge a duplicate without a warning, and the one listed last wins, while `gen-python` and `gen-jsonld-context` stop with `Conflicting URIs`, so the gate's `gen-project` catches what lint misses.
 - Start every class with attributes, and lift a field to a top-level slot only when a second class needs the same field with the same meaning.
 - Put fields that unrelated classes share in a mixin.
 - Keep a fundamental name (`id`, `name`, `type`, `description`) as an attribute, or in one mixin, because such names clash first. A base slot the schema means to share carries a `slot_uri`, so the IRI survives a rename by an importer.
