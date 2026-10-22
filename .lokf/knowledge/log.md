@@ -1,5 +1,9 @@
 # Change Log
 
+## 2026-10-22
+
+* **Prose**: reworded 3 concept bodies in plain English. No fact, link, number or frontmatter changed.
+
 ## 2026-10-21
 
 * **Added**: the knowledge website, from `website/README.md`, `site.config.mjs` and `knowledge-website.yaml`.

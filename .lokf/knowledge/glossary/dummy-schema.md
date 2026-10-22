@@ -21,6 +21,6 @@ status: draft
 
 # Overview
 
-A fresh sidecar holds a **dummy schema**: the `Person` example, or, beside a KTL bundle, `ExampleConcept`. It comes from `templates/linkml/schema/plain/` or `templates/linkml/schema/lokf/`, not from the template, because the upstream example fails `just lint`. The scaffold answers `add_example: false` so copier never generates that example, and lays down a dummy that lints clean.
+A fresh sidecar holds a **dummy schema**: the `Person` example, or, beside a KTL bundle, `ExampleConcept`. It comes from `templates/linkml/schema/plain/` or `templates/linkml/schema/lokf/`, not from the template, because the upstream example fails `just lint`. The scaffold answers `add_example: false` so copier never generates that example, and writes a dummy that lints clean.
 
 linkml-author's first run replaces the dummy with the host's model, keeping the dummy's data files only while its classes remain.

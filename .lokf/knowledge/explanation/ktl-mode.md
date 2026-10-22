@@ -39,7 +39,7 @@ The sidecar stands alone. When the host carries a `.lokf/` bundle, the preflight
 
 ## The one workaround
 
-The two recipes run from the schema's directory rather than from `.lokf/`. `lokf validate` hands the schema to `linkml.validator.validate()`, which drops the schema's path, so a relative import resolves from the working directory. [linkml PR 3855](https://github.com/linkml/linkml/pull/3855) changes this in linkml 1.12.0. The `cd` form works on 1.11.x and 1.12.0 alike, so it stays while a `.lokf/uv.lock` may still hold 1.11.x.
+The two recipes run from the schema's directory rather than from `.lokf/`. `lokf validate` passes the schema to `linkml.validator.validate()`, which drops the schema's path, so a relative import resolves from the working directory. [linkml PR 3855](https://github.com/linkml/linkml/pull/3855) changes this in linkml 1.12.0. The `cd` form works on 1.11.x and 1.12.0 alike, so it stays while a `.lokf/uv.lock` may still hold 1.11.x.
 
 ## Two more upstream limits
 
@@ -48,4 +48,4 @@ The two recipes run from the schema's directory rather than from `.lokf/`. `lokf
 
 ## What the host still does by hand
 
-It adds each domain class to the *Known LOKF types* setting of the KTL Registrar and KTL Curator plugins. When the `lokf` floor moves, it refreshes `.lokf/lokf.yaml`, regenerates `.linkmllint.yaml` and re-runs both gates. When the sidecar is removed, `.lokf/justfile` goes back to `schema := ""`.
+It adds each domain class to the *Known LOKF types* setting of the KTL Registrar and KTL Curator plugins. When the `lokf` floor moves, it refreshes `.lokf/lokf.yaml`, regenerates `.linkmllint.yaml` and re-runs both gates. When the sidecar is removed, `.lokf/justfile` is reset to `schema := ""`.

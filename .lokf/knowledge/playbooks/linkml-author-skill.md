@@ -41,7 +41,7 @@ Use it when someone asks to:
 - check schema conventions;
 - run lint, gen-project, gen-doc or test.
 
-It is not for installing or repairing the sidecar: a missing or broken sidecar file goes back to linkml-sidecar's `--repair`.
+It is not for installing or repairing the sidecar: linkml-sidecar's `--repair` restores a missing or broken sidecar file.
 
 ## What it needs
 
