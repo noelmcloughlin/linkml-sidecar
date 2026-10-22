@@ -2,6 +2,8 @@
 
 ## 2026-10-22
 
+* **Changed**: the assumptions catalogue cites linkml-project-copier#187, where the layout proposal is filed, in place of the draft that left the skill.
+* **Removal**: Upstream layout proposal; the draft left `skills/linkml-sidecar/references/` once it was filed as linkml-project-copier#187.
 * **Prose**: reworded 6 concept bodies in plain English. No fact, link, number or frontmatter changed.
 * **Changed**: The linkml-sidecar skill playbook drops the claim that most schema repositories have no project, as SKILL.md has.
 * **Changed**: Releasing now describes the semantic-release and publish.yml workflows that replaced tagging by hand, as CONTRIBUTING.md states.
