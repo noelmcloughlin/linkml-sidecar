@@ -27,12 +27,14 @@ the work, in this order:
    nothing moves. A failure before this point removes the staging
    directory and nothing else, so `.linkml/` is never deleted here;
 7. neutralise what the template assumes of a repository root (the
-   catalogue is references/template-assumptions.md), wire a KTL bundle
-   when one is present, add the root pointers, and print the hand-off.
+   catalogue is references/template-assumptions.md), and rename the
+   generators' settings from config.yaml to generators.yaml. Then name
+   the schema in a KTL bundle's justfile when one is present, add the
+   root pointers, and print the hand-off.
 
-With `--adopt <schema>`, the dummy is not laid down: `config.public.mk`
-points `LINKML_SCHEMA_SOURCE_DIR` at the folder that already holds the
-host's schema, which is never moved, linked or edited, and the folder the
+With `--adopt <schema>`, no dummy is written. `config.public.mk` points
+`LINKML_SCHEMA_SOURCE_DIR` at the folder that already holds the host's
+schema, which is never moved, linked or edited, and the folder the
 template expects gets a README that says where the schema is.
 
 Every line it prints starts with `scaffold:`, `handoff:` or `next:`, so a
@@ -104,6 +106,18 @@ CODE_HOSTS = ("github.com", "gitlab.com", "bitbucket.org", "codeberg.org", "sour
 # inline until ktl-sidecar's template carries the `schema` variable, and the
 # line that template runs instead. The runners have no `just`, so the step
 # runs it through uvx.
+# The generators' settings. The template renders them as config.yaml at the
+# project's root and names that file in config.public.mk, which every recipe
+# reads; nothing else names it. The sidecar keeps them as generators.yaml, so
+# from the host's root they sit at .linkml/generators.yaml, in the folder
+# upstream LinkML may name for its configuration files. A new sidecar is
+# renamed without asking, and `--repair generators.yaml` moves an existing
+# project's file when a person agrees. copier update leaves the moved file
+# alone: a test from v0.4.0 to v0.4.2, where upstream changed config.yaml,
+# kept the old settings. So the template's later changes no longer arrive.
+TEMPLATE_GENERATORS = "config.yaml"
+GENERATORS = "generators.yaml"
+GENERATORS_VAR = "LINKML_GENERATORS_CONFIG_YAML"
 KTL_WORKFLOWS = ("knowledge-registrar.yaml", "knowledge-librarian.yaml", "knowledge-release.yaml")
 KTL_VALIDATE_STEP = "uvx --from rust-just==1.47.0 just lokf-check-refs"
 # The files the skill owns, as (template path, destination inside .linkml/).
@@ -569,7 +583,7 @@ def run_copier(host, stage, facts, src, ref, dry):
 
 def after_copy(host, stage, facts, mode, ref, dry, adopt):
     if dry:
-        plan = "would check .linkml/.copier-answers.yml, remove nothing, patch mkdocs.yml"
+        plan = f"would check .linkml/.copier-answers.yml, remove nothing, patch mkdocs.yml, rename {TEMPLATE_GENERATORS} to {GENERATORS}"
         plan += ", point config.public.mk at the adopted schema's folder" if adopt else ", append the doorway recipe"
         plan += ", set --render-imports and write .linkmllint.yaml" if mode == "lokf" else ""
         say("scaffold", plan)
@@ -602,6 +616,14 @@ def after_copy(host, stage, facts, mode, ref, dry, adopt):
         say("handoff", f"adopted {facts['SCHEMA_DIR']}/{facts['PROJ_SLUG']}.yaml: {PROJECT_CONFIG} names its folder (LINKML_SCHEMA_SOURCE_DIR={source_dir}); the file was not moved, linked or changed")
     else:
         append_doorway_recipe(stage, facts, dry)
+    if (host / SIDECAR / GENERATORS).exists():
+        say("handoff", f"{SIDECAR}/{GENERATORS} was already there and is the host's, so the generators' settings stay in {SIDECAR}/{TEMPLATE_GENERATORS}")
+    else:
+        reason = move_generators(host, stage, stage / GENERATORS, GENERATORS, dry)
+        if reason:
+            say("handoff", f"the generators' settings stay in {SIDECAR}/{TEMPLATE_GENERATORS}: {reason}")
+        else:
+            say_generators_update()
     if mode == "lokf":
         if mk.is_file():
             text = read(mk)
@@ -609,6 +631,68 @@ def after_copy(host, stage, facts, mode, ref, dry, adopt):
             write(mk, text, dry)
         write(stage / ".linkmllint.yaml", lint_config(host), dry)
     say_inert_handoffs(stage)
+
+
+def move_generators(host, project, dest, value, dry):
+    """Move project/config.yaml to dest and name value in project/config.public.mk.
+
+    Returns why it could not, or None once it is done (or, in a dry run,
+    planned). It checks everything before it moves anything, so a refusal
+    leaves both files as they were.
+    """
+    source = project / TEMPLATE_GENERATORS
+    mk = project / PROJECT_CONFIG
+
+    def rel(path):
+        return shown(path) if _stage is not None and str(path).startswith(str(_stage)) else os.path.relpath(path, host).replace(os.sep, "/")
+
+    if not source.is_file():
+        return f"there is no {rel(source)}"
+    if dest.exists() or dest.is_symlink():
+        return f"{rel(dest)} already exists"
+    if not mk.is_file():
+        return f"there is no {rel(mk)}, whose {GENERATORS_VAR} names the file for every recipe"
+    line = re.compile(rf'^{GENERATORS_VAR}="?{re.escape(TEMPLATE_GENERATORS)}"?[ \t]*$', re.M)
+    text = read(mk)
+    if not line.search(text):
+        return f"{rel(mk)} does not set {GENERATORS_VAR}={TEMPLATE_GENERATORS}, so the recipes may not read that file"
+    if dry:
+        say("scaffold", f"would move {rel(source)} to {rel(dest)} and set {GENERATORS_VAR}={value} in {rel(mk)}")
+        return None
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    os.rename(source, dest)
+    write(mk, line.sub(f"{GENERATORS_VAR}={value}", text, count=1), dry)
+    say("scaffold", f"moved {rel(source)} to {rel(dest)}; {rel(mk)} sets {GENERATORS_VAR}={value}, which every recipe reads")
+    return None
+
+
+def say_generators_update():
+    say("handoff", f"the generators' settings are {SIDECAR}/{GENERATORS}, the project's own: just update no longer changes them, so read the template's changelog for changes to its {TEMPLATE_GENERATORS} when the pin moves")
+
+
+def repair_generators(host, dry):
+    """--repair generators.yaml: move a finished project's config.yaml to .linkml/generators.yaml.
+
+    The project is the sidecar, or a schema project at the host's root (made
+    with linkml-project-copier or the older cookiecutter); --host names a
+    project that sits anywhere else. A root project's file goes into
+    .linkml/, beside whatever configuration files are already there.
+    """
+    if (host / SIDECAR / ".copier-answers.yml").is_file():
+        project, value = host / SIDECAR, GENERATORS
+    elif linkml_project(host):
+        project, value = host, f"{SIDECAR}/{GENERATORS}"
+    else:
+        raise Refused(3, f"no sidecar and no LinkML schema project at {host}; --host names the project's directory")
+    dest = host / SIDECAR / GENERATORS
+    if dest.is_file() and not (project / TEMPLATE_GENERATORS).exists() and mk_value(project / PROJECT_CONFIG, GENERATORS_VAR) == value:
+        say("scaffold", f"nothing to do: {GENERATORS_VAR}={value} already, and there is no {TEMPLATE_GENERATORS} beside it")
+        return
+    reason = move_generators(host, project, dest, value, dry)
+    if reason:
+        raise Refused(3, f"{reason}; nothing was moved")
+    if not dry:
+        say_generators_update()
 
 
 def clashes(host, stage):
@@ -960,7 +1044,7 @@ def repair(host, facts, mode, target, dry):
     if rel == "LICENSE":
         preseed_license_only(host, facts, dry)
         return
-    raise Refused(2, f"{target} is not a file this skill owns (the preflight, README.md, docs/index.md, docs/about.md, LICENSE, the dummy schema and its tests, .linkmllint.yaml, project.justfile's doorway recipe); a template-owned file comes back with `just --justfile .linkml/justfile update`")
+    raise Refused(2, f"{target} is not a file this skill owns (the preflight, README.md, docs/index.md, docs/about.md, LICENSE, the dummy schema and its tests, .linkmllint.yaml, project.justfile's doorway recipe, or {GENERATORS}, which moves {TEMPLATE_GENERATORS}); a template-owned file comes back with `just --justfile .linkml/justfile update`")
 
 
 def preseed_license_only(host, facts, dry):
@@ -984,7 +1068,7 @@ def main(argv=None):
     parser.add_argument("--dry-run", action="store_true", help="print every action; write nothing")
     parser.add_argument("--gitignored", action="store_true", help="the host keeps .linkml/ out of git: add it and the doorway to .gitignore")
     parser.add_argument("--pointers-only", action="store_true", help="re-add the root pointers to a finished sidecar")
-    parser.add_argument("--repair", metavar="PATH", help="re-lay one skill-owned file of a finished sidecar")
+    parser.add_argument("--repair", metavar="PATH", help="rewrite one skill-owned file of a finished sidecar; generators.yaml moves a finished project's config.yaml there")
     schema = parser.add_mutually_exclusive_group()
     schema.add_argument("--adopt", metavar="SCHEMA", help="give the schema file the host already holds the toolchain, instead of laying the dummy")
     schema.add_argument("--dummy", action="store_true", help="lay the dummy schema although the host holds a schema")
@@ -1004,6 +1088,9 @@ def main(argv=None):
     dry = args.dry_run
     stage = None
     try:
+        if args.repair and os.path.normpath(args.repair).replace("\\", "/") in (GENERATORS, f"{SIDECAR}/{GENERATORS}"):
+            repair_generators(host, dry)
+            return 0
         if args.pointers_only or args.repair:
             if not (host / SIDECAR / ".copier-answers.yml").is_file():
                 raise Refused(3, f"no finished sidecar under {host} to work on")

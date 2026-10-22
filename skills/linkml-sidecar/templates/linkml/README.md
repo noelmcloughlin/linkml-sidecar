@@ -19,7 +19,7 @@ This is a small **sidecar** that holds <PROJ_NAME>'s data model as a [LinkML](ht
 |-- tests/data/{valid,invalid}/              # example data the tests and the example runner check
 |-- justfile, project.justfile               # the recipes (below); your own recipes go in project.justfile
 |-- pyproject.toml, uv.lock                  # the Python project uv installs into .linkml/.venv
-|-- config.public.mk, config.yaml            # the schema's name and path; the generators' settings
+|-- config.public.mk, generators.yaml        # the schema's name and path; the generators' settings
 |-- mkdocs.yml                               # the docs site
 |-- scripts/linkml-preflight.sh              # what this machine can do; the skills run it first
 |-- .copier-answers.yml                      # what the template was told; `just update` reads it
@@ -30,9 +30,10 @@ This is a small **sidecar** that holds <PROJ_NAME>'s data model as a [LinkML](ht
 
 | Files | Owner | Change them by |
 | --- | --- | --- |
-| `justfile`, `pyproject.toml`, `config.yaml`, `mkdocs.yml` (all but two lines), `.github/`, `.pre-commit-config.yaml`, `.gitignore`, `.editorconfig`, `.yamllint.yaml`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, `src/<PROJ_SLUG>/__init__.py`, `_version.py`, `tests/__init__.py` | the template | `just update` from this folder; never by hand |
+| `justfile`, `pyproject.toml`, `mkdocs.yml` (all but two lines), `.github/`, `.pre-commit-config.yaml`, `.gitignore`, `.editorconfig`, `.yamllint.yaml`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, `src/<PROJ_SLUG>/__init__.py`, `_version.py`, `tests/__init__.py` | the template | `just update` from this folder; never by hand |
 | `README.md` (this file), `LICENSE`, `docs/index.md`, `docs/about.md`, `src/<PROJ_SLUG>/schema/`, `tests/test_data.py`, `tests/data/` | <PROJ_NAME> | editing; copier never touches them (`_skip_if_exists`) |
 | `project.justfile`, `config.public.mk`, the `site_url` and `repo_url` lines of `mkdocs.yml` | both | editing; `copier update` merges |
+| `generators.yaml`, the template's `config.yaml` renamed | <PROJ_NAME> | editing; `just update` no longer changes it, so carry over what the template's changelog says changed in `config.yaml` |
 | `scripts/linkml-preflight.sh`, `.linkmllint.yaml` when present | the `linkml-sidecar` skill | its repair |
 
 `CODE_OF_CONDUCT.md` and `CONTRIBUTING.md` here are the template's; the host's own govern.
@@ -62,7 +63,7 @@ Or `cd .linkml` and drop `--justfile .linkml/justfile`. Without `just`:
 cd .linkml
 uv sync --group dev
 uv run linkml-lint src/<PROJ_SLUG>/schema
-uv run gen-project --config-file config.yaml -d project src/<PROJ_SLUG>/schema/<PROJ_SLUG>.yaml
+uv run gen-project --config-file generators.yaml -d project src/<PROJ_SLUG>/schema/<PROJ_SLUG>.yaml
 ```
 
 Use these, not a `linkml-lint` or `gen-project` installed elsewhere: the versions are pinned in `uv.lock`.

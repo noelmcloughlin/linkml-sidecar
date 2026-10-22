@@ -345,6 +345,83 @@ def test_repair_relays_one_owned_file_from_the_sidecars_own_facts(tmp_path):
     assert bad.rc == 2 and "not a file this skill owns" in bad.out
 
 
+REPAIR_ENV = {"LINKML_TEMPLATE_SKIP_PIN_CHECK": "1"}
+GENERATORS_SETTINGS = "excludes:\n  - markdown\n"
+
+
+def test_a_new_sidecar_keeps_the_generators_settings_in_generators_yaml(tmp_path):
+    host = make_host(tmp_path)
+    result = scaffold(host)
+    assert result, result.out
+    side = host / ".linkml"
+    assert read(side / "generators.yaml") == GENERATORS_SETTINGS and not (side / "config.yaml").exists()
+    assert "LINKML_GENERATORS_CONFIG_YAML=generators.yaml\n" in read(side / "config.public.mk")
+    assert matches(result.out, r"^handoff: the generators' settings are \.linkml/generators\.yaml, the project's own: just update no longer changes them"), result.out
+
+
+def test_a_generators_yaml_the_host_keeps_in_dot_linkml_is_left_alone(tmp_path):
+    host = make_host(tmp_path)
+    write(host / ".linkml" / "generators.yaml", "the host's own\n")
+    result = scaffold(host)
+    assert result, result.out
+    side = host / ".linkml"
+    assert read(side / "generators.yaml") == "the host's own\n" and read(side / "config.yaml") == GENERATORS_SETTINGS
+    assert "LINKML_GENERATORS_CONFIG_YAML=config.yaml\n" in read(side / "config.public.mk")
+    assert "the generators' settings stay in .linkml/config.yaml" in result.out, result.out
+
+
+def test_repair_moves_an_older_sidecars_config_yaml_once(tmp_path):
+    host = make_host(tmp_path)
+    assert scaffold(host)
+    side = host / ".linkml"
+    mk = side / "config.public.mk"
+    os.rename(side / "generators.yaml", side / "config.yaml")
+    write(mk, read(mk).replace("_CONFIG_YAML=generators.yaml", "_CONFIG_YAML=config.yaml"))
+    dry = bash(SCAFFOLD, "--host", str(host), "--repair", "generators.yaml", "--dry-run", env=REPAIR_ENV)
+    assert dry and "would move .linkml/config.yaml to .linkml/generators.yaml" in dry.out, dry.out
+    assert (side / "config.yaml").is_file() and not (side / "generators.yaml").exists()
+    result = bash(SCAFFOLD, "--host", str(host), "--repair", ".linkml/generators.yaml", env=REPAIR_ENV)
+    assert result, result.out
+    assert read(side / "generators.yaml") == GENERATORS_SETTINGS and not (side / "config.yaml").exists()
+    assert "LINKML_GENERATORS_CONFIG_YAML=generators.yaml\n" in read(mk)
+    again = bash(SCAFFOLD, "--host", str(host), "--repair", "generators.yaml", env=REPAIR_ENV)
+    assert again and "nothing to do" in again.out, again.out
+
+
+def root_project(host, var="config.yaml"):
+    write(host / ".copier-answers.yml", OURS + "project_slug: demo\n")
+    write(host / "config.public.mk", f'LINKML_SCHEMA_NAME="demo"\nLINKML_GENERATORS_CONFIG_YAML={var}\nLINKML_GENERATORS_DOC_ARGS=\n')
+    write(host / "config.yaml", GENERATORS_SETTINGS)
+    return host
+
+
+def test_repair_moves_a_root_projects_config_yaml_into_dot_linkml(tmp_path):
+    host = root_project(make_host(tmp_path))
+    write(host / ".linkml" / "upstream.toml", "[linkml]\n")
+    result = bash(SCAFFOLD, "--host", str(host), "--repair", "generators.yaml", env=REPAIR_ENV)
+    assert result, result.out
+    assert read(host / ".linkml" / "generators.yaml") == GENERATORS_SETTINGS and not (host / "config.yaml").exists()
+    assert read(host / "config.public.mk") == 'LINKML_SCHEMA_NAME="demo"\nLINKML_GENERATORS_CONFIG_YAML=.linkml/generators.yaml\nLINKML_GENERATORS_DOC_ARGS=\n'
+    assert read(host / ".linkml" / "upstream.toml") == "[linkml]\n"
+
+
+@pytest.mark.parametrize(
+    ("setup", "needle"),
+    [
+        (lambda h: h, "no sidecar and no LinkML schema project"),
+        (lambda h: root_project(h, var="settings/gen.yaml"), "does not set LINKML_GENERATORS_CONFIG_YAML=config.yaml"),
+        (lambda h: write(root_project(h) / ".linkml" / "generators.yaml", "kept\n"), ".linkml/generators.yaml already exists"),
+    ],
+)
+def test_repair_of_the_generators_settings_moves_nothing_it_cannot_finish(tmp_path, setup, needle):
+    host = make_host(tmp_path)
+    setup(host)
+    before = {p: read(p) for p in host.rglob("*") if p.is_file() and ".git" not in p.parts}
+    result = bash(SCAFFOLD, "--host", str(host), "--repair", "generators.yaml", env=REPAIR_ENV)
+    assert result.rc == 3 and needle in result.out, result.out
+    assert {p: read(p) for p in host.rglob("*") if p.is_file() and ".git" not in p.parts} == before
+
+
 @pytest.mark.skipif(not have("just"), reason="just not installed locally")
 def test_the_doorway_recipe_creates_refuses_and_is_a_no_op(tmp_path):
     host = make_host(tmp_path)
@@ -523,6 +600,9 @@ def test_the_real_template_passes_the_gate_on_a_plain_host(tmp_path):
     host = slow_host(tmp_path, with_lokf=False)
     ref, _ = pin()
     assert f"_commit: {ref}" in read(host / ".linkml" / ".copier-answers.yml")
+    # The generators' settings are renamed; gen-project reads them through config.public.mk.
+    assert (host / ".linkml" / "generators.yaml").is_file() and not (host / ".linkml" / "config.yaml").exists()
+    assert "LINKML_GENERATORS_CONFIG_YAML=generators.yaml\n" in read(host / ".linkml" / "config.public.mk")
     for recipe in ("install", "lint", "test", "site"):
         result = gate(host, recipe)
         assert result, f"just {recipe} failed:\n{result.out[-3000:]}"
@@ -534,6 +614,7 @@ def test_the_real_template_passes_the_gate_on_a_plain_host(tmp_path):
     update = run(["uvx", "--from", "copier>=9.4.0,<10", "--with", "jinja2-time", "copier", "update", "--trust", "--skip-answered", "--quiet"], cwd=host / ".linkml")
     assert update, update.out[-2000:]
     assert git("status", "--porcelain") == "", "copier update at the same pin changed something"
+    assert not (host / ".linkml" / "config.yaml").exists(), "copier update brought config.yaml back"
 
 
 @pytest.mark.slow

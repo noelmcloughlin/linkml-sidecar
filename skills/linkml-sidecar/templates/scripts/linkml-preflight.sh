@@ -257,6 +257,19 @@ if [ -n "$sidecar" ]; then
   if [ -n "$name" ] && [ -f "$sidecar/$schema" ]; then ok project "schema $shown; $venv"
   elif [ -n "$name" ]; then warn project "the project names $schema but it is not there - the schema file is the one thing linkml-author needs"
   else warn project "${sdisp}config.public.mk missing and the answers name no project_slug - just cannot find the schema name; linkml-sidecar repair, or copier update, lays config.public.mk down"; fi
+  # The generators' settings: the template renders config.yaml and names it
+  # in config.public.mk, which every recipe reads. The sidecar keeps them as
+  # .linkml/generators.yaml, and linkml-sidecar --repair generators.yaml
+  # moves an existing project's file there, so the line below is an offer.
+  if [ -f "$sidecar/config.public.mk" ]; then
+    gens="$(mkvalue "$sidecar/config.public.mk" LINKML_GENERATORS_CONFIG_YAML)"
+    case "$gens" in
+      config.yaml)
+        [ -f "$sidecar/config.yaml" ] && info generators "${sdisp}config.yaml holds the generators' settings; linkml-sidecar --repair generators.yaml moves it to .linkml/generators.yaml and changes the one line of ${sdisp}config.public.mk that names it" ;;
+      generators.yaml|.linkml/generators.yaml)
+        [ -f "$sidecar/config.yaml" ] && warn generators "${sdisp}config.yaml exists beside $gens, which the recipes read - carry any change into $gens, then delete ${sdisp}config.yaml" ;;
+    esac
+  fi
   if [ "$ingit" -eq 1 ] && [ "$tracked" = tracked ] && [ -f "$root/.github/workflows/linkml-sidecar.yaml" ] \
      && [ -z "$(git -C "$root" ls-files .linkml/uv.lock 2>/dev/null | head -n 1)" ]; then
     warn project ".linkml/uv.lock is not in git - the workflow installs with uv sync --locked and fails without it; run just --justfile .linkml/justfile install and commit the file"
@@ -309,7 +322,7 @@ fi
 if [ -d "$root/.lokf" ]; then
   floor="$(sed -n 's/.*"lokf\[build\]>=\([0-9.]*\)".*/\1/p' "$root/.lokf/pyproject.toml" 2>/dev/null | head -n 1)"
   pinned="absent (the scaffold copies it out of the installed toolkit)"; [ -f "$root/.lokf/lokf.yaml" ] && pinned="pinned"
-  # ktl-sidecar's template carries `schema := ""` before anything is wired.
+  # ktl-sidecar's template carries `schema := ""` until a schema is named.
   named="$(sed -n 's/^schema := "\(.*\)"$/\1/p' "$root/.lokf/justfile" 2>/dev/null | head -n 1)"
   wired="not wired"; [ -n "$named" ] && wired="wired ($named)"
   base="$(sed -n 's/^base_iri: *//p' "$root/.lokf/knowledge/index.md" 2>/dev/null | head -n 1)"

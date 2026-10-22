@@ -162,6 +162,24 @@ def test_a_root_project_gets_no_sidecar_hints(tmp_path):
     assert matches(result.out, r"^info    workflows  1 workflow\(s\); the project's own are its gate"), result.out
 
 
+def test_offers_to_move_the_generators_settings_and_warns_when_both_files_exist(tmp_path):
+    root = make_host(tmp_path / "root")
+    write(root / ".copier-answers.yml", OURS + "project_slug: demo\n")
+    write(root / "config.public.mk", 'LINKML_SCHEMA_NAME="demo"\nLINKML_GENERATORS_CONFIG_YAML=config.yaml\n')
+    write(root / "config.yaml", "excludes: []\n")
+    result = preflight(root)
+    assert result and matches(result.out, r"^info    generators config\.yaml holds the generators' settings; linkml-sidecar --repair generators\.yaml moves it to \.linkml/generators\.yaml"), result.out
+    side = make_host(tmp_path / "side")
+    write(side / ".linkml" / ".copier-answers.yml", OURS + "project_slug: demo\n")
+    write(side / ".linkml" / "config.public.mk", 'LINKML_SCHEMA_NAME="demo"\nLINKML_GENERATORS_CONFIG_YAML=generators.yaml\n')
+    write(side / ".linkml" / "generators.yaml", "excludes: []\n")
+    result = preflight(side)
+    assert result and not matches(result.out, r"^\w+ +generators"), result.out
+    write(side / ".linkml" / "config.yaml", "excludes: []\n")
+    result = preflight(side)
+    assert result and matches(result.out, r"^warn    generators \.linkml/config\.yaml exists beside generators\.yaml, which the recipes read"), result.out
+
+
 def test_reads_a_ktl_bundle_and_warns_without_a_base_iri(tmp_path):
     host = make_host(tmp_path)
     add_lokf(host)

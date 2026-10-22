@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # linkml-scaffold.sh: Steps 1 to 3 of linkml-sidecar as one deterministic run.
 # It pre-seeds the files the skill owns, runs copier for everything else,
-# neutralises the template's root-install assumptions, wires a KTL bundle
-# when one is present, adds the root pointers, and prints the hand-off
-# facts. Nothing in it is a judgement: the facts come in as environment
-# variables that the skill's Step 0 resolved from real sources.
+# neutralises the template's root-install assumptions, names the schema in
+# a KTL bundle's justfile when one is present, adds the root pointers, and
+# prints the hand-off facts. Nothing in it is a judgement: the facts come
+# in as environment variables that the skill's Step 0 resolved from real
+# sources.
 #
 # This file holds the one pin of the template. The contract script holds
 # every other mention under skills/ and README.md to these two values, and
@@ -14,6 +15,8 @@
 # Usage: linkml-scaffold.sh [--dry-run] [--host DIR] [--mode plain|lokf|auto]
 #                           [--gitignored] [--adopt SCHEMA | --dummy]
 #                           [--pointers-only] [--repair PATH]
+#   --repair generators.yaml moves a finished project's config.yaml to
+#   .linkml/generators.yaml; a new sidecar is given that name without asking.
 #   Facts (environment): PROJ_NAME PROJ_SLUG PROJ_DESC GITHUB_ORG REPO_URL
 #   FULL_NAME EMAIL LICENSE_ID SCHEMA_ID DOCS_URL [COPYRIGHT_YEAR] [TODAY]
 #   [BASE_IRI, read from .lokf/knowledge/index.md when absent]
