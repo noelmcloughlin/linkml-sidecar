@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.8"
+# dependencies = []
+# ///
 """The Python half of linkml-scaffold.sh: lay down a `.linkml/` sidecar.
 
 The driver sets the template pin and picks an interpreter; this file does

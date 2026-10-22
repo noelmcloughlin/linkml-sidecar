@@ -12,6 +12,12 @@
 # the Python half verifies the tag still names this commit before it trusts
 # the template with `--trust`.
 #
+# The Python half runs through `uv run` first, which reads the half's own
+# header and so passes over a python3 older than 3.8, such as RHEL 8's 3.6.
+# Then it runs through python3, and through python as the last resort, each
+# only when it is 3.8 or later. The half needs only the standard library, so
+# its header names no package for a mirror to refuse.
+#
 # Usage: linkml-scaffold.sh [--dry-run] [--host DIR] [--mode plain|lokf|auto]
 #                           [--gitignored] [--adopt SCHEMA | --dummy]
 #                           [--pointers-only] [--repair PATH]
@@ -36,11 +42,13 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 : "${LINKML_TEMPLATE_SHA:=1d52a14e42db05ae0a3bff03350309dae437c531}"
 export LINKML_TEMPLATE_SRC LINKML_TEMPLATE_REF LINKML_TEMPLATE_SHA
 
-if command -v python3 >/dev/null 2>&1; then
+usable() { command -v "$1" >/dev/null 2>&1 && "$1" -c 'import sys; assert sys.version_info >= (3, 8)' >/dev/null 2>&1; }
+if command -v uv >/dev/null 2>&1; then
+  exec uv run --quiet "$here/linkml-scaffold.py" "$@"
+elif usable python3; then
   exec python3 "$here/linkml-scaffold.py" "$@"
-elif command -v uv >/dev/null 2>&1; then
-  exec uv run --quiet --no-project python "$here/linkml-scaffold.py" "$@"
-else
-  echo "linkml-scaffold.sh: neither python3 nor uv is on PATH; install uv (docs.astral.sh/uv) and run again" >&2
-  exit 2
+elif usable python; then
+  exec python "$here/linkml-scaffold.py" "$@"
 fi
+echo "linkml-scaffold.sh: needs uv, or python3 3.8 or later; install uv (docs.astral.sh/uv) and run again" >&2
+exit 2

@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed
+
+- **The scaffold runs its Python half through `uv run` first**, then through a `python3` or `python` of 3.8 or later, as KTL's scripts do. An older `python3`, such as RHEL 8's 3.6, no longer stops it at its first line.
+
 ### Removed
 
 - **The upstream layout proposal leaves linkml-sidecar's references.** It is filed as [linkml-project-copier#187](https://github.com/linkml/linkml-project-copier/issues/187), which the assumptions catalogue links instead.
