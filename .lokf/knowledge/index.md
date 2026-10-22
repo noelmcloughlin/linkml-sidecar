@@ -46,7 +46,7 @@ A [LOKF](https://lokf.nolan-nichols.com) knowledge base for linkml-sidecar. Ever
 * [Agent Skills specification](references/agent-skills-specification.md) - The Agent Skills format both skills follow: a folder with a SKILL.md whose frontmatter carries name, description, license and compatibility, checked in CI with gh skill publish --dry-run.
 * [Knowledge Trust Ladder](references/knowledge-trust-ladder.md) - The Knowledge Trust Ladder (KTL), whose bundle is a .lokf/ folder in the host; beside one, the sidecar's schema becomes the bundle's domain schema, and ktl-librarian's domain-schema page is the authority on what lokf validate expects.
 * [Where a LinkML schema lives](references/schema-layouts.md) - The rule both skills apply to find a LinkML schema in any repository: copier answers naming linkml-project-copier, a config.public.mk, or a schema file found by content; where the preflight looks; and how --adopt gives a found schema the toolchain in place.
-* [Schema design for reuse](references/schema-design.md) - linkml-author's page on designing a LinkML schema that others can import and extend, distilled from Damien Goutte-Gattat's draft LinkML guidelines: reuse by import, minor releases that only add, prefixed class names, attributes before slots, mixins, type designators instead of kind enums, no enum inheritance and typed references.
+* [Schema design for reuse](references/schema-design.md) - linkml-author's page on designing a LinkML schema that others can import and extend: which names reach the data, attributes before slots, mixins, prefixed class names, type designators instead of kind enums, typed references, no enum inheritance, and minor releases that only add.
 
 # Policies
 
