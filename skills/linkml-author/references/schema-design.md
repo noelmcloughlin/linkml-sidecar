@@ -79,7 +79,7 @@ A fact the metamodel has no metaslot for, such as the release an element was add
 
 A schema that exists is not a schema in use. Many LinkML schemas are one maintainer's experiment, and a release count says little about users. ai-atlas-nexus's twenty GitHub releases carry no asset, because its schema travels inside its PyPI package. Of the lmodel schemas used as examples here, which exist to try patterns, gist has tags and oscal and slsa have none.
 
-The signal is the people in the schema folder's history. The preflight's `authors` line prints how many have committed to the folder, the names that commit most, and the same count for the repository. Read the names before the count, because one person under two emails counts twice. Ignore the counts on a shallow clone, which the line says it is, and when the line says the history was not weighed. One or two people, and the schema can still change shape. A team's history means every change has to be additive, because the habits and the data of people you cannot ask depend on it.
+The signal is the people in the schema folder's history. The preflight's `authors` line prints how many have committed to the folder and the names that commit most. Read the names before the count, because one person under two emails counts twice. Ignore the counts on a shallow clone, which the line says it is. One or two people, and the schema can still change shape. A team's history means every change has to be additive, because the habits and the data of people you cannot ask depend on it.
 
 A known importer is the second signal: a package that loads the schema, a schema that imports it, a release asset someone fetches. With one, keep to the moves that touch no record, and name the importer in the hand-off.
 

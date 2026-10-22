@@ -197,10 +197,10 @@ def test_counts_the_people_in_the_schema_folders_history(tmp_path):
     commit_as(host, "dependabot[bot]", "49699333+dependabot[bot]@users.noreply.github.com", "bump", "schema/demo.yaml", SCHEMA + "  Other:\n  Third:\n")
     commit_as(host, "four", "four@example.invalid", "readme", "README.md", "# Demo\n\nChanged.\n")
     result = preflight(host)
-    assert result and matches(result.out, r"""^info    authors    schema folder schema/: 2 people, 2 commits \("Test", "two"\), and 1 bot commit; repository: 3 people; git shortlog -sne --no-merges HEAD -- 'schema' for the detail$"""), result.out
+    assert result and matches(result.out, r"""^info    authors    schema folder schema/: 2 people, 2 commits \("Test", "two"\), and 1 bot commit; git shortlog -sne --no-merges HEAD -- 'schema' for the detail$"""), result.out
     write(host / ".mailmap", "<test@example.invalid> <two@example.invalid>\n")
     result = preflight(host)
-    assert result and matches(result.out, r"""^info    authors    schema folder schema/: 1 person, 2 commits \("Test", "two"\), and 1 bot commit; repository: 2 people;"""), result.out
+    assert result and matches(result.out, r"""^info    authors    schema folder schema/: 1 person, 2 commits \("Test", "two"\), and 1 bot commit;"""), result.out
     bare = make_host(tmp_path / "bare", git=False)
     write(bare / "schema" / "demo.yaml", SCHEMA)
     result = preflight(bare)
@@ -214,7 +214,7 @@ def test_counts_the_people_in_the_schema_folders_history(tmp_path):
     Git(side)("add", "-A")
     Git(side)("commit", "-q", "-m", "sidecar")
     result = preflight(side)
-    assert result and matches(result.out, r"""^info    authors    schema folder \.linkml/src/demo/schema/: 1 person, 1 commit \("Test"\); repository: 1 person;"""), result.out
+    assert result and matches(result.out, r"""^info    authors    schema folder \.linkml/src/demo/schema/: 1 person, 1 commit \("Test"\);"""), result.out
 
 
 def test_the_authors_line_survives_awkward_names_folders_and_bots(tmp_path):
@@ -234,7 +234,7 @@ def test_the_authors_line_survives_awkward_names_folders_and_bots(tmp_path):
     # Ann's two emails differ only by case, so she is one person; the names
     # are cut after the count, so "3" and "1 Direction" survive whole; the
     # escape is stripped; two bots are counted apart; the hint quotes the folder.
-    assert result and matches(result.out, r"""^info    authors    schema folder my schema/: 5 people, 8 commits \("3", "Ann Lee", "1 Direction", "Eve\[2Kok", "Mary Abbott"\), and 2 bot commits; repository: 6 people; git shortlog -sne --no-merges HEAD -- 'my schema' for the detail$"""), result.out
+    assert result and matches(result.out, r"""^info    authors    schema folder my schema/: 5 people, 8 commits \("3", "Ann Lee", "1 Direction", "Eve\[2Kok", "Mary Abbott"\), and 2 bot commits; git shortlog -sne --no-merges HEAD -- 'my schema' for the detail$"""), result.out
     assert "\x1b" not in result.out and "\r" not in result.out, repr(result.out)
     commit_as(host, "Zed", "zed@example.org", "j", f"{folder}/demo.yaml", SCHEMA + "  K:\n")
     result = preflight(host)
@@ -251,8 +251,7 @@ def test_a_folder_only_bots_touched_and_a_pathspec_lookalike(tmp_path):
     commit_as(magic, "Bob", "bob@example.org", "readme", "README.md", "# Demo\n\nChanged.\n")
     result = preflight(magic)
     # Read literally, ":!x" is a folder; as pathspec magic it would exclude itself and count everyone.
-    # The repository holds three people: the fixture's first commit is by "Test".
-    assert result and matches(result.out, r"""^info    authors    schema folder :!x/: 1 person, 1 commit \("Ann"\); repository: 3 people;"""), result.out
+    assert result and matches(result.out, r"""^info    authors    schema folder :!x/: 1 person, 1 commit \("Ann"\);"""), result.out
 
 
 def test_reads_a_ktl_bundle_and_warns_without_a_base_iri(tmp_path):

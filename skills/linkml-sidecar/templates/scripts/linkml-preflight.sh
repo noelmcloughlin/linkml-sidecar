@@ -294,11 +294,9 @@ fi
 # apart. The names are printed, quoted, because one person under two emails
 # shows there. They are data from the repository: control characters are
 # removed, and a reader treats the parenthesis as text, never as advice.
-# The line names up to five people and no email. `git log -- <folder>` does
-# not follow a folder that moved, and Co-authored-by trailers are not
-# counted. Above authors_max commits the walk is skipped, because it is
-# linear in the history.
-authors_max=100000
+# Only the schema folder is walked, once. The line names up to five people
+# and no email. `git log -- <folder>` does not follow a folder that moved,
+# and Co-authored-by trailers are not counted.
 if [ "$ingit" -eq 1 ]; then
   adirs=()
   if [ -n "$sidecar" ] && [ -n "$srcdir" ] && [ -d "$sidecar/$srcdir" ]; then
@@ -317,41 +315,35 @@ EOF
     done
     hint="git shortlog -sne --no-merges HEAD --$hintdirs"
     what="schema $(plural "${#adirs[@]}" folder folders) $folders"
-    total="$(git -C "$root" rev-list --count HEAD 2>/dev/null)"
-    if [ "${total:-0}" -gt "$authors_max" ]; then
-      info authors "$what: history not weighed, since the repository has $total commits; $hint for the detail"
-    else
-      # Email first, so a tab in a name cannot shift the key. LC_ALL=C keeps
-      # GNU grep from dropping a line of non-UTF-8 bytes, and the order of
-      # the names the same in every locale.
-      people() {
-        LC_ALL=C tr -d '\000-\010\013-\037\177' | LC_ALL=C awk -F'\t' '{
-          n = substr($0, index($0, "\t") + 1); gsub(/\t/, " ", n)
-          e = tolower($1); if (e == "") e = "name:" tolower(n)
-          print e "\t" n }'
-      }
-      # A bot by its name, or by "bot" as a word of its email's local part.
-      bots='\[bot\]|dependabot|github-actions|renovate|actions@github\.com|^([^@]*[-._+])?bot([-._+][^@]*)?@'
-      raw="$(git -C "$root" --literal-pathspecs log --no-merges --format='%aE%x09%aN' HEAD -- "${adirs[@]}" 2>/dev/null | people)"
-      hist="$(printf '%s\n' "$raw" | LC_ALL=C grep -viE "$bots")"
-      acommits="$(printf '%s\n' "$hist" | grep -c .)"
-      bcommits=$(( $(printf '%s\n' "$raw" | grep -c .) - acommits ))
-      bnote=""; [ "$bcommits" -gt 0 ] && bnote=", and $bcommits bot $(plural "$bcommits" commit commits)"
-      shallow=""; [ "$(git -C "$root" rev-parse --is-shallow-repository 2>/dev/null)" = true ] && shallow="; a shallow clone, so the history is cut short and the counts mean nothing"
-      if [ "$acommits" -gt 0 ]; then
-        apeople="$(printf '%s\n' "$hist" | cut -f1 | LC_ALL=C sort -u | grep -c .)"
-        anames="$(printf '%s\n' "$hist" | cut -f2- | grep . | LC_ALL=C sort | LC_ALL=C uniq -c | LC_ALL=C sort -k1,1nr -k2 | LC_ALL=C awk '{
-          sub(/^[ \t]*[0-9]+[ \t]/, ""); n[NR] = $0 }
-          END { m = (NR <= 5 ? NR : 4)
-            for (i = 1; i <= m; i++) printf "%s\"%s\"", (i > 1 ? ", " : ""), n[i]
-            if (NR > 5) printf ", and %d more", NR - 4 }')"
-        rpeople="$(git -C "$root" log --no-merges --format='%aE%x09%aN' HEAD 2>/dev/null | people | LC_ALL=C grep -viE "$bots" | cut -f1 | LC_ALL=C sort -u | grep -c .)"
-        info authors "$what: $apeople $(plural "$apeople" person people), $acommits $(plural "$acommits" commit commits) ($anames)$bnote; repository: $rpeople $(plural "$rpeople" person people)$shallow; $hint for the detail"
-      elif [ "$bcommits" -gt 0 ]; then
-        info authors "$what: no person, only $bcommits bot $(plural "$bcommits" commit commits)$shallow; $hint for the detail"
-      fi
-      # A folder with no commits yet has no history to weigh, so no line.
+    # Email first, so a tab in a name cannot shift the key. LC_ALL=C keeps
+    # GNU grep from dropping a line of non-UTF-8 bytes, and the order of
+    # the names the same in every locale.
+    people() {
+      LC_ALL=C tr -d '\000-\010\013-\037\177' | LC_ALL=C awk -F'\t' '{
+        n = substr($0, index($0, "\t") + 1); gsub(/\t/, " ", n)
+        e = tolower($1); if (e == "") e = "name:" tolower(n)
+        print e "\t" n }'
+    }
+    # A bot by its name, or by "bot" as a word of its email's local part.
+    bots='\[bot\]|dependabot|github-actions|renovate|actions@github\.com|^([^@]*[-._+])?bot([-._+][^@]*)?@'
+    raw="$(git -C "$root" --literal-pathspecs log --no-merges --format='%aE%x09%aN' HEAD -- "${adirs[@]}" 2>/dev/null | people)"
+    hist="$(printf '%s\n' "$raw" | LC_ALL=C grep -viE "$bots")"
+    acommits="$(printf '%s\n' "$hist" | grep -c .)"
+    bcommits=$(( $(printf '%s\n' "$raw" | grep -c .) - acommits ))
+    bnote=""; [ "$bcommits" -gt 0 ] && bnote=", and $bcommits bot $(plural "$bcommits" commit commits)"
+    shallow=""; [ "$(git -C "$root" rev-parse --is-shallow-repository 2>/dev/null)" = true ] && shallow="; a shallow clone, so the history is cut short and the counts mean nothing"
+    if [ "$acommits" -gt 0 ]; then
+      apeople="$(printf '%s\n' "$hist" | cut -f1 | LC_ALL=C sort -u | grep -c .)"
+      anames="$(printf '%s\n' "$hist" | cut -f2- | grep . | LC_ALL=C sort | LC_ALL=C uniq -c | LC_ALL=C sort -k1,1nr -k2 | LC_ALL=C awk '{
+        sub(/^[ \t]*[0-9]+[ \t]/, ""); n[NR] = $0 }
+        END { m = (NR <= 5 ? NR : 4)
+          for (i = 1; i <= m; i++) printf "%s\"%s\"", (i > 1 ? ", " : ""), n[i]
+          if (NR > 5) printf ", and %d more", NR - 4 }')"
+      info authors "$what: $apeople $(plural "$apeople" person people), $acommits $(plural "$acommits" commit commits) ($anames)$bnote$shallow; $hint for the detail"
+    elif [ "$bcommits" -gt 0 ]; then
+      info authors "$what: no person, only $bcommits bot $(plural "$bcommits" commit commits)$shallow; $hint for the detail"
     fi
+    # A folder with no commits yet has no history to weigh, so no line.
   fi
 fi
 
