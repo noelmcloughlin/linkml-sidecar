@@ -13,6 +13,7 @@ All notable changes to this project are documented here. The format follows [Kee
 - **Tests and a repository contract.** The scaffold, the preflight and the workflow run on throwaway hosts against an offline stand-in for copier; the slow tests run the real template and both gates.
 - **`--adopt` builds the sidecar around a schema the repository already holds.** `config.public.mk` points at the schema's folder, the file is never moved, linked or edited, and no dummy is laid; a schema found outside any project is refused until `--adopt` names it or `--dummy` asks for the example beside it.
 - **The preflight finds the schema by what files say, wherever it sits.** Copier answers naming the template or a `config.public.mk` make a project at the root, one directory down or where the preflight was started; a schema file on its own is found by content; a `tools` line names how lint and the generators run there. linkml-author works in every one of those layouts.
+- **linkml-author designs for reuse.** Attributes before slots, a mixin for shared fields, a type-designated hierarchy instead of a kind enum, typed references instead of described keys, no enum inheritance, prefixed class names and releases that only add, distilled from Damien Goutte-Gattat's draft *LinkML guidelines* into a reference page and the rules table.
 
 ### Changed
 

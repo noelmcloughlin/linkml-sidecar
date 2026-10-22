@@ -9,7 +9,7 @@ compatibility: 'Requires bash; every LinkML tool runs through the host''s own en
 
 Turn a project's LinkML schema into the model its code, data and documents describe, and keep it linted, generated, documented and tested after every change. The schema is one YAML file (or a few modules) and everything else is generated from it, so this skill edits the schema and runs the recipes; it never edits a generated file.
 
-> Sources: linkml.io is the canonical site for the language ([schemas](https://linkml.io/linkml/schemas/), [generators](https://linkml.io/linkml/generators/)). The metamodel detail this page leaves out is in [references/metamodel.md](references/metamodel.md); the pitfalls of particular generators, each stamped with the LinkML version it was seen on, are in [references/generators.md](references/generators.md).
+> Sources: linkml.io is the canonical site for the language ([schemas](https://linkml.io/linkml/schemas/), [generators](https://linkml.io/linkml/generators/)). The metamodel detail this page leaves out is in [references/metamodel.md](references/metamodel.md); the reasons behind the design rules below, for a schema others will import or extend, are in [references/schema-design.md](references/schema-design.md); the pitfalls of particular generators, each stamped with the LinkML version it was seen on, are in [references/generators.md](references/generators.md).
 
 > Model: keep this skill on the calling agent's normal model. Mapping a document to classes and slots is judgement, and a wrong mapping validates fine.
 
@@ -69,10 +69,15 @@ These settle the questions an author meets most, each stated once:
 | --- | --- |
 | The schema header's `description` | `description: >-` on its own line, with the text indented beneath it; `\|-` on one line is invalid YAML |
 | `name` of the schema | the slug, snake_case, the same as the file, the package and `LINKML_SCHEMA_NAME`; `title` carries the human name |
-| Element names | classes and enums `PascalCase`, slots and types `snake_case`, enum values `snake_case`; `linkml-lint`'s `standard_naming` rule enforces this, and a project that wants `UPPER_CASE` values says so in a `.linkmllint.yaml` |
-| Slots or attributes | a slot used by more than one class, or carrying a `slot_uri` identity, is a top-level `slots:` entry; a field only one class owns may be an `attributes:` entry of that class; never both for one name |
+| Element names | classes and enums `PascalCase`, slots and types `snake_case`, enum values `snake_case`; `linkml-lint`'s `standard_naming` rule enforces this, and a project that wants `UPPER_CASE` values says so in a `.linkmllint.yaml`. In a schema meant to be imported, class names carry a schema-specific prefix (`PIDInstOwner`), a mixin ends in `Mixin`, and an enum is singular with no `Enum` suffix |
+| Permissible values | one style throughout; a value that must carry punctuation, start with a digit or differ from another only by case gets a `title` free of them |
+| Slots or attributes | every field starts as an `attributes:` entry of its class; it becomes a top-level `slots:` entry only when a second class needs the same field with the same meaning, or it carries a `slot_uri` identity; fields unrelated classes share go in a mixin; never both forms for one name |
 | `slot_usage` | refines a slot for one class (range, cardinality, description); it never changes the slot's identity |
-| Annotation values | strings by default; a nested YAML value (LinkML 1.6+) only when a comment names the consumer that parses it, since generators ignore annotations |
+| References between classes | `identifier: true` on the target's key and `range: <Class>` on the referring field, never a string key described in prose; where the objects live, `inlined: true` with `inlined_as_list: true` |
+| Variants of one thing | a hierarchy whose base carries a `designates_type: true` field, never one class with a kind enum and fields that apply "only when"; a holder takes one multivalued field of the base class, not a field per kind |
+| Enum inheritance | none: `is_a` and `inherits` are unsettled upstream and the generators do not apply them; repeat the values, or share their `meaning` terms |
+| Versions | `version:` carries the full version; element IRIs carry only the part that breaks compatibility; a minor release only adds, never removes, renames or tightens, and a tightening is a major release |
+| Annotation values | strings by default; a nested YAML value (LinkML 1.6+) only when a comment names the consumer that parses it, since generators ignore annotations; a fact the metamodel has no metaslot for goes in a structured annotation the schema declares as a metamodel extension (`instantiates:`), not in a description |
 | Dublin Core prefix | `dcterms: http://purl.org/dc/terms/` |
 | Identity versus mappings | `class_uri` and `slot_uri` use the schema's own prefix (they render as the element's IRI); an upstream term goes in `exact_mappings` or `close_mappings` |
 | Mappings | never guessed; a term with no sure match stays unmapped, or takes `related_mappings` with a comment |
@@ -83,7 +88,7 @@ These settle the questions an author meets most, each stated once:
 ## Evolving the model
 
 - **Add** a class, slot, enum or type by the patterns in [references/metamodel.md](references/metamodel.md); then the gate.
-- **Change** a range or cardinality only in the direction the existing data allows; a narrowing goes with a counter-example that shows what it now rejects.
+- **Change** a range or cardinality only in the direction the existing data allows; a narrowing is a major-version change and goes with a counter-example that shows what it now rejects.
 - **Rename** by adding the new element, marking the old one deprecated with its replacement, and removing the old one in a later release.
 - **Split** a growing schema into modules under the same folder, imported by the main file (`imports: [./module]`), without redeclaring an imported element.
 - **Update the template** with `just update` on a clean tree, then the gate, then commit `uv.lock` and `.copier-answers.yml` with the diff.

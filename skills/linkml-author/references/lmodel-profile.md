@@ -10,7 +10,7 @@ The [lmodel](https://github.com/lmodel) organisation publishes LinkML renderings
 
 ## Shape
 
-- Two abstract bases, defined once per schema: `NamedEntity` (operational entities: `id`, `name`, `description`, `created_date`, `modified_date`, `version`) and `DocumentedInformation` (`is_a: NamedEntity`; policy, procedure and record artefacts, with `document_type`, `owner`, `approved_by`, `effective_date`, `review_date`, `status`, `classification`, `retention_period` and the like). Every concrete class inherits from one of them.
+- Two abstract bases, defined once per schema: `NamedEntity` (operational entities: `id`, `name`, `description`, `created_date`, `modified_date`, `version`) and `DocumentedInformation` (`is_a: NamedEntity`; policy, procedure and record artefacts, with `document_type`, `owner`, `approved_by`, `effective_date`, `review_date`, `status`, `classification`, `retention_period` and the like). Every concrete class inherits from one of them. The bases and their shared slots are the family's deliberate vocabulary, so the attributes-first rule yields to them: a field the bases carry is their slot; a field of one class is still its attribute.
 - One subset per functional area of the standard, applied with `in_subset` on every class, slot and enum of that area.
 - Annotation values are strings (`mandatory: "true"`, `standard_clause: "6.1"`); a nested annotation names its consumer in a comment.
 
