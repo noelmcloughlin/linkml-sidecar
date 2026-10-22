@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-22
+
 ### Added
 
 - **A Step 5 workflow for Forgejo, as Codeberg runs it.** It runs the same gate on Codeberg's runners and publishes the site under `linkml/` on Codeberg Pages once `LINKML_DOCS_ENABLED` is `true`. The preflight names the one workflow folder Forgejo reads.
