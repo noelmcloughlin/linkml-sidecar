@@ -256,6 +256,23 @@ slots:
 
 The boolean forms, on a class or a slot: `any_of` (at least one holds), `all_of` (every one), `none_of` (none), `exactly_one_of` (exactly one). Reusable sub-patterns go under `settings:` and are used through `structured_pattern` with `interpolated: true`. `defining_slots` on a class makes membership follow from the slots' ranges (an equivalence axiom in OWL).
 
+## Descriptions, comments and notes
+
+`description` is the element's definition (`skos:definition`), and it travels: `gen-json-schema`, `gen-pydantic` and the OpenAPI generators copy it into every schema, model field and UI hint they write, and nothing else from the element goes with it. Keep it to one or two plain sentences that say what the element is, as a form field's hint or an API field's help text would. The rest has a place of its own. `comments` (multivalued, `skos:note`) carries what a user of the schema should know: a caveat, a limit, a usage rule. `notes` (`skos:editorialNote`) carries what its maintainers should know: a decision and why, an open question. `see_also` carries the link, `examples` the sample, and an annotation the clause reference. `gen-doc` renders all of them on the element's page; the JSON Schema and Pydantic generators carry none of them. The rule comes from the KTL Obsidian plugins, whose settings hints showed how a long description renders in a small UI.
+
+```yaml
+slots:
+  retention_period:
+    description: How long a record of this kind is kept, as an ISO 8601 duration.
+    range: string
+    comments:
+      - A period shorter than the legal minimum for the jurisdiction fails review, not validation.
+    notes:
+      - Kept as a string rather than a duration type until the generators agree on one.
+    examples:
+      - value: P7Y
+```
+
 ## Annotations
 
 Annotations are opaque key-value metadata on any element; generators ignore them, and a custom template or a script reads them.

@@ -28,13 +28,13 @@ This page is for the author: it says what becomes what when a specification, a s
 4. Write each field as an attribute of its class; lift it to a top-level slot, once, when a second class needs the same meaning, and refine per class with `slot_usage`.
 5. Write enums with every value described; bind values to public terms with `meaning` only when the match is sure.
 6. Add subsets for the source's own groupings, and `see_also` links to the source's public location.
-7. Paraphrase descriptions. A standard's text is its publisher's; a comment may cite the clause, never reproduce it.
+7. Paraphrase descriptions, in one or two sentences each; a caveat goes in `comments`, a decision in `notes`. A standard's text is its publisher's; an annotation may cite the clause, never reproduce it.
 8. Write one valid example per class that carries data, and one counter-example per constraint that matters.
 9. Run the gate: `lint`, `gen-project`, `test`.
 
 ## The checklist
 
-- Every class has a description, and an `identifier` where instances have identity.
+- Every class has a description of one or two sentences, and an `identifier` where instances have identity.
 - Every slot has a description and a range, and `multivalued`, `required` or `inlined` where the data says so.
 - Every enum value has a description; `meaning` is present where a public term exists and absent where none is sure.
 - `is_a` matches the source's hierarchy; a mixin is used for behaviour shared across branches, not for a second parent.

@@ -68,6 +68,7 @@ These settle the questions an author meets most, each stated once:
 | Question | Rule |
 | --- | --- |
 | The schema header's `description` | `description: >-` on its own line, with the text indented beneath it; `\|-` on one line is invalid YAML |
+| Element descriptions | one or two plain sentences saying what the element is, fit for a form field's hint or an API field's help text, since JSON Schema, Pydantic and OpenAPI copy the description and nothing else; a caveat for users goes in `comments`, a decision or an open question in `notes`, a clause reference in an annotation |
 | `name` of the schema | the slug, snake_case, the same as the file, the package and `LINKML_SCHEMA_NAME`; `title` carries the human name |
 | Element names | classes and enums `PascalCase`, slots and types `snake_case`, enum values `snake_case`; `linkml-lint`'s `standard_naming` rule enforces this, and a project that wants `UPPER_CASE` values says so in a `.linkmllint.yaml`. In a schema meant to be imported, class names carry a schema-specific prefix (`PIDInstOwner`), a mixin ends in `Mixin`, and an enum is singular with no `Enum` suffix |
 | Permissible values | one style throughout; a value that must carry punctuation, start with a digit or differ from another only by case gets a `title` free of them |
