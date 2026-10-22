@@ -181,9 +181,8 @@ if (( words <= 1000 )); then ok "CONTRIBUTING.md is $words words (budget 1000)";
 
 # 8. The one template pin. The scaffold driver holds LINKML_TEMPLATE_REF and
 #    LINKML_TEMPLATE_SHA; every mention of a linkml-project-copier version
-#    under skills/ and docs/, in README.md and CONTRIBUTING.md, and in
-#    CHANGELOG.md's [Unreleased] names the same tag, and the catalogue's
-#    heading is for that version.
+#    under skills/ and docs/, and in README.md and CONTRIBUTING.md, names
+#    the same tag, and the catalogue's heading is for that version.
 say ""
 say "Checking the template pin..."
 pin="$(grep -oE 'LINKML_TEMPLATE_REF:=v[0-9]+\.[0-9]+\.[0-9]+' "$scaffold" | head -1 | sed 's/.*:=//')"
