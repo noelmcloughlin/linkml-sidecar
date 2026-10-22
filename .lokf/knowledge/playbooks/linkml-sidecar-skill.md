@@ -48,7 +48,7 @@ A `.linkml/.copier-answers.yml` means a sidecar exists, so use linkml-author ins
 
 ## What it needs
 
-The `compatibility` field asks for bash (Git for Windows on Windows) and `uv`, which runs copier, just and the project's own Python. The scaffold needs one network run to github.com and pypi.org, and the project needs Python 3.10 or later. Any forge works, or none; the Step 5 workflow is GitHub Actions.
+The `compatibility` field asks for bash (Git for Windows on Windows) and `uv`, which runs copier, just and the project's own Python. The scaffold needs one network run to github.com and pypi.org, and the project needs Python 3.10 or later. Any forge works, or none. The Step 5 workflow is GitHub Actions.
 
 ## How it runs
 
@@ -58,6 +58,6 @@ The `compatibility` field asks for bash (Git for Windows on Windows) and `uv`, w
 4. Step 5 optionally installs one workflow at `.github/workflows/linkml-sidecar.yaml`.
 5. Step 6 hands off to linkml-author, naming every guessed value, `SCHEMA_ID` above all.
 
-The skill never runs `just setup`, which runs `git init` and commits, or `just deploy`, which pushes the host's `gh-pages` branch root. It never edits a template-owned file by hand; `just update` changes those.
+The skill never runs `just setup`, which runs `git init` and commits, or `just deploy`, which pushes the host's `gh-pages` branch root. It never edits a template-owned file by hand. `just update` changes those.
 
 The procedure stays in `skills/linkml-sidecar/SKILL.md`.

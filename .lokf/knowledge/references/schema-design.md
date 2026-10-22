@@ -27,7 +27,7 @@ status: draft
 ## What it recommends
 
 - Import a schema rather than copy its classes. Every name in the import closure shares one flat namespace, so names are chosen with that in mind.
-- In a minor release, only add. Never remove, rename or tighten anything; a change that breaks data is a major release.
+- In a minor release, only add. Never remove, rename or tighten anything. A change that breaks data is a major release.
 - In a schema meant to be imported, give class names a schema-specific prefix, end a mixin's name in `Mixin`, and name an enum in the singular with no `Enum` suffix.
 - Start every class with attributes, and lift a field to a top-level slot only when a second class needs the same field with the same meaning.
 - Put fields that unrelated classes share in a mixin.

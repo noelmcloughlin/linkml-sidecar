@@ -2,6 +2,7 @@
 
 ## 2026-10-22
 
+* **Prose**: reworded 3 concept bodies in plain English. No fact, link, number or frontmatter changed.
 * **Changed**: the linkml-author skill finds a schema by what files say in any repository, runs tools through the host's justfile, Makefile or environment, and follows the new design rules.
 * **Changed**: the linkml-sidecar skill now covers three cases, adopts a schema the host already holds, and installs around configuration files in .linkml/.
 * **Changed**: the preflight finds a schema project or schema file by what files say, in any layout, and names how the tools run on it.
