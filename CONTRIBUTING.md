@@ -39,7 +39,7 @@ The slow tests run the real template: clone the pinned tag into `.template-cache
 
 ## Editing scope
 
-This repository packages and distributes the two skills. A change to what an agent should *do*, such as a different scaffold step or a new rule in linkml-author, needs its *why* in the pull request. It keeps the boundary: linkml-sidecar installs and repairs, linkml-author authors, and neither edits a generated file or a template-owned one.
+This repository packages and distributes the two skills. A change to what an agent should *do*, such as a different scaffold step or a new rule in linkml-author, needs its *why* in the pull request. Every change keeps the boundary: linkml-sidecar installs and repairs, linkml-author authors, and neither edits a generated file or a template-owned one.
 
 ## Code of conduct
 

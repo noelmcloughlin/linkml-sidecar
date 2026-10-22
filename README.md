@@ -14,7 +14,7 @@ A repository that *is* a schema project, such as [lmodel/gist](https://github.co
 
 A domain codebase whose maintainers do not want a schema project in their root folder gets the sidecar.
 
-A repository that holds a LinkML schema but no project, which is most of them, gets the sidecar around that schema (`--adopt`). It gains the pinned lock, the recipes, the tests, the workflow and the docs site, and the schema stays untouched where it lies. linkml-author works on the schema either way. Both skills find the schema by what files say, never by the folder's name. [layouts.md](skills/linkml-sidecar/references/layouts.md) states the rule.
+A repository that holds a LinkML schema but no project gets the sidecar around that schema (`--adopt`). It gains the pinned lock, the recipes, the tests, the workflow and the docs site, and the schema is neither moved nor changed. Both skills find the schema by its files (copier answers, a `config.public.mk`, or a YAML file that imports `linkml:types`), never by the folder's name, as [layouts.md](skills/linkml-sidecar/references/layouts.md) sets out.
 
 ## Install
 

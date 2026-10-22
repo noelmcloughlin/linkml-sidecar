@@ -38,6 +38,6 @@ This page is for the author: it says what becomes what when a specification, a s
 - Every slot has a description and a range, and `multivalued`, `required` or `inlined` where the data says so.
 - Every enum value has a description; `meaning` is present where a public term exists and absent where none is sure.
 - `is_a` matches the source's hierarchy; a mixin is used for behaviour shared across branches, not for a second parent.
-- A reference to another class is typed by its range, not a string; where the objects live, `inlined: true` and `inlined_as_list: true` are explicit.
+- A reference to another class is typed by its range, not a string; where the referenced objects are nested inside the referring one, `inlined: true` and `inlined_as_list: true` are explicit.
 - `class_uri` and `slot_uri` use the schema's own prefix; upstream identifiers are in `exact_mappings`.
 - No generated file was edited; `docs/index.md` says what the model covers.
