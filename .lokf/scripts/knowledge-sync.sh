@@ -490,7 +490,9 @@ main() {
     website=1
     while IFS= read -r tpath; do
       rel="${tpath#"$website_templates/website/"}"
-      if [[ ! "$rel" =~ ^[A-Za-z0-9._/@+-]+$ || "/$rel/" =~ /\.[Gg][Ii][Tt]/ || "/$rel/" == */../* ]]; then
+      # The same plain set as --apply's, brackets and all: Astro names a
+      # route with them, as in src/pages/og/[...route].ts.
+      if [[ ! "$rel" =~ $plain_path ||"/$rel/" =~ /\.[Gg][Ii][Tt]/ || "/$rel/" == */../* ]]; then
         die "$tag's website templates hold a path a host may not carry: $rel"
       fi
       skip=0; for o in "${website_owned[@]}"; do [[ "$rel" == "$o" ]] && skip=1; done

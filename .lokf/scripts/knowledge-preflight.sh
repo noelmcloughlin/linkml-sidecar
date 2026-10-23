@@ -24,6 +24,9 @@ info() { line info "$1" "$2"; }
 warn() { line warn "$1" "$2"; warns=$((warns + 1)); }
 miss() { line missing "$1" "$2"; missing=$((missing + 1)); [ -n "${3:-}" ] && disables="${disables}${disables:+; }$3"; }
 have() { command -v "$1" >/dev/null 2>&1; }
+# The host of a URL, without its scheme, user, password, port and path. An
+# index URL may carry a password, so a URL is only ever printed this way.
+hostof() { printf '%s\n' "$1" | sed -e 's#^[A-Za-z][A-Za-z0-9+.-]*://##' -e 's#^[^/@]*@##' -e 's#[/:?].*$##'; }
 
 # ---- root ------------------------------------------------------------------
 root="${1:-}"
@@ -205,6 +208,29 @@ else
 fi
 
 # ---- toolkit ---------------------------------------------------------------
+# The index uv installs from: UV_DEFAULT_INDEX (a URL, or name=URL), the
+# older UV_INDEX_URL, else the default index of a user or system uv.toml,
+# else PyPI. The lock and network lines name its host.
+index="${UV_DEFAULT_INDEX:-${UV_INDEX_URL:-}}"
+case "$index" in *=http*) index="${index#*=}" ;; esac
+if [ -z "$index" ]; then
+  for f in "${XDG_CONFIG_HOME:-${HOME:-}/.config}/uv/uv.toml" /etc/uv/uv.toml; do
+    [ -f "$f" ] || continue
+    # An [[index]] table with `default = true` names the default index; a
+    # top-level index-url is the older spelling of the same.
+    index="$(awk '
+      function flush() { if (inidx && dflt && url != "") found = url }
+      /^[[:space:]]*\[\[index\]\]/ { flush(); inidx = 1; url = ""; dflt = 0; next }
+      /^[[:space:]]*\[/ { flush(); inidx = 0; next }
+      inidx && /^[[:space:]]*url[[:space:]]*=/ { url = $0; sub(/^[^"]*"/, "", url); sub(/".*$/, "", url) }
+      inidx && /^[[:space:]]*default[[:space:]]*=[[:space:]]*true/ { dflt = 1 }
+      !inidx && /^[[:space:]]*index-url[[:space:]]*=/ { top = $0; sub(/^[^"]*"/, "", top); sub(/".*$/, "", top) }
+      END { flush(); if (found != "") print found; else if (top != "") print top }' "$f")"
+    [ -n "$index" ] && break
+  done
+fi
+index="${index:-https://pypi.org/simple}"
+ihost="$(hostof "$index")"
 if have uv; then
   floor="$(sed -n 's/.*"lokf\[build\]>=\([0-9.]*\)".*/\1/p' "$root/.lokf/pyproject.toml" 2>/dev/null | head -n 1)"
   if [ -d "$root/.lokf/.venv" ]; then
@@ -225,6 +251,15 @@ fi
 if [ "$ingit" = 1 ] && [ "$tracked" = tracked ] && [ -f "$root/.lokf/pyproject.toml" ] && [ -f "$root/.github/workflows/knowledge-registrar.yaml" ] \
    && [ -z "$(git -C "$root" ls-files .lokf/uv.lock 2>/dev/null | head -n 1)" ]; then
   warn toolkit ".lokf/uv.lock is not in git - the gate installs the toolkit with uv sync --locked and fails without it; run uv lock in .lokf/ and commit the file"
+fi
+# A lock records the index it was made against, and every file's address
+# there. Where uv reads another index, uv sync --locked fails on it, and
+# uv sync rewrites every address to the index uv reads.
+if [ -f "$root/.lokf/uv.lock" ]; then
+  lhost="$(hostof "$(sed -n 's/.*registry = "\([^"]*\)".*/\1/p' "$root/.lokf/uv.lock" | sort | uniq -c | sort -rn | head -n 1 | sed 's/^ *[0-9]* *//')")"
+  if [ -n "$lhost" ] && [ "$lhost" != "$ihost" ]; then
+    warn lock ".lokf/uv.lock was made against $lhost, and uv here reads $ihost - uv sync in .lokf/ rewrites it to $ihost; commit that only where the gate's runner reads $ihost too"
+  fi
 fi
 
 # ---- installed skills, and drift between copies -----------------------------
@@ -354,7 +389,7 @@ else
   info session "attended${agent:+ ($agent)}: a person can answer item by item"
 fi
 if have curl; then
-  if curl -sI --max-time 4 https://pypi.org/simple/lokf/ >/dev/null 2>&1; then info network "pypi.org reachable"; else warn network "pypi.org unreachable - version checks and skill installs will fail here"; fi
+  if curl -sI --max-time 4 "${index%/}/lokf/" >/dev/null 2>&1; then info network "$ihost reachable"; else warn network "$ihost unreachable - uv cannot install the toolkit here, and version checks fail"; fi
 else
   warn network "curl not installed - the signing-key identity route and the version check need it"
 fi
