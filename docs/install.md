@@ -11,7 +11,7 @@ Install both skills for your user, then ask your agent to set up a LinkML sideca
 This route needs [`gh skill`](https://cli.github.com/manual/gh_skill_install) version 2.90.0 or later. It defaults to GitHub Copilot, so pass `--agent` to name yours (`claude-code`, `github-copilot`, `cursor`, `codex`, `gemini-cli`, or another from `gh skill install --help`):
 
 ```bash
-gh skill install noelmcloughlin/linkml-sidecar --all --scope user --agent claude-code
+gh skill install noelmcloughlin/linkml-sidecar --all --scope user
 ```
 
 This is the route for a work machine: it needs github.com but no npm registry.
