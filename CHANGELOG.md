@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+
+- **linkml-author names the adapt route beside a KTL bundle.** A schema published on its own stays as it is, and the copy `lokf adapt` writes is the domain schema; the preflight's `lokf` line says when the justfile names such a copy.
+
 ## [0.3.0] - 2026-10-22
 
 ### Added
