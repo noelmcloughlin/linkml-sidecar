@@ -1,6 +1,6 @@
 ---
 type: Playbook
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/linkml-sidecar-skill
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/playbooks/linkml-sidecar-skill
 title: linkml-sidecar skill
 description: "The installer skill: it runs once to put a hidden .linkml/ LinkML schema project from linkml-project-copier into a host repository, around a dummy schema or around a schema the host already holds (--adopt), without touching the host's build, repairs one file it owns, and hands off to linkml-author."
 genre: how-to
@@ -11,17 +11,17 @@ tags:
   - copier
   - scaffold
 dependsOn:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/services/linkml-scaffold
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/services/linkml-preflight
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/linkml-project-copier
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/services/linkml-scaffold
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/services/linkml-preflight
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/references/linkml-project-copier
 references:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/linkml-author-skill
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/services/linkml-sidecar-workflow
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/template-assumptions
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/explanation/ktl-mode
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/schema-layouts
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/playbooks/linkml-author-skill
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/services/linkml-sidecar-workflow
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/references/template-assumptions
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/explanation/ktl-mode
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/references/schema-layouts
 definedBy:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/agent-skills-specification
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/references/agent-skills-specification
 sources:
   - resource: skills/linkml-sidecar/SKILL.md
 generated:

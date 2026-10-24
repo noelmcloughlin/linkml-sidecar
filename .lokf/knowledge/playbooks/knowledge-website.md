@@ -1,6 +1,6 @@
 ---
 type: Playbook
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/knowledge-website
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/playbooks/knowledge-website
 title: Knowledge website
 description: "How the website in website/ is built, previewed and published: an Astro Starlight site with a page per concept and its trust label, the lokf export files under knowledge/, and the README as its home page, deployed to GitHub Pages by knowledge-website.yaml once KNOWLEDGE_WEBSITE_ENABLED is true."
 genre: how-to
@@ -11,7 +11,7 @@ tags:
   - astro
   - KNOWLEDGE_WEBSITE_ENABLED
 references:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/knowledge-trust-ladder
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/references/knowledge-trust-ladder
 sources:
   - resource: website/README.md
   - resource: website/site.config.mjs
@@ -25,7 +25,7 @@ status: draft
 
 # Overview
 
-The folder `website/` builds the site that the Knowledge website workflow publishes to GitHub Pages at `https://noelmcloughlin.github.io/linkml-sidecar/`. Every page comes from a file the repository already holds, so a change to the site is a change to that file.
+The folder `website/` builds the site that the Knowledge website workflow publishes to GitHub Pages, at `https://w3id.org/ktl/linkml-sidecar/`. Every page comes from a file the repository already holds, so a change to the site is a change to that file.
 
 - Each concept in `.lokf/knowledge/` becomes a page under `knowledge/`, with its trust label from `knowledge-report.sh`, its sources and its typed relations both ways.
 - The four files `lokf export` writes are served under `knowledge/`, beside each concept's own Markdown file and its JSON-LD. The bundle log is served as an Atom feed, `knowledge/log.xml`.

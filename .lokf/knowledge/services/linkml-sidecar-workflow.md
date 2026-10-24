@@ -1,6 +1,6 @@
 ---
 type: Service
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/services/linkml-sidecar-workflow
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/services/linkml-sidecar-workflow
 title: linkml-sidecar workflow
 description: The workflow the sidecar installs in Step 5. On GitHub, templates/github/linkml-sidecar.yaml at .github/workflows/linkml-sidecar.yaml lints and tests in .linkml/ from the locked environment, builds the docs site on the default branch, and publishes it under the linkml/ subpath of gh-pages only while LINKML_DOCS_ENABLED is true. On Forgejo and Codeberg, templates/forgejo/linkml-sidecar.yaml runs the same gate and publishes to Codeberg Pages.
 resource: skills/linkml-sidecar/templates/github/linkml-sidecar.yaml
@@ -12,9 +12,9 @@ tags:
   - gh-pages
   - LINKML_DOCS_ENABLED
 isPartOf:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/linkml-sidecar-skill
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/playbooks/linkml-sidecar-skill
 references:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/template-assumptions
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/references/template-assumptions
 sources:
   - resource: skills/linkml-sidecar/templates/github/linkml-sidecar.yaml
   - resource: skills/linkml-sidecar/templates/forgejo/linkml-sidecar.yaml

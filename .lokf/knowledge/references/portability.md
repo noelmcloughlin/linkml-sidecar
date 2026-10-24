@@ -1,6 +1,6 @@
 ---
 type: Document
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/portability
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/references/portability
 title: Portability
 description: "Which hosts the linkml sidecar works on and what each one loses: macOS, RHEL 8 and 9, WSL2, Windows with Git for Windows or PowerShell, a company proxy, TLS certificates or package mirror, Codeberg and Forgejo, GitLab, no forge, no git, and the template from a company copy instead of github.com."
 genre: reference
@@ -16,11 +16,11 @@ tags:
   - package mirror
   - certificates
 references:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/services/linkml-preflight
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/services/linkml-sidecar-workflow
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/linkml-project-copier
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/services/linkml-preflight
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/services/linkml-sidecar-workflow
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/references/linkml-project-copier
 isPartOf:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/linkml-sidecar-skill
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/playbooks/linkml-sidecar-skill
 generated:
   by: process:ktl-librarian
   at: "2026-10-22T18:19:05Z"

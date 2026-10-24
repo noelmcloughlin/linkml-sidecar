@@ -1,6 +1,6 @@
 ---
 type: Policy
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/policies/code-of-conduct
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/policies/code-of-conduct
 title: Code of conduct
 description: The Contributor Covenant code of conduct that covers participation in this repository.
 resource: CODE_OF_CONDUCT.md

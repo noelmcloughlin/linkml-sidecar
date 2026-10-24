@@ -1,6 +1,6 @@
 ---
 type: Playbook
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/knowledge-sources
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/playbooks/knowledge-sources
 title: Knowledge sources
 description: Map of the repository locations this bundle was derived from, the classes each yields, the files left out on purpose, and how to re-check each on a future refresh.
 genre: how-to

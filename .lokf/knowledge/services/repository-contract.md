@@ -1,6 +1,6 @@
 ---
 type: Service
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/services/repository-contract
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/services/repository-contract
 title: Repository contract
 description: "scripts/validate-repository.sh and the validate.yml workflow: the checks every pull request runs on this repository, covering skill shape, links, word budgets, the one template pin, shared action pins, prerequisites rows, the changelog, invisible characters, plus pytest, ShellCheck, actionlint, markdownlint, lychee, codespell and the install smoke test."
 resource: scripts/validate-repository.sh
@@ -9,8 +9,8 @@ tags:
   - validate
   - contract
 references:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/glossary/template-pin
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/services/linkml-sidecar-workflow
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/glossary/template-pin
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/services/linkml-sidecar-workflow
 sources:
   - resource: scripts/validate-repository.sh
   - resource: .github/workflows/validate.yml

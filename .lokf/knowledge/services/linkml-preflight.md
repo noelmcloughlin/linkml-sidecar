@@ -1,6 +1,6 @@
 ---
 type: Service
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/services/linkml-preflight
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/services/linkml-preflight
 title: linkml-preflight.sh
 description: "The read-only preflight both skills run first: one screen of ok, warn, missing and info lines about the host's shell, git, forge, uv, copier, just and network, where a LinkML schema project or schema file sits, how to run the tools on it and how many people have committed to it, a .lokf/ bundle and Pages, ending in a summary line of what is missing and which steps that disables."
 resource: skills/linkml-sidecar/templates/scripts/linkml-preflight.sh
@@ -8,7 +8,7 @@ tags:
   - preflight
   - prerequisites
 isPartOf:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/linkml-sidecar-skill
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/playbooks/linkml-sidecar-skill
 sources:
   - resource: skills/linkml-sidecar/templates/scripts/linkml-preflight.sh
   - resource: skills/linkml-sidecar/references/prerequisites.md

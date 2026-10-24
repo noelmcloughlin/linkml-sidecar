@@ -1,6 +1,6 @@
 ---
 type: Reference
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/knowledge-trust-ladder
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/references/knowledge-trust-ladder
 title: Knowledge Trust Ladder
 description: The Knowledge Trust Ladder (KTL), whose bundle is a .lokf/ folder in the host; beside one, the sidecar's schema becomes the bundle's domain schema, and ktl-librarian's domain-schema page is the authority on what lokf validate expects.
 genre: reference

@@ -1,6 +1,6 @@
 ---
 type: Playbook
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/installing-the-skills
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/playbooks/installing-the-skills
 title: Installing the skills
 description: How to install linkml-sidecar and linkml-author with gh skill, npx skills, the Claude Code plugin or a copy of the repository, for your user or a team, pinned to one tag, and how to turn on the workflow and run the preflight and scaffold without an agent.
 genre: how-to
@@ -12,10 +12,10 @@ tags:
   - claude plugin
   - pin
 references:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/linkml-sidecar-skill
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/linkml-author-skill
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/services/linkml-scaffold
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/services/linkml-preflight
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/playbooks/linkml-sidecar-skill
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/playbooks/linkml-author-skill
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/services/linkml-scaffold
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/services/linkml-preflight
 sources:
   - resource: docs/install.md
   - resource: .claude-plugin/plugin.json

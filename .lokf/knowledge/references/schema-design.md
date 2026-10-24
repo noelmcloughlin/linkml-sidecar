@@ -1,6 +1,6 @@
 ---
 type: Document
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/schema-design
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/references/schema-design
 title: Schema design for reuse
 description: "linkml-author's page on designing a LinkML schema that others can import and extend: which names reach the data and how a name defined twice across imports is caught (by the gate's gen-project, not by lint), attributes before slots with fundamental names kept as attributes, mixins, prefixed class names, a core plus modules as the shape importers can take a slice of, type designators instead of kind enums, typed references, no enum inheritance, minor releases that only add, and when a schema that exists can still be refactored."
 genre: reference
@@ -11,7 +11,7 @@ tags:
   - extensibility
   - versioning
 references:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/linkml-author-skill
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/playbooks/linkml-author-skill
 sources:
   - resource: skills/linkml-author/references/schema-design.md
 generated:

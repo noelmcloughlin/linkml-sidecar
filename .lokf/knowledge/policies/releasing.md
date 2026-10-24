@@ -1,6 +1,6 @@
 ---
 type: Policy
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/policies/releasing
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/policies/releasing
 title: Releasing
 description: "How a release is cut: semantic-release.yml waits for a reviewer of the release environment and then promotes Unreleased in CHANGELOG.md to the next version, a maintainer runs publish.yml by hand with that version, gh skill publish creates the tag and the release for both skills, installers read the tag, and the plugin marketplace reads main."
 resource: CONTRIBUTING.md

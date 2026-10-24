@@ -1,6 +1,6 @@
 ---
 type: Reference
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/agent-skills-specification
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/references/agent-skills-specification
 title: Agent Skills specification
 description: "The Agent Skills format both skills follow: a folder with a SKILL.md whose frontmatter carries name, description, license and compatibility, checked in CI with gh skill publish --dry-run."
 genre: reference

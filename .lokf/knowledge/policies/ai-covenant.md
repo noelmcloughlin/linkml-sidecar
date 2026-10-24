@@ -1,6 +1,6 @@
 ---
 type: Policy
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/policies/ai-covenant
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/policies/ai-covenant
 title: AI covenant
 description: "Community norms for AI use: contributors own what they submit whatever tools helped, AI review comments are suggestions, AI systems must not post comments or replies in issues, discussions, chat or mail, and AI co-authorship in commit messages is discouraged."
 resource: AI_COVENANT.md

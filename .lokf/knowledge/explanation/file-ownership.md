@@ -1,6 +1,6 @@
 ---
 type: Explanation
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/explanation/file-ownership
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/explanation/file-ownership
 title: Who owns which file
 description: Who owns each file in a .linkml/ sidecar (the template, the host or the skill) and how each changes, which template recipes never run, and how just update keeps a sidecar current.
 genre: explanation
@@ -15,11 +15,11 @@ tags:
   - just deploy
   - repair
 about:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/glossary/sidecar
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/glossary/sidecar
 references:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/template-assumptions
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/glossary/template-pin
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/explanation/two-patterns
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/references/template-assumptions
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/glossary/template-pin
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/explanation/two-patterns
 generated:
   by: process:ktl-librarian
   at: "2026-10-22T18:19:05Z"

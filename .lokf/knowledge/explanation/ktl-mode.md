@@ -1,6 +1,6 @@
 ---
 type: Explanation
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/explanation/ktl-mode
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/explanation/ktl-mode
 title: KTL mode
 description: "What changes when the host carries a .lokf/ Knowledge Trust Ladder bundle: the sidecar's dummy schema becomes the bundle's domain schema, and the scaffold pins .lokf/lokf.yaml, writes an ExampleConcept dummy, excuses LOKF's camelCase slots in the linter and names the schema in .lokf/justfile; an adopted schema is not made the domain schema."
 genre: explanation
@@ -11,10 +11,10 @@ tags:
   - domain schema
   - lokf validate
 about:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/glossary/domain-schema
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/glossary/domain-schema
 references:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/knowledge-trust-ladder
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/linkml-author-skill
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/references/knowledge-trust-ladder
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/playbooks/linkml-author-skill
 sources:
   - resource: skills/linkml-sidecar/references/ktl.md
   - resource: skills/linkml-author/references/ktl-domain-schema.md
