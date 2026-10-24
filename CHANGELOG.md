@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Changed
+
+- **The project's persistent identifier is `https://w3id.org/ktl/linkml-sidecar/`.** The README, the plugin's homepage and the website's README link through it. No skill change.
+
 ## [0.3.1] - 2026-10-23
 
 ### Security
