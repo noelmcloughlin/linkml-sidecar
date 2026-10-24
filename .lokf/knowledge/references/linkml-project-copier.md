@@ -1,6 +1,6 @@
 ---
 type: Reference
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/linkml-project-copier
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/references/linkml-project-copier
 title: linkml-project-copier
 description: The upstream copier template (MIT) that every sidecar is made from, pinned at tag v0.5.0 and verified against the commit the scaffold driver records before it runs with --trust.
 genre: reference
@@ -10,7 +10,7 @@ tags:
   - template
   - upstream
 references:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/glossary/template-pin
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/glossary/template-pin
 sources:
   - resource: skills/linkml-sidecar/SKILL.md
   - resource: skills/linkml-sidecar/scripts/linkml-scaffold.sh

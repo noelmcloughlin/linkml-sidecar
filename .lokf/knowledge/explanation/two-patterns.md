@@ -1,6 +1,6 @@
 ---
 type: Explanation
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/explanation/two-patterns
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/explanation/two-patterns
 title: Three cases, one skill
 description: "Why there are three ways to give a repository a LinkML schema: a schema project runs copier at its root and needs no sidecar, a codebase whose maintainers do not want a schema project in their root folder gets the hidden .linkml/ sidecar around a dummy schema, and a repository holding a schema but no project gets the sidecar around that schema (--adopt)."
 genre: explanation
@@ -10,10 +10,10 @@ tags:
   - copier at the root
   - adopt
 about:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/glossary/sidecar
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/glossary/sidecar
 references:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/linkml-sidecar-skill
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/template-assumptions
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/playbooks/linkml-sidecar-skill
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/references/template-assumptions
 sources:
   - resource: docs/architecture.md
   - resource: skills/linkml-sidecar/SKILL.md

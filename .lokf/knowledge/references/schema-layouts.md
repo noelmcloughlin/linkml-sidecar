@@ -1,6 +1,6 @@
 ---
 type: Document
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/schema-layouts
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/references/schema-layouts
 title: Where a LinkML schema lives
 description: "The rule both skills apply to find a LinkML schema in any repository: copier answers naming linkml-project-copier, a config.public.mk, or a schema file found by content; where the preflight looks; and how --adopt gives a found schema the toolchain in place."
 genre: reference
@@ -11,10 +11,10 @@ tags:
   - adopt
   - config.public.mk
 references:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/services/linkml-preflight
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/services/linkml-scaffold
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/linkml-author-skill
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/linkml-sidecar-skill
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/services/linkml-preflight
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/services/linkml-scaffold
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/playbooks/linkml-author-skill
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/playbooks/linkml-sidecar-skill
 sources:
   - resource: skills/linkml-sidecar/references/layouts.md
 generated:

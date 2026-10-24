@@ -1,6 +1,6 @@
 ---
 type: GlossaryTerm
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/glossary/sidecar
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/glossary/sidecar
 title: Sidecar
 description: A hidden folder, .linkml/, that holds a complete schema project beside a host's own code, around a dummy schema or a schema the host already holds, with nothing in the host's build depending on it.
 definition: A hidden .linkml/ folder holding a complete, pinned linkml-project-copier project inside a host repository, with one visible doorway, one workflow and a README that says how to remove it, and nothing in the host's build depending on it.

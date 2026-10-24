@@ -1,6 +1,6 @@
 ---
 type: GlossaryTerm
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/glossary/doorway
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/glossary/doorway
 title: Doorway
 description: The linkml_schema link at the host's root that shows the hidden sidecar's schema folder under an ordinary, visible name.
 definition: A relative symbolic link, linkml_schema, from the host's root to .linkml/src/<slug>/schema, so a person can open the schema folder where Finder and folder pickers hide dot-directories.

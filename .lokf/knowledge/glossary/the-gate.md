@@ -1,6 +1,6 @@
 ---
 type: GlossaryTerm
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/glossary/the-gate
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/glossary/the-gate
 title: The gate
 description: "linkml-author's check after every schema edit: lint, then gen-project, then test, through the project's justfile or Makefile, or the three LinkML tools directly for a schema with no project, with lokf validate after it beside a KTL bundle that names the schema."
 definition: "The three recipes linkml-author runs after every schema edit, in order: lint, gen-project and test."

@@ -1,6 +1,6 @@
 ---
 type: Reference
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/linkml
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/references/linkml
 title: LinkML
 description: LinkML, the modelling language the sidecar's schema is written in; linkml.io is the canonical site for what it means, its schemas and its generators (JSON Schema, Pydantic, OWL, SHACL, TypeScript, docs).
 genre: reference

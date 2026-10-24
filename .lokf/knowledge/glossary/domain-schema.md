@@ -1,6 +1,6 @@
 ---
 type: GlossaryTerm
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/glossary/domain-schema
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/glossary/domain-schema
 title: Domain schema
 description: A LinkML schema that imports LOKF's core schema so its is_a Concept classes become types a .lokf/ bundle's concepts may carry, checked by lokf validate --schema; a schema is one only when .lokf/justfile names it or it imports lokf.yaml, as the sidecar's dummy does in KTL mode.
 definition: A LinkML schema importing LOKF's core schema, whose classes that are is_a Concept the bundle's concepts may name in type, checked by lokf validate --schema.

@@ -1,6 +1,6 @@
 ---
 type: Document
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/publishing
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/references/publishing
 title: Publishing a schema others can import
 description: "linkml-author's page on how a schema reaches an importer: two addresses under its id (every module at schema/module.yaml and one merged file with no imports), a tagged release with a checksummed asset, a vendored copy at a tag or an import by persistent identifier and never by a code-host URL, the importmap and the order an import resolves in, and lokf's adapt for a vocabulary that shares names with yours."
 genre: reference
@@ -11,9 +11,9 @@ tags:
   - distribution
   - importmap
 references:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/linkml-author-skill
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/playbooks/linkml-author-skill
 relatedTo:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/schema-design
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/references/schema-design
 sources:
   - resource: skills/linkml-author/references/publishing.md
 generated:

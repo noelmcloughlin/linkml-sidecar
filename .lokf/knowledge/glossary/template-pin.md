@@ -1,6 +1,6 @@
 ---
 type: GlossaryTerm
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/glossary/template-pin
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/glossary/template-pin
 title: Template pin
 description: "The one place the linkml-project-copier version is fixed: LINKML_TEMPLATE_REF and LINKML_TEMPLATE_SHA in the scaffold driver, a tag verified against its commit before copier runs with --trust."
 definition: The tag and commit of linkml-project-copier the sidecar is made from, held as LINKML_TEMPLATE_REF and LINKML_TEMPLATE_SHA in skills/linkml-sidecar/scripts/linkml-scaffold.sh and recorded in .copier-answers.yml as _commit.

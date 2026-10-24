@@ -1,6 +1,6 @@
 ---
 type: Playbook
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/linkml-author-skill
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/playbooks/linkml-author-skill
 title: linkml-author skill
 description: "The authoring skill: it adds, changes or deprecates LinkML classes, slots, enums and types, replaces the dummy schema with the host's real model, and runs lint, gen-project and test after every change, in any repository that holds a schema: the .linkml/ sidecar, a copier or cookiecutter project wherever it sits, or a schema file on its own."
 genre: how-to
@@ -10,17 +10,17 @@ tags:
   - schema authoring
   - data model
 dependsOn:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/services/linkml-preflight
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/linkml
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/services/linkml-preflight
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/references/linkml
 references:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/linkml-sidecar-skill
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/glossary/the-gate
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/explanation/ktl-mode
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/schema-layouts
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/schema-design
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/publishing
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/playbooks/linkml-sidecar-skill
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/glossary/the-gate
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/explanation/ktl-mode
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/references/schema-layouts
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/references/schema-design
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/references/publishing
 definedBy:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/agent-skills-specification
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/references/agent-skills-specification
 sources:
   - resource: skills/linkml-author/SKILL.md
 generated:

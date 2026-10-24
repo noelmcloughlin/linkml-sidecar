@@ -1,6 +1,6 @@
 ---
 type: Playbook
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/playbooks/contributing
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/playbooks/contributing
 title: Contributing
 description: "The contributor checklist: development setup, the fast tests, the slow tests and the clone of the pinned template they need, the install smoke test, what to run before a pull request, how to move the linkml-project-copier template pin, and how action pins in the GitHub and Forgejo workflow templates follow Dependabot."
 genre: how-to
@@ -11,13 +11,13 @@ tags:
   - template pin
   - forgejo
 dependsOn:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/services/repository-contract
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/services/repository-contract
 references:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/glossary/template-pin
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/template-assumptions
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/policies/releasing
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/policies/ai-covenant
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/policies/code-of-conduct
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/glossary/template-pin
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/references/template-assumptions
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/policies/releasing
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/policies/ai-covenant
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/policies/code-of-conduct
 sources:
   - resource: CONTRIBUTING.md
   - resource: .github/pull_request_template.md

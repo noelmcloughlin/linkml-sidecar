@@ -1,5 +1,9 @@
 # Change Log
 
+## 2026-10-24
+
+* **Changed**: The bundle's namespace is now the persistent identifier `https://w3id.org/ktl/linkml-sidecar/knowledge/`, and every concept's id moves with it. Knowledge website names `https://w3id.org/ktl/linkml-sidecar/` as the site's address.
+
 ## 2026-10-22
 
 * **Changed**: Template pin: the contract now holds the pin's mentions under `docs/` and in `CONTRIBUTING.md` too, as check 8 and the scaffold driver's header say.

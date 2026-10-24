@@ -1,6 +1,6 @@
 ---
 type: Document
-id: https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/template-assumptions
+id: https://w3id.org/ktl/linkml-sidecar/knowledge/references/template-assumptions
 title: Template assumptions catalogue
 description: The catalogue, at template v0.5.0, of the twenty things linkml-project-copier assumes of a repository root (just setup, just deploy, nested workflows, the governance files, mkdocs URLs, --trust, just update, config.public.mk, the generators' settings and more), what the scaffold does about each, and which an upstream layout answer would remove.
 genre: reference
@@ -11,7 +11,7 @@ tags:
   - just setup
   - just deploy
 about:
-  - https://noelmcloughlin.github.io/linkml-sidecar/knowledge/references/linkml-project-copier
+  - https://w3id.org/ktl/linkml-sidecar/knowledge/references/linkml-project-copier
 references:
   - https://github.com/linkml/linkml-project-copier/issues/187
 sources:
