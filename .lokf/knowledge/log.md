@@ -1,5 +1,9 @@
 # Change Log
 
+## 2026-10-26
+
+* **Changed**: the assumptions catalogue links linkml-project-copier#187 from its body, not its `references`, because a typed relation names a concept and the federation gate fails on a target no member owns.
+
 ## 2026-10-24
 
 * **Changed**: The bundle's namespace is now the persistent identifier `https://w3id.org/ktl/linkml-sidecar/knowledge/`, and every concept's id moves with it. Knowledge website names `https://w3id.org/ktl/linkml-sidecar/` as the site's address.

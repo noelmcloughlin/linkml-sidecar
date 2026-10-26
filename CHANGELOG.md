@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed
+
+- **The assumptions catalogue concept links linkml-project-copier#187 from its body, not its `references`.** A typed relation names a concept, so the KTL federation gate failed on that outside URL.
+
 ## [0.3.2] - 2026-10-26
 
 ### Changed
