@@ -12,19 +12,17 @@ tags:
   - just deploy
 about:
   - https://w3id.org/ktl/linkml-sidecar/knowledge/references/linkml-project-copier
-references:
-  - https://github.com/linkml/linkml-project-copier/issues/187
 sources:
   - resource: skills/linkml-sidecar/references/template-assumptions.md
 generated:
   by: process:ktl-librarian
-  at: "2026-10-22T17:44:49Z"
+  at: "2026-10-26T17:42:04Z"
 status: draft
 ---
 
 # Overview
 
-`skills/linkml-sidecar/references/template-assumptions.md` is the catalogue the scaffold implements, row by row, at template **v0.5.0**. It is for whoever maintains the skill. Each row names one root-install assumption, what the skill does about it, and whether an upstream `layout: sidecar` answer would remove it.
+`skills/linkml-sidecar/references/template-assumptions.md` is the catalogue the scaffold implements, row by row, at template **v0.5.0**. It is for whoever maintains the skill. Each row names one root-install assumption, what the skill does about it, and whether a `layout: sidecar` answer, proposed upstream in [linkml-project-copier#187](https://github.com/linkml/linkml-project-copier/issues/187), would remove it.
 
 Some of the rows:
 
