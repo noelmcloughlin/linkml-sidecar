@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Changed
+
+- **The `.lokf` toolkit floor is lokf 0.9.0.** Knowledge Trust Ladder v0.60.0's `lokf-check-refs` passes `--check-excerpts`, which lokf 0.8.0 lacks.
+
 ## [0.3.4] - 2026-10-29
 
 ### Added

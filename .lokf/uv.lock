@@ -1302,31 +1302,35 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "lokf", extras = ["build"], specifier = ">=0.8.0" },
+    { name = "lokf", extras = ["build"], specifier = ">=0.9.0" },
     { name = "rust-just", specifier = "==1.47.0" },
 ]
 
 [[package]]
 name = "lokf"
-version = "0.8.0"
+version = "0.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "curies", version = "0.14.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "curies", version = "0.15.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "linkml-runtime" },
     { name = "mcp" },
     { name = "pyoxigraph" },
     { name = "pyyaml" },
     { name = "rdflib" },
     { name = "ruamel-yaml" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d8/0c/02545d1ae27ac5cb9c224d86635bc5b216dd6bc6214e7d2a451c4c6f7b69/lokf-0.8.0.tar.gz", hash = "sha256:6745eb52579babc411b896166a6d3ebe31fb96ca8bf12b2f42a1fc97ff9dcb61", size = 526074, upload-time = "2026-09-16T22:12:05.982Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/18/7e/6fbfe6515951bb90965b3189587df943d3a6caef69ff1de037efef8a9ed6/lokf-0.9.0.tar.gz", hash = "sha256:1f7c2106f818600a40584569eb4d390c1de68c86085ce8df727d612a0ac0f4b3", size = 721300, upload-time = "2026-10-28T17:35:57.903Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/eb/3b/cbf48f3bc8f15ba8a9bd07c39dc84f443aaccca4500bee4b5654e7c3c4a0/lokf-0.8.0-py3-none-any.whl", hash = "sha256:d39b6ea3191fc2478a5da43c78020c40822f90626869f54480c5a5ce959f5056", size = 250253, upload-time = "2026-09-16T22:12:04.306Z" },
+    { url = "https://files.pythonhosted.org/packages/74/c6/1866aaceb834d8796ec1e24b12a35f95d4dd649635a9bad859627d6212a7/lokf-0.9.0-py3-none-any.whl", hash = "sha256:a873562c432da49bf078c2f94845efe64bc7ec2d99518aab06f82b3092ac2d6a", size = 349393, upload-time = "2026-10-28T17:35:56.135Z" },
 ]
 
 [package.optional-dependencies]
 build = [
     { name = "linkml" },
+    { name = "markdown-it-py" },
 ]
 
 [[package]]

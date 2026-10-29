@@ -71,5 +71,5 @@ When the justfile's `schema` line names a domain schema, run the recipes instead
 
 - LOKF specification & Golden Rules: <https://lokf.nolan-nichols.com/>
 - `lokf` toolkit (PyPI): <https://pypi.org/project/lokf/>
-- LOKF schema, if Python is not available, from the commit tagged with the `pyproject.toml` floor, `v0.8.0`: <https://github.com/nicholsn/lokf/blob/66073c3eb8b8ca6ca00fb66ba11beca235eaedc8/lokf.yaml>
+- LOKF schema, if Python is not available, from the commit tagged with the `pyproject.toml` floor, `v0.9.0`: <https://github.com/nicholsn/lokf/blob/eab5fe35b99e154bec9aabc03656446b891311f8/lokf.yaml>
 - OKF spec: <https://github.com/GoogleCloudPlatform/open-knowledge-format/blob/main/SPEC.md>
