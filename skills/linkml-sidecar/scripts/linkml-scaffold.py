@@ -850,18 +850,50 @@ def say_ktl_workflows():
     )
 
 
+def wire_tool_lokf(host, schema, dry):
+    """`[tool.lokf] schema`, which a lokf command given no --schema reads (0.9.0 or later), set to the justfile's path; another path is told, not patched."""
+    pyproject = host / ".lokf" / "pyproject.toml"
+    if not pyproject.is_file():
+        say("handoff", f'no .lokf/pyproject.toml; when one exists, add [tool.lokf] schema = "{schema}"')
+        return
+    text = read(pyproject)
+    table = re.search(r"^\[tool\.lokf\][ \t]*(#.*)?$", text, re.M)
+    if table is None:
+        new = (
+            text.rstrip("\n") + "\n\n[tool.lokf]\n"
+            "# The domain schema a lokf command reads when it is given no --schema, the\n"
+            "# path the justfile's schema line names. Keep the two the same.\n"
+            f'schema = "{schema}"\n'
+        )
+        write(pyproject, new, dry)
+        return
+    rest = text[table.end():]
+    following = re.search(r"^[ \t]*\[", rest, re.M)
+    body = rest[: following.start()] if following else rest
+    named = re.search(r"""^[ \t]*schema[ \t]*=[ \t]*["']([^"']*)["']""", body, re.M)
+    if named is None:
+        write(pyproject, text[: table.end()] + f'\nschema = "{schema}"' + rest, dry)
+        return
+    value = named.group(1)[2:] if named.group(1).startswith("./") else named.group(1)
+    if value == schema:
+        say("scaffold", ".lokf/pyproject.toml's [tool.lokf] schema names the schema already; left alone")
+    else:
+        say("handoff", f'.lokf/pyproject.toml\'s [tool.lokf] schema is "{named.group(1)}"; set it to "{schema}", the justfile\'s line, or remove it')
+
+
 def wire_lokf(host, facts, dry):
-    """`schema :=` and `--schema` in .lokf/justfile (domain-schema.md, step 4); an unexpected line is printed, not patched."""
+    """`schema :=` and `--schema` in .lokf/justfile (domain-schema.md, step 4), and `[tool.lokf] schema`; an unexpected line is printed, not patched."""
     justfile = host / ".lokf" / "justfile"
     schema = f"../{SIDECAR}/src/{facts['PROJ_SLUG']}/schema/{facts['PROJ_SLUG']}.yaml"
     if not justfile.is_file():
-        say("handoff", f"no .lokf/justfile to wire; when one exists, add schema := \"{schema}\" and --schema {{{{ schema }}}} to lokf-validate and lokf-check-refs")
+        say("handoff", f"no .lokf/justfile to wire; when one exists, add schema := \"{schema}\" and --schema {{{{ schema }}}} to lokf-validate and lokf-check-refs, and the same path as [tool.lokf] schema in .lokf/pyproject.toml")
         return
     text = read(justfile)
     if re.search(r'^schema := ""$', text, re.M):
         # The ktl-sidecar template that carries the variable itself: its recipes
         # already pass --schema and run from the schema's directory when it is set.
         write(justfile, re.sub(r'^schema := ""$', lambda _m: f'schema := "{schema}"', text, count=1, flags=re.M), dry)
+        wire_tool_lokf(host, schema, dry)
         say("handoff", f'.lokf/justfile wired: schema := "{schema}" (the template\'s own recipes take it from there)')
         say("handoff", "list ExampleConcept under the KTL plugins' Known LOKF types")
         return
@@ -885,7 +917,8 @@ def wire_lokf(host, facts, dry):
         say(
             "handoff",
             f".lokf/justfile does not hold the ktl-sidecar template's lines {missing!r}; "
-            f"add schema := \"{schema}\" and --schema {{{{ schema }}}} to lokf-validate and lokf-check-refs by hand",
+            f"add schema := \"{schema}\" and --schema {{{{ schema }}}} to lokf-validate and lokf-check-refs by hand, "
+            "and the same path as [tool.lokf] schema in .lokf/pyproject.toml",
         )
         say_ktl_workflows()
         say("handoff", "list ExampleConcept under the KTL plugins' Known LOKF types")
@@ -893,6 +926,7 @@ def wire_lokf(host, facts, dry):
     for old, new in edits:
         text = text.replace(old, new, 1)
     write(justfile, text, dry)
+    wire_tool_lokf(host, schema, dry)
     say("handoff", f".lokf/justfile wired: schema := \"{schema}\"; lokf-validate and lokf-check-refs run from the schema's directory")
     say_ktl_workflows()
     say("handoff", "list ExampleConcept under the KTL plugins' Known LOKF types")
