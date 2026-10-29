@@ -247,7 +247,7 @@ if have uv; then
     info just-pin "uv.lock pins no just, so the workflows fetch rust-just by version; uv add rust-just==1.47.0 in .lokf/ pins it by hash"
   fi
 else
-  miss toolkit "uv not installed - lokf validate, convert and query unavailable, and the conventions script skips its parser's half (rules 2, 3, 4, 7, 9, 10, 12, 13, 14); only the manual schema cross-check remains" "lokf validate and nine of the fourteen conventions (every skill's audit)"
+  miss toolkit "uv not installed - lokf validate, convert and query unavailable, and the conventions script skips its parser's half (rules 2, 3, 4, 7, 9, 10, 12, 13, 14, 15, 16, 17, 18); only the manual schema cross-check remains" "lokf validate and thirteen of the eighteen conventions (every skill's audit)"
 fi
 
 # The gate, the release and the scheduled librarian install the toolkit with
@@ -363,13 +363,14 @@ fi
 # The script's own status line says how many entries, how many mirrored files
 # and which token names are present; it prints no value. A mirror file the
 # lock names and the disk has lost, or a file the lock does not name, is a
-# warning: a run restores the first, and the second is nobody's. Without the
-# script, the manifest is a wish nothing fulfils.
+# warning: a run restores the first, and the second is nobody's. So is a git
+# older than a `git` entry needs, since the run refuses that entry. Without
+# the script, the manifest is a wish nothing fulfils.
 if [ -f "$root/.lokf/ingest.yaml" ]; then
   if [ -f "$root/.lokf/scripts/knowledge-ingest.sh" ]; then
     status="$(bash "$root/.lokf/scripts/knowledge-ingest.sh" --root "$root" --status 2>/dev/null)" || status=""
     case "$status" in
-      "ingest: "*"missing from the mirror"*|"ingest: "*"the lock does not name"*) warn ingest "${status#ingest: }" ;;
+      "ingest: "*"missing from the mirror"*|"ingest: "*"the lock does not name"*|"ingest: "*"this git is "*) warn ingest "${status#ingest: }" ;;
       "ingest: "*) info ingest "${status#ingest: }" ;;
       *) info ingest ".lokf/ingest.yaml is here; its status was not read (no .lokf/.venv or python3 3.9 or later with pyyaml, and uv could not run it)" ;;
     esac

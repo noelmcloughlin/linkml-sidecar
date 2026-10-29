@@ -8,6 +8,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 - **linkml-author's generator pitfalls cover seven more behaviours seen on linkml 1.12.1.** `gen-owl` types a property from its range, so a union slot needs a `range` and an annotation property `implements`; it writes no `deprecated`, and keeps a label in `aliases` as `skos:altLabel`. The SQL generator writes a table for each multivalued slot of each class, and `gen-project` ignores a generator name it does not know, such as the template's `markdown` and `sqlddl`. `gen-owl`'s `type_objects` defaults differ between `gen-project` and the command line, and the `gen-project` row now says that it runs `gen-java` since 1.12.
 
+### Security
+
+- **The sidecar copies and the skills pin are at Knowledge Trust Ladder [v0.59.0](https://github.com/noelmcloughlin/knowledge-trust-ladder/compare/v0.56.2...v0.59.0).** The release changed `.github/workflows/knowledge-registrar.yaml`, `.github/workflows/knowledge-librarian.yaml`, `.github/workflows/knowledge-release.yaml`, `.github/workflows/knowledge-sync.yaml`, `.lokf/scripts/knowledge-conventions.sh`, `.lokf/scripts/knowledge-conventions.py`, `.lokf/scripts/knowledge-preflight.sh`, `.lokf/scripts/knowledge-apply.sh`, `.lokf/scripts/knowledge-apply.py`, `.lokf/scripts/knowledge-report.sh`, `.lokf/m365/ktl-docent-m365.md`, `website/package-lock.json`, `website/package.json`, `website/scripts/config.mjs` and `.github/workflows/knowledge-website.yaml` here.
+
 ## [0.3.3] - 2026-10-27
 
 ### Security
