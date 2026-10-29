@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+
+- **In KTL mode the scaffold writes the schema's path as `[tool.lokf] schema` in `.lokf/pyproject.toml` too.** A `lokf` command given no `--schema` then reads the schema the recipes check against, and the preflight reports the table and warns when it names another path.
+
 ## [0.3.4] - 2026-10-29
 
 ### Added

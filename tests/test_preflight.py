@@ -259,7 +259,7 @@ def test_reads_a_ktl_bundle_and_warns_without_a_base_iri(tmp_path):
     host = make_host(tmp_path)
     add_lokf(host)
     result = preflight(host)
-    assert result and matches(result.out, r"^ok      lokf .*with-KTL mode; lokf floor >=0\.8\.0; \.lokf/lokf\.yaml pinned; \.lokf/justfile schema not wired; base_iri https://fixture\.example/knowledge/"), result.out
+    assert result and matches(result.out, r"^ok      lokf .*with-KTL mode; lokf floor >=0\.9\.0; \.lokf/lokf\.yaml pinned; \.lokf/justfile schema not wired; \[tool\.lokf\] schema absent; base_iri https://fixture\.example/knowledge/"), result.out
     write(host / ".lokf" / "knowledge" / "index.md", "---\ntitle: no base\n---\n")
     result = preflight(host)
     assert result and matches(result.out, r"^warn    lokf .*no base_iri"), result.out
@@ -321,7 +321,22 @@ def test_a_ktl_justfile_with_an_empty_schema_variable_is_not_wired(tmp_path):
     assert result and "schema not wired" in result.out, result.out
     write(host / ".lokf" / "justfile", 'bundle := "knowledge"\nschema := "../.linkml/src/demo/schema/demo.yaml"\n')
     result = preflight(host)
-    assert result and "schema wired (../.linkml/src/demo/schema/demo.yaml)" in result.out, result.out
+    assert result and "schema wired (../.linkml/src/demo/schema/demo.yaml); [tool.lokf] schema absent" in result.out, result.out
+
+
+def test_a_tool_lokf_schema_is_reported_and_held_to_the_justfile_line(tmp_path):
+    host = make_host(tmp_path)
+    add_lokf(host)
+    pyproject = host / ".lokf" / "pyproject.toml"
+    original = read(pyproject)
+    write(host / ".lokf" / "justfile", 'bundle := "knowledge"\nschema := "../.linkml/src/demo/schema/demo.yaml"\n')
+    write(pyproject, original + '\n[tool.lokf]\nschema = "./../.linkml/src/demo/schema/demo.yaml"\n')
+    result = preflight(host)
+    assert result and "[tool.lokf] schema ./../.linkml/src/demo/schema/demo.yaml;" in result.out, result.out
+    assert not matches(result.out, r"^warn    lokf "), result.out
+    write(pyproject, original + "\n[tool.lokf]\nschema = 'other.yaml'\n")
+    result = preflight(host)
+    assert result and matches(result.out, r"^warn    lokf +\[tool\.lokf\] schema in \.lokf/pyproject\.toml is other\.yaml and \.lokf/justfile's schema line is \.\./"), result.out
 
 
 def test_a_justfile_naming_an_adapted_copy_says_so(tmp_path):

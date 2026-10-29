@@ -1,5 +1,9 @@
 # Change Log
 
+## 2026-10-29
+
+* **Changed**: KTL mode says the scaffold also writes the schema's path as `[tool.lokf] schema`, that the `cd` workaround is needed only at a lokf 0.8.0 floor, and that removal drops the table's line.
+
 ## 2026-10-26
 
 * **Changed**: the assumptions catalogue links linkml-project-copier#187 from its body, not its `references`, because a typed relation names a concept and the federation gate fails on a target no member owns.

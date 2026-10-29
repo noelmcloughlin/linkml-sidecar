@@ -11,17 +11,18 @@ A schema the host already held (`--adopt`) is not made the domain schema: the sc
 3. **Excuses LOKF's own names in the linter.** `linkml-lint`'s `standard_naming` rule walks the import closure, and LOKF's relation slots are camelCase (`isPartOf`, `dependsOn`, ...). `.linkml/.linkmllint.yaml` extends the recommended rules and lists those names under `exclude`, read from the pinned copy, and nothing else: the host's own slots are still held to snake_case. Regenerate it with `--repair .linkmllint.yaml` when the floor moves.
 4. **Renders LOKF's pages in the docs.** `config.public.mk` gets `LINKML_GENERATORS_DOC_ARGS="--render-imports"`, so `is_a: Concept` links to a page that exists.
 5. **Edits `.lokf/justfile`** (domain-schema.md's step 4): `schema := "../.linkml/src/<slug>/schema/<slug>.yaml"` after `bundle := "knowledge"`, and `lokf-validate` and `lokf-check-refs` pass `--schema`. The edit matches ktl-sidecar's template lines exactly; a justfile that differs gets the edit printed instead of patched.
+6. **Writes the same path as `[tool.lokf] schema`** in `.lokf/pyproject.toml`, once the justfile names it, so a `lokf` command given no `--schema` (lokf 0.9.0 or later) reads the schema too. KTL's preflight warns when the two differ, and so does this sidecar's. A table that already names another schema is printed, not patched.
 
-## The one workaround, and when it ends
+## The one workaround, for a lokf 0.8.0 floor
 
-The two recipes run from the schema's directory rather than from `.lokf/`:
+On a justfile from before the `schema :=` variable, the scaffold makes the two recipes run from the schema's directory rather than from `.lokf/`:
 
 ```just
 lokf-validate:
     cd {{ parent_directory(schema) }} && uv run --project {{ justfile_directory() }} lokf validate --schema {{ file_name(schema) }} {{ justfile_directory() }}/{{ bundle }}
 ```
 
-`lokf validate` passes the schema path to `linkml.validator.validate()`, which loads the file into a `SchemaDefinition` without its `source_file`, so the schema's relative import resolves from the working directory, not from the file. From the schema's own directory the same string resolves to the same place for both the validator and `SchemaView`, so lint, the generators and the validator agree. [linkml PR 3855](https://github.com/linkml/linkml/pull/3855), released in linkml 1.12.0, changes how imports are tracked. The `cd` form works on 1.11.x and on 1.12.0 alike, so it stays while a `.lokf/uv.lock` may still hold 1.11.x. Once `uv run lokf validate --schema ../.linkml/src/<slug>/schema/<slug>.yaml knowledge` passes from `.lokf/` on the locked version, the recipes can drop the `cd`.
+On lokf 0.8.0, `lokf validate` passes the schema path to `linkml.validator.validate()`, which loads the file into a `SchemaDefinition` without its `source_file`, so the schema's relative import resolves from the working directory, not from the file. From the schema's own directory the same string resolves to the same place for both the validator and `SchemaView`, so lint, the generators and the validator agree. lokf 0.9.0 requires linkml-runtime 1.12, which resolves the import from the schema's own folder, so ktl-sidecar's template from KTL 0.60.0 passes `--schema` from `.lokf/` with no `cd`. The `cd` form works on both floors, and only a `.lokf/` still at lokf 0.8.0 needs it.
 
 On a `.lokf/` from a ktl-sidecar release that predates the `schema := ""` variable, the three KTL workflows (`knowledge-registrar.yaml`, `knowledge-librarian.yaml`, `knowledge-release.yaml`) run `uv run lokf validate --check-refs` inline in `.lokf/`. The hand-off then asks that each workflow's validate step run `uvx --from rust-just==1.47.0 just lokf-check-refs`, so the recipes stay in one place. The runners have no `just`, so the step runs it through `uvx`. A `.lokf/justfile` that already carries `schema := ""` (ktl-sidecar's template from the follow-up that added it, whose workflows run that line) needs only the variable set, and the scaffold sets it.
 
@@ -37,4 +38,4 @@ On a `.lokf/` from a ktl-sidecar release that predates the `schema := ""` variab
 
 - **The plugins.** KTL Registrar and KTL Curator each carry a *Known LOKF types* setting; add each domain class to both (domain-schema.md, step 5). The skills need no telling: ktl-librarian's Rule 3 reads the schema the justfile names.
 - **The floor.** When `.lokf/pyproject.toml`'s `lokf` floor moves, refresh `.lokf/lokf.yaml` from the new toolkit in the same change, regenerate `.linkmllint.yaml`, and re-run both gates. A copy older than the toolkit validates against classes and slots the toolkit no longer means.
-- **Removal.** When the sidecar is removed, a `.lokf/justfile` that names the schema is reset to `schema := ""` (on an older justfile, to `uv run lokf validate {{ bundle }}` in both validate recipes). `.lokf/lokf.yaml` may stay.
+- **Removal.** When the sidecar is removed, a `.lokf/justfile` that names the schema is reset to `schema := ""` (on an older justfile, to `uv run lokf validate {{ bundle }}` in both validate recipes), and `[tool.lokf] schema` is removed from `.lokf/pyproject.toml`. `.lokf/lokf.yaml` may stay.
