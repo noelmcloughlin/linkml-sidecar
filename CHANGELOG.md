@@ -4,15 +4,15 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
-### Changed
-
-- **The `.lokf` toolkit floor is lokf 0.9.0.** Knowledge Trust Ladder v0.60.0's `lokf-check-refs` passes `--check-excerpts`, which lokf 0.8.0 lacks.
-
 ## [0.3.4] - 2026-10-29
 
 ### Added
 
 - **linkml-author's generator pitfalls cover seven more behaviours seen on linkml 1.12.1.** `gen-owl` types a property from its range, so a union slot needs a `range` and an annotation property `implements`; it writes no `deprecated`, and keeps a label in `aliases` as `skos:altLabel`. The SQL generator writes a table for each multivalued slot of each class, and `gen-project` ignores a generator name it does not know, such as the template's `markdown` and `sqlddl`. `gen-owl`'s `type_objects` defaults differ between `gen-project` and the command line, and the `gen-project` row now says that it runs `gen-java` since 1.12.
+
+### Changed
+
+- **The `.lokf` toolkit floor is lokf 0.9.0.** Knowledge Trust Ladder v0.60.0's `lokf-check-refs` passes `--check-excerpts`, which lokf 0.8.0 lacks.
 
 ### Security
 
