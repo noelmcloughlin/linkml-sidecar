@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Changed
+
+- **linkml-author's generator pitfalls are re-checked on linkml 1.12.1 against the SPDX schema.** The keyword-slot row says the dataclasses now compile but the example runner still rejects a `from` key, which linkml PR 4083 fixes. Two rows are new: the SQL generator does not follow a type's `typeof` to its base (linkml issue 3491), and the TypeScript generator warns on any base outside five, built-in types included (linkml issue 2539).
+
 ## [0.4.0] - 2026-10-29
 
 ### Added
