@@ -365,6 +365,40 @@ def test_a_tool_lokf_table_gets_the_schema_or_is_told(tmp_path):
     assert result and '[tool.lokf] schema is "elsewhere.yaml"; set it to "../.linkml/src/demo/schema/demo.yaml"' in result.out, result.out
     assert read(pyproject) == original
 
+    # lokf refuses an empty path, so the empty line is filled in where it stands.
+    host = make_host(tmp_path / "empty-schema")
+    add_lokf(host)
+    pyproject = host / ".lokf" / "pyproject.toml"
+    write(pyproject, read(pyproject) + '\n[tool.lokf]\nschema = ""  # set by hand\n')
+    assert scaffold(host)
+    assert 'schema = "../.linkml/src/demo/schema/demo.yaml"  # set by hand\n' in read(pyproject)
+
+    # A subtable alone leaves [tool.lokf] free to declare.
+    host = make_host(tmp_path / "subtable")
+    add_lokf(host)
+    pyproject = host / ".lokf" / "pyproject.toml"
+    write(pyproject, read(pyproject) + "\n[tool.lokf.extra]\nk = 1\n")
+    assert scaffold(host)
+    assert tool_lokf_schema(host) == "../.linkml/src/demo/schema/demo.yaml"
+
+
+def test_a_tool_lokf_table_spelled_another_way_is_told_not_doubled(tmp_path):
+    # A second [tool.lokf] beside any of these is invalid TOML, which stops uv and every lokf command.
+    for name, table in [
+        ("spaced", '[ tool.lokf ]\nschema = "x.yaml"\n'),
+        ("quoted", '[tool."lokf"]\n'),
+        ("dotted", '[tool]\nlokf.schema = "x.yaml"\n'),
+        ("inline", '[tool]\nlokf = { schema = "x.yaml" }\n'),
+    ]:
+        host = make_host(tmp_path / name)
+        add_lokf(host)
+        pyproject = host / ".lokf" / "pyproject.toml"
+        original = read(pyproject) + "\n" + table
+        write(pyproject, original)
+        result = scaffold(host)
+        assert result and "spells [tool.lokf] in a form the scaffold does not edit" in result.out, (name, result.out)
+        assert read(pyproject) == original, name
+
 
 def test_repair_relays_one_owned_file_from_the_sidecars_own_facts(tmp_path):
     host = make_host(tmp_path)

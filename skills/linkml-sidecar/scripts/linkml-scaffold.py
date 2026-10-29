@@ -850,6 +850,37 @@ def say_ktl_workflows():
     )
 
 
+TOOL_LOKF_RE = re.compile(r"^\[tool\.lokf\][ \t]*(#.*)?$", re.M)
+
+
+def tool_lokf_edit_holds(text, new, schema):
+    """Whether new, the edited pyproject.toml, still parses and reads `[tool.lokf] schema` as schema.
+
+    A second [tool.lokf] beside one spelled another way is invalid TOML, which
+    stops uv and every lokf command. Without tomllib (before Python 3.11) a
+    pattern looks in text for the other spellings instead: a spaced or quoted
+    header, a dotted `tool.lokf.` key, or a `lokf` key in a `[tool]` table.
+    """
+    try:
+        import tomllib
+    except ModuleNotFoundError:
+        if TOOL_LOKF_RE.search(text):
+            return True
+        if re.search(r"""^[ \t]*(\[[ \t]*tool[ \t]*\.[ \t]*["']?lokf["']?[ \t]*\]|tool[ \t]*\.[ \t]*["']?lokf["']?[ \t]*\.)""", text, re.M):
+            return False
+        tool = re.search(r"^\[tool\][ \t]*(#.*)?$", text, re.M)
+        if tool is None:
+            return True
+        following = re.search(r"^[ \t]*\[", text[tool.end():], re.M)
+        body = text[tool.end():][: following.start()] if following else text[tool.end():]
+        return re.search(r"""^[ \t]*["']?lokf["']?[ \t]*[.=]""", body, re.M) is None
+    try:
+        table = tomllib.loads(new).get("tool", {}).get("lokf")
+    except tomllib.TOMLDecodeError:
+        return False
+    return isinstance(table, dict) and table.get("schema") == schema
+
+
 def wire_tool_lokf(host, schema, dry):
     """`[tool.lokf] schema`, which a lokf command given no --schema reads (0.9.0 or later), set to the justfile's path; another path is told, not patched."""
     pyproject = host / ".lokf" / "pyproject.toml"
@@ -857,7 +888,14 @@ def wire_tool_lokf(host, schema, dry):
         say("handoff", f'no .lokf/pyproject.toml; when one exists, add [tool.lokf] schema = "{schema}"')
         return
     text = read(pyproject)
-    table = re.search(r"^\[tool\.lokf\][ \t]*(#.*)?$", text, re.M)
+
+    def write_checked(new):
+        if tool_lokf_edit_holds(text, new, schema):
+            write(pyproject, new, dry)
+        else:
+            say("handoff", f'.lokf/pyproject.toml is not valid TOML or spells [tool.lokf] in a form the scaffold does not edit; set its schema to "{schema}" by hand')
+
+    table = TOOL_LOKF_RE.search(text)
     if table is None:
         new = (
             text.rstrip("\n") + "\n\n[tool.lokf]\n"
@@ -865,14 +903,19 @@ def wire_tool_lokf(host, schema, dry):
             "# path the justfile's schema line names. Keep the two the same.\n"
             f'schema = "{schema}"\n'
         )
-        write(pyproject, new, dry)
+        write_checked(new)
         return
     rest = text[table.end():]
     following = re.search(r"^[ \t]*\[", rest, re.M)
     body = rest[: following.start()] if following else rest
     named = re.search(r"""^[ \t]*schema[ \t]*=[ \t]*["']([^"']*)["']""", body, re.M)
     if named is None:
-        write(pyproject, text[: table.end()] + f'\nschema = "{schema}"' + rest, dry)
+        write_checked(text[: table.end()] + f'\nschema = "{schema}"' + (rest or "\n"))
+        return
+    if named.group(1) == "":
+        # lokf refuses an empty path rather than falling back to core, so the line is filled in.
+        at = table.end() + named.start(1)
+        write_checked(text[:at] + schema + text[at:])
         return
     value = named.group(1)[2:] if named.group(1).startswith("./") else named.group(1)
     if value == schema:
@@ -891,7 +934,7 @@ def wire_lokf(host, facts, dry):
     text = read(justfile)
     if re.search(r'^schema := ""$', text, re.M):
         # The ktl-sidecar template that carries the variable itself: its recipes
-        # already pass --schema and run from the schema's directory when it is set.
+        # already pass --schema when it is set (from the schema's directory before KTL 0.60.0).
         write(justfile, re.sub(r'^schema := ""$', lambda _m: f'schema := "{schema}"', text, count=1, flags=re.M), dry)
         wire_tool_lokf(host, schema, dry)
         say("handoff", f'.lokf/justfile wired: schema := "{schema}" (the template\'s own recipes take it from there)')
